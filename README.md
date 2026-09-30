@@ -59,9 +59,17 @@ npm test             # 纯函数与轮询列表工厂单测
 
 ## 打包
 
-```bash
-npm run dist         # vite build 产物进 dist/，再 electron-builder 打 nsis 安装包到 release/
-```
+三条命令都先做 `vite build` 把渲染产物写进 dist/，再交给 electron-builder。区别只在打包目标：
+
+| 命令 | 等价命令 | 产物 |
+|------|----------|------|
+| `npm run build` | `vite build && electron-builder --win nsis` | 安装版 `release/*.exe`（NSIS 安装包） |
+| `npm run dist`  | 同上（与 build 完全一致） | 安装版，同 build |
+| `npm run pack`  | `vite build && electron-builder --win dir` | **免安装绿色版目录 `release/win-unpacked/`** |
+
+- 产物目录由 `electron-builder.yml` 的 `directories.output: release` 决定。
+- `pack` 用 `dir` 目标，只产出解包后的程序目录、不生成安装包：把 `release/win-unpacked/` 整目录拷到任意 Windows 机器，双击里面的 `adb++.exe` 即可运行，无需安装。
+- `build` / `dist` 用 `nsis` 目标，产出可分发安装包 `release/*.exe`。
 
 ## 安全要点
 
