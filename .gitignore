@@ -1,0 +1,25 @@
+# ===== 依赖与构建产物 =====
+node_modules/
+dist/
+release/
+out/
+
+# ===== 日志 =====
+logs/
+*.log
+
+# ===== 本地私有配置（设备/模拟器，不入库）=====
+adbtool-config.json
+雷电模拟器.json
+
+# ===== 工具 / IDE 本地数据 =====
+.codegraph/
+.idea/
+
+# ===== 本地项目记忆（不入库）=====
+.workbuddy/
+docs/
+
+# ===== 系统文件 =====
+.DS_Store
+Thumbs.db

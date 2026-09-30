@@ -1,0 +1,28 @@
+{
+  "name": "adb-enhance-tool",
+  "version": "0.1.26093001",
+  "private": true,
+  "description": "ADB++：类 AS Logcat / 日志导出 / 截图录屏 / 快捷命令（Electron 37 + Vue 3，仅 Windows）",
+  "type": "module",
+  "main": "main/index.js",
+  "author": "AI审核人员",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "vite": "vite",
+    "build:renderer": "vite build",
+    "check": "node scripts/check.mjs",
+    "test": "node --test",
+    "build": "vite build && electron-builder --win nsis",
+    "pack": "vite build && electron-builder --win dir",
+    "dist": "vite build && electron-builder --win nsis"
+  },
+  "dependencies": {
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "37.10.3",
+    "electron-builder": "^25.1.8",
+    "vite": "^6.0.7"
+  }
+}

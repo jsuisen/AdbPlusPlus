@@ -1,0 +1,1 @@
+echo "CPUS=$(grep -c ^processor /proc/cpuinfo)"; for d in /proc/[0-9]*/task/[0-9]*; do base=${d%/task/*}; pid=${base#/proc/}; tid=${d##*/}; s=$(cat "$d/stat" 2>/dev/null); [ -n "$s" ] || continue; comm=$(printf '%s' "$s" | sed 's/.*(//; s/).*//'); rest=$(printf '%s' "$s" | sed 's/^.*) //'); set -- $rest; ut=${12}; sm=${13}; echo "$pid|$tid|$comm|$ut|$sm"; done

@@ -1,0 +1,25 @@
+appId: com.adbpluspp.desktop
+productName: ADBEnhanceTool
+executableName: adb++
+copyright: Copyright © 2026
+directories:
+  output: release
+  buildResources: resources
+# 打包进 asar 的源码：主进程(main) + IPC 通道常量(shared) + 渲染产物(dist)
+files:
+  - main/**/*
+  - shared/**/*
+  - dist/**/*
+  - package.json
+# 不被 asar 压缩、运行时在 process.resourcesPath/resources 下可直接执行的二进制
+extraResources:
+  - from: resources
+    to: resources
+win:
+  target:
+    - nsis
+  icon: resources/icon.png
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
