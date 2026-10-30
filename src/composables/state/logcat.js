@@ -2,7 +2,7 @@
 import { ref, reactive, computed } from 'vue'
 import { activeLogSerial } from './devices.js'
 import { cfg } from './core.js'
-import { escapeRegExp } from '../shared.js'
+import { escapeRegExp, sortPkgs } from '../shared.js'
 
 // 内存中保留的日志行上限（单设备）
 export const MAX_BUFFER = 50000
@@ -24,7 +24,7 @@ export const runningMap = reactive({}) // serial -> 是否采集中
 export const logErrMap = reactive({})  // serial -> 错误信息
 export const procsMap = reactive({})   // serial -> 进程列表
 
-export const LOG_FILTER_DEFAULTS = () => ({ level: '', pkg: '', tag: '', regex: false, text: '', autoscroll: true, wrap: false })
+export const LOG_FILTER_DEFAULTS = () => ({ level: '', pkg: '', tag: '', regex: false, text: '', autoscroll: true, wrap: false, byPkg: false })
 
 export const _logFilter = reactive({})   // serial -> 过滤状态对象
 
@@ -70,7 +70,25 @@ export const selectedProc = computed({
   set: (v) => { const s = activeLogSerial.value; if (s) ensureLogFilter(s).pkg = v }
 })
 
+// 「按包名过滤」勾选框：勾选时下拉值为去重后的基础包名（覆盖多进程 APK 全部进程），默认不勾选
+export const procFilterByPkg = computed({
+  get: () => (activeLogSerial.value && _logFilter[activeLogSerial.value] ? !!_logFilter[activeLogSerial.value].byPkg : false),
+  set: (v) => { const s = activeLogSerial.value; if (s) ensureLogFilter(s).byPkg = !!v }
+})
+
 export const procs = computed(() => procsMap[activeLogSerial.value] || [])
+
+// 下拉可选值：按 procFilterByPkg 切换「进程名」与「包名」两种模式；排序沿用原 sortPkgs 规则（android./com.android. 置底 + 字典序）
+export const procOptions = computed(() => {
+  const list = procsMap[activeLogSerial.value] || []
+  if (procFilterByPkg.value) {
+    // 包名模式：取基础包名（去冒号后缀）去重，每个 App 仅一项；多选该 App 即命中其全部进程（含 :remote 等私有进程）
+    const bases = [...new Set(list.map((p) => p.pkg.split(':')[0]))]
+    return sortPkgs(bases.map((b) => ({ pkg: b }))).map((b) => ({ key: 'b_' + b.pkg, value: b.pkg, label: b.pkg }))
+  }
+  // 进程名模式（原行为）：每条进程一项，值为完整进程名（含 :suffix）
+  return sortPkgs(list).map((p) => ({ key: 'p_' + p.pid, value: p.pkg, label: p.pkg + '(' + p.pid + ')' }))
+})
 
 export const pidPkgMap = computed(() => {
   const m = {}
@@ -104,11 +122,17 @@ export const displayLogs = computed(() => {
       arr = arr.filter((l) => (l.msg || '').toLowerCase().includes(t))
     }
   }
-  // 进程包名过滤：仅保留 pid 映射到所选包名的日志（pid->pkg 取自当前查看设备）
+  // 进程/包名过滤：按当前模式决定匹配方式
+  // - 进程名模式（默认）：精确匹配所选完整进程名（含 :suffix），仅显示该单一进程
+  // - 包名模式（勾选「按包名过滤」）：按基础包名匹配（去冒号后缀），命中某 App 的全部进程（含 :remote 等私有进程）
   const pkg = selectedProc.value
   if (pkg) {
     const m = pidPkgMap.value
-    arr = arr.filter((l) => m[String(l.pid)] === pkg)
+    if (procFilterByPkg.value) {
+      arr = arr.filter((l) => (m[String(l.pid)] || '').split(':')[0] === pkg)
+    } else {
+      arr = arr.filter((l) => m[String(l.pid)] === pkg)
+    }
   }
   const maxRender = cfg.value.maxRender ?? DEFAULT_MAX_RENDER
   if (arr.length > maxRender) arr = arr.slice(arr.length - maxRender)

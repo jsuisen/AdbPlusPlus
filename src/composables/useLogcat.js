@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, lastMsg, logEl, logErrMap, logFmt, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms} from './state'
+import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, lastMsg, logEl, logErrMap, logFmt, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
 import { saveCfg } from './useConfig'
@@ -863,6 +863,8 @@ watch(() => [findDraft.target, findDraft.mode, findDraft.matchCase, findDraft.wh
   findIndex.value = -1
   findBox.value = ''
 })
+// 切换「按包名过滤」模式时清空已选进程名/包名：两种模式可选值集合不同，旧选中值在新模式下无效，避免停在空选项
+watch(procFilterByPkg, () => { selectedProc.value = '' })
 
   return { anyAutoLogActive, applyAutoLog, browseAppLogDir, cancelFmt, clearKeywordFilter, clearLogs, clearTagFilter, closeCtxMenu, closeFindWindow, closeQuickFilter, collectTagStats, commitNote, commitNoteById, commitQuickFilter, confirmFmt, copySelection, countFind, deviceLabel, editNote, ensureAutoLogPath, ensureLogFilter, escapeRegExp, escapeRegexTag, exportLogs, findLineEl, findSegsFor, flushAutoLog, fmtLineOf, focusFindInput, formatLogLine, insertNote, insertTailNote, invertQf, loadProcToPkg, noteFileAppend, onAppLogChange, onAutoLogChange, onData, onDataAutoLog, onFindWinFocusChange, onFindWinMouseDown, onGlobalKey, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, pidMapFor, pushFindHistory, refreshFindScope, refreshProcs, removeNote, resetFindPosOnce, resetQf, sanitizeSerial, scrollToBottom, scrollToTop, selectAllLogs, sortPkgs, startAutoLogFlush, startFindDrag, startFindResize, startLogcat, stepFind, stopAutoLogFlush, stopLogcat, syncCheckFromRegex, toggleAllQf, toggleLatest, toggleLogcat, unescapeRegexTag }
 }

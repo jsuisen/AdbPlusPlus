@@ -38,7 +38,7 @@ import UninstallModal from './components/modals/UninstallModal.vue'
 import UpdateModal from './components/modals/UpdateModal.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, quickCommands, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
@@ -228,10 +228,13 @@ const { openUpdateDialog } = useUpdate()
                 <option value="I">I</option><option value="W">W</option>
                 <option value="E">E</option><option value="F">F</option>
               </select>
+            <label class="proc-chk" title="勾选后下拉按包名（去重）过滤，可一次抓取某 APK 的全部进程；不勾选则按完整进程名过滤单个进程">
+              <input type="checkbox" v-model="procFilterByPkg" />按包名过滤
+            </label>
             <span class="proc-wrap">
               <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" @mousedown="refreshProcs" title="点开即刷新当前设备进程列表">
-                <option value="">-进程包名-</option>
-                <option v-for="p in procs" :key="p.pid" :value="p.pkg">{{ p.pkg }}({{ p.pid }})</option>
+                <option value="">{{ procFilterByPkg ? '-包名-' : '-包名进程-' }}</option>
+                <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
               </select>
             </span>
             <span class="kwfilter-wrap tag-wrap">
