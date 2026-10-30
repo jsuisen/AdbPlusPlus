@@ -189,6 +189,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .ctx-item:hover { background: #f0f6ff; color: var(--primary); }
 .ctx-item:disabled { color: var(--muted); cursor: default; background: #fff; }
 .ctx-item:disabled:hover { background: #fff; color: var(--muted); }
+.ctx-clear { border-top: 1px solid var(--border); border-radius: 0; margin-top: 4px; }
 /* 设备列表右键菜单（保存 / 重命名）：复用 .ctx-overlay 遮罩，菜单层置于其上 */
 .dev-ctx-menu { position: fixed; z-index: 1001; min-width: 120px; background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.16); padding: 4px; }
 .dev-ctx-item { display: block; width: 100%; text-align: left; border: none; background: #fff; color: var(--text); font-size: 13px; padding: 6px 12px; border-radius: 4px; cursor: pointer; }

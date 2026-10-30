@@ -288,6 +288,7 @@ const { openUpdateDialog } = useUpdate()
                 <button class="ctx-item" :disabled="!ctxMenu.text" @click="copySelection">复制</button>
                 <button class="ctx-item" @click="selectAllLogs">全选</button>
                 <button class="ctx-item" @click="openFindFromCtx">搜索</button>
+                <button class="ctx-item ctx-clear" @click="clearLogs(); ctxMenu.visible = false">清空</button>
               </div>
             </div>
           </Teleport>
