@@ -105,7 +105,7 @@ function expandAll() { for (const g of devGroups) groupOpen[g.key] = true }
 
 function collapseAll() { for (const g of devGroups) groupOpen[g.key] = false }
 
-function runAction(item) {
+async function runAction(item) {
   const effLabel = (item.act === 'recordStart' && recording.value) ? '停止录屏'
     : (item.act === 'screenshotTimer' && screenshotting.value) ? '停止截图'
     : item.label
