@@ -43,7 +43,7 @@ const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFil
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
 
-const { clearKeywordFilter, clearLogs, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
+const { clearKeywordFilter, clearLogs, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onLogWheel, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
 // 日志区点击光标：纯视觉闪烁光标，落在点击处；同时放置一个真实折叠选区，
 // 使浏览器原生 Shift+方向键 能从该点扩展文本选区（跨行/换行均有效）
 const logCaret = reactive({ visible: false, x: 0, y: 0 })
@@ -257,7 +257,7 @@ const { openUpdateDialog } = useUpdate()
             <button @click="openFmt">格式</button>
             <span v-if="currentLogErr" class="muted" style="color:var(--danger)">{{ currentLogErr }}</span>
           </div>
-          <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
+          <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @wheel="onLogWheel" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
             <div v-if="logCaret.visible" class="log-caret" :style="{ left: logCaret.x + 'px', top: logCaret.y + 'px' }"></div>
             <div v-if="!mergedView.length" class="muted">点击「开始」采集 {{ activeLogSerial || '设备' }} 的日志…</div>
             <template v-for="e in mergedView" :key="e.id">
