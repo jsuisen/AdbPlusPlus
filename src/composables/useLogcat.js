@@ -27,6 +27,13 @@ function onLogScrollSave() {
 
 function onLogMouseDown(e) {
   if (e.button !== 0) return   // 仅左键；右键菜单等不取消
+  const el = logEl.value
+  if (el) {
+    const rect = el.getBoundingClientRect()
+    // 点/拖在水平或垂直滚动条上时不取消「底部」跟随：否则点水平滚动条会被误判为点击正文而误关跟随
+    const onScrollbar = e.clientX >= rect.left + el.clientWidth || e.clientY >= rect.top + el.clientHeight
+    if (onScrollbar) return
+  }
   autoscroll.value = false
 }
 
