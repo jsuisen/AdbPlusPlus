@@ -24,6 +24,7 @@ export const devGroups = [
     { label: '加载包名', act: 'loadPkg', needProc: true },
     { label: '启动应用', act: 'appStart', needPkg: true },
     { label: '停止应用', act: 'appStop', needPkg: true },
+    { label: '停止进程', act: 'procKill', needPkg: true },
     { label: '重启应用', act: 'appRestart', needPkg: true },
     { label: '清除缓存', act: 'appClear', needPkg: true },
     { label: '清除缓存并重启', act: 'appClearRestart', needPkg: true },
