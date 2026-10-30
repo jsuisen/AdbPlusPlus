@@ -1,7 +1,7 @@
 // 文件对话框 / 落地 IPC：导出日志、选截图/录屏保存路径、选本地 APK。
 // 渲染进程无 nodeIntegration，所有文件写盘都在主进程完成。
-import { ipcMain, dialog, clipboard } from 'electron'
-import { FILE_PICK_SAVE, FILE_OPEN_FILE, FILE_PICK_DIR, FILE_SAVE_TEXT, FILE_READ_TEXT, LOG_APPEND, CLIPBOARD_WRITE } from '../shared/ipc-channels.js'
+import { ipcMain, dialog, clipboard, shell } from 'electron'
+import { FILE_PICK_SAVE, FILE_OPEN_FILE, FILE_PICK_DIR, FILE_SAVE_TEXT, FILE_READ_TEXT, FILE_OPEN_DIR, LOG_APPEND, CLIPBOARD_WRITE } from '../shared/ipc-channels.js'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -52,5 +52,11 @@ export function registerFileIpc() {
   // 写入系统剪贴板（日志窗口右键"复制"用）。渲染进程无 nodeIntegration，走主进程。
   ipcMain.handle(CLIPBOARD_WRITE, async (_e, { text }) => {
     try { clipboard.writeText(text || '') } catch (e) { console.error('[clipboard:write] 写入剪贴板失败:', e) }
+  })
+
+  // 用系统文件管理器打开指定目录（日志「浏览」按钮打开自动保存目录）；路径为空或不存在时忽略
+  ipcMain.handle(FILE_OPEN_DIR, async (_e, { path: p } = {}) => {
+    if (!p) return
+    try { await shell.openPath(p) } catch (e) { console.error('[file:openDir] 打开目录失败:', p, e) }
   })
 }

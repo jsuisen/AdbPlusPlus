@@ -43,7 +43,7 @@ const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFil
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
 
-const { clearKeywordFilter, clearLogs, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onLogWheel, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
+const { clearKeywordFilter, clearLogs, browseLogDir, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onLogWheel, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
 // 日志区点击光标：纯视觉闪烁光标，落在点击处；同时放置一个真实折叠选区，
 // 使浏览器原生 Shift+方向键 能从该点扩展文本选区（跨行/换行均有效）
 const logCaret = reactive({ visible: false, x: 0, y: 0 })
@@ -254,6 +254,7 @@ const { openUpdateDialog } = useUpdate()
             <button @click="clearLogs">清空</button>
             <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）">搜索</button>
             <button @click="exportLogs">导出</button>
+            <button @click="browseLogDir" title="立即打开自动保存日志的目录（outDir）">浏览</button>
             <button @click="openFmt">格式</button>
             <span v-if="currentLogErr" class="muted" style="color:var(--danger)">{{ currentLogErr }}</span>
           </div>
