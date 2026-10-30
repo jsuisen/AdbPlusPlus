@@ -1,0 +1,74 @@
+{
+  "quickCommands": [
+    {
+      "name": "devices",
+      "args": [
+        "devices"
+      ],
+      "group": "默认",
+      "ignoreResponse": false,
+      "color": "#4a90d9"
+    }
+  ],
+  "lastSerial": "",
+  "outDir": "",
+  "targetPkg": "",
+  "configPath": "",
+  "autoLog": false,
+  "appLogEnabled": false,
+  "appLogDir": "",
+  "closeOnOuterClick": false,
+  "logColors": {
+    "V": "#CFC4C6",
+    "D": "#CFC4C6",
+    "I": "#000000",
+    "W": "#FFC0C0",
+    "E": "#FF0000",
+    "F": "#FF0000"
+  },
+  "logBgColors": {
+    "V": "#FFFFFF",
+    "D": "#FFFFFF",
+    "I": "#FFFFFF",
+    "W": "#FFFFFF",
+    "E": "#FFFFFF",
+    "F": "#FFFFFF"
+  },
+  "logBgOn": {
+    "V": false,
+    "D": false,
+    "I": false,
+    "W": false,
+    "E": false,
+    "F": false
+  },
+  "logFont": {
+    "size": 12,
+    "family": "\"Cascadia Code\", Consolas, monospace",
+    "bold": false,
+    "lineHeight": 1.4
+  },
+  "captureArgs": "-p -vv -s 0 -w",
+  "captureDeviceDir": "/sdcard/adbpp_captures/",
+  "captureLocalDir": "",
+  "captureAsRoot": false,
+  "screenshotDir": "",
+  "maxRender": 20000,
+  "screenshotInterval": 1000,
+  "levelFilter": "",
+  "tagFilter": "",
+  "textFilter": "",
+  "keyButtons": [],
+  "textButtons": [],
+  "tapButtons": [],
+  "swipeButtons": [],
+  "logColorBold": {
+    "V": false,
+    "D": false,
+    "I": false,
+    "W": false,
+    "E": false,
+    "F": false
+  },
+  "logColorRules": []
+}
