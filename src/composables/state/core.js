@@ -30,3 +30,6 @@ export const updateInfo = ref(null)   // 当前应展示的升级信息（null =
 export const maximized = ref(false)
 
 export const collapsedSidebar = ref(false)
+
+// 快捷按钮区是否展开（默认收起隐藏；状态栏「快捷按钮」开关切换）
+export const quickbarVisible = ref(false)

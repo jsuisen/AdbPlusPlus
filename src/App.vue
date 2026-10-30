@@ -38,7 +38,7 @@ import UninstallModal from './components/modals/UninstallModal.vue'
 import UpdateModal from './components/modals/UpdateModal.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
@@ -423,8 +423,8 @@ const { openUpdateDialog } = useUpdate()
       </main>
     </div>
 
-    <!-- 快捷按钮区（状态栏上一行、设备管理/日志窗口下一行） -->
-    <div class="quickbar">
+    <!-- 快捷按钮区（状态栏上一行、设备管理/日志窗口下一行）；默认收起隐藏，由状态栏「快捷按钮」开关展开 -->
+    <div v-if="quickbarVisible" class="quickbar">
       <div class="qb-head">
         <span class="qb-title">快捷按钮</span>
         <select v-model="cmdGroup" class="qb-group">
@@ -479,6 +479,8 @@ const { openUpdateDialog } = useUpdate()
       <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-update" style="color:#185FA5;cursor:pointer" @click="openUpdateDialog">发现新版本 v{{ updateInfo.latest }}</span>
       <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-sep">|</span>
       <span class="sb-msg">{{ lastMsg }}</span>
+      <span class="sb-sep">|</span>
+      <button class="sb-toggle" :class="{ active: quickbarVisible }" @click="quickbarVisible = !quickbarVisible" :title="quickbarVisible ? '收起快捷按钮区' : '展开快捷按钮区'">快捷按钮</button>
     </div>
 
     <!-- 关于弹窗 -->
