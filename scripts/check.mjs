@@ -1,14 +1,16 @@
 // 提交前静态验证管线：npm run check
-// 覆盖历史上真实出现过的 bug 类别（漏导入/断链/拼写漂移/环），全部基于仓内已有依赖（typescript 为传递依赖）。
+// 覆盖历史上真实出现过的 bug 类别（漏导入/断链/拼写漂移/环/通道归类/模板隐式回退），全部基于仓内已有依赖（typescript 为传递依赖）。
 // 1) tsc --checkJs：composables + shared 内的未定义名/重复定义/导出冲突（TS2304/2300/2308）
 // 2) main/ 通道常量：使用但未导入 = 0；注册零字面量残留
-// 3) 渲染侧 IPC 字面量 ⊆ shared/ipc-channels.js 常量集（拼写漂移防护）
+// 3) 渲染侧 IPC 字面量 ⊆ 常量集；invoke/send/on 类别归属正确
 // 4) composables 导入图无环
 // 5) state barrel：state/*.js 导出名必须全部经 barrel 再导出且不重复
 // 6) App.vue：模板标识符可解析 + 模板 ref 必须有同名 setup 绑定
+// 7) 全部 .vue：模板布尔赋值（xxx = true/false）必须有 setup 绑定，防 _ctx 隐式回退
 import fs from 'node:fs'
 import path from 'node:path'
 import { execSync, spawnSync } from 'node:child_process'
+import * as CH from '../shared/ipc-channels.js'
 
 let fail = 0
 const ok = (name, cond, detail = '') => { console.log(`${cond ? 'PASS' : 'FAIL'} ${name}${detail ? '  ' + detail : ''}`); if (!cond) fail++ }
@@ -60,6 +62,19 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     }
   }
   ok('渲染侧 IPC 字面量全部在常量集内', unknown.length === 0, unknown.slice(0, 3).join(' | '))
+
+  // 类别归属：上面只查「字面量在不在常量全集里」，不查它属于 invoke/send/on 哪一类。
+  // window:zoomIn 曾登记在 INVOKE 却被 api.send 调用，preload 白名单直接拒绝、整窗缩放静默失效。
+  // 要求 api.xxx(' 紧邻；三元/变量形式的通道字面量扫不到，故调用侧一律写显式字面量。
+  const sets = { invoke: CH.INVOKE_CHANNELS, send: CH.SEND_CHANNELS, on: CH.ON_CHANNELS }
+  const wrong = []
+  for (const f of walk('src')) {
+    const src = read(f)
+    for (const m of src.matchAll(/\bapi\.(invoke|send|on)\(\s*'([\w:-]+)'/g)) {
+      if (!sets[m[1]].has(m[2])) wrong.push(path.relative('.', f) + ': api.' + m[1] + ' -> ' + m[2])
+    }
+  }
+  ok('渲染侧 IPC 通道类别归属正确', wrong.length === 0, wrong.slice(0, 3).join(' | '))
 }
 
 // ---------- 4. composables 导入图无环 ----------
@@ -136,6 +151,33 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
   for (const m of tmpl.matchAll(/\bref="([\w$]+)"/g)) if (!defined.has(m[1])) refBad.push(m[1])
   ok('App.vue 模板标识符全部可解析', problems.length === 0, [...new Set(problems)].slice(0, 3).join(' | '))
   ok('App.vue 模板 ref 均有同名绑定', refBad.length === 0, refBad.join(','))
+
+  // 窄规则：只查「xxx = true/false」这类模板赋值，不扩全量标识符扫描
+  // （defineModel / props 的读取会被全量扫描误报）。
+  // <script setup> 里没有同名绑定时，Vue 编译成 _ctx.xxx = true，写到组件实例 ctx
+  // 而非 state ref —— KeyModal 的「速查」按钮曾因此完全失效。
+  const walkVue = (dir) => fs.readdirSync(dir).flatMap(f => {
+    const p = path.join(dir, f)
+    return fs.statSync(p).isDirectory() ? walkVue(p) : (f.endsWith('.vue') ? [p] : [])
+  })
+  const assignBad = []
+  for (const f of walkVue('src')) {
+    const src = read(f)
+    const se = src.indexOf('</script>')
+    if (se < 0) continue
+    const script = src.slice(0, se)
+    const tmpl = src.slice(src.indexOf('<template>'))
+    const bound = new Set()
+    for (const m of script.matchAll(/import\s*\{([^}]*)\}\s*from\s*'[^']*'/g)) m[1].split(',').forEach(n => bound.add(n.trim().split(/\s+as\s+/).pop().trim()))
+    for (const m of script.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=/g)) m[1].split(',').forEach(n => bound.add(n.trim().split(':')[0].trim()))
+    for (const m of script.matchAll(/\b(?:const|let|var)\s+(\w+)/g)) bound.add(m[1])
+    for (const m of script.matchAll(/\bfunction\s+(\w+)/g)) bound.add(m[1])
+    // 前缀排除成员赋值：ctxMenu.visible = false 里的 visible 不是裸标识符，不该报
+    for (const m of tmpl.matchAll(/(?:^|[^.\w$])([A-Za-z_$][\w$]*)\s*=\s*(?:true|false)\b/g)) {
+      if (!bound.has(m[1])) assignBad.push(path.relative('.', f) + ': ' + m[1])
+    }
+  }
+  ok('组件模板布尔赋值均有 setup 绑定', assignBad.length === 0, [...new Set(assignBad)].slice(0, 3).join(' | '))
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)
