@@ -1,12 +1,14 @@
 // 网络抓包：设备端 tcpdump 常驻运行，停止时 pkill -INT 刷盘退出；按需 pull 到本机。
 // 流程照搬 media.js（录屏）：spawn 常驻子进程，stop 时杀本地进程 + 设备端 pkill + 等待落盘。
-// 全部参数数组 spawn，不拼 shell（防命令注入）。多设备按 serial 分桶（同 logcat）。
+// 本机全部参数数组 spawn（不经本机 shell）；设备端 adbd 仍会 sh -c 解析，
+// 故用户可控 token 统一经 ./netcap-safety.js 白名单。多设备按 serial 分桶（同 logcat）。
 import { ipcMain } from 'electron'
 import { NETCAP_START, NETCAP_ERROR, NETCAP_STOPPED, NETCAP_STARTED, NETCAP_STOP, NETCAP_PULL, NETCAP_LIST, NETCAP_RM } from '../shared/ipc-channels.js'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { run, resolveTool } from './tools.js'
+import { safeTokens, safeDevicePath, sq, suWrap } from './netcap-safety.js'
 
 const FLUSH_WAIT = 800        // 停止后等待设备端 tcpdump 刷盘（与 media:recordStop 一致）
 const sessions = new Map()    // serial -> { serial, child, devicePath }
@@ -18,34 +20,26 @@ const ymdhms = (d) => '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.get
 const sanitize = (s) => (s || '').replace(/[^a-z0-9._-]/gi, '_')
 
 // 把用户配置的 tcpdump 参数解析为数组，并强制以生成的 devicePath 作为 -w 的值
-// （用户若在参数里写了 -w xxx，其后的路径值被丢弃，保证文件名规则可控）
+// （参数先过白名单；用户若写了 -w xxx，其后的路径值被丢弃，保证文件名规则可控）
 function buildTcpdumpCmd(tcpdumpPath, args, devicePath) {
-  const toks = (args && args.trim()) ? args.trim().split(/\s+/).filter(Boolean) : []
+  const toks = safeTokens(args)
   const out = []
   for (let i = 0; i < toks.length; i++) {
     if (toks[i] === '-w') { i++; continue } // 跳过 -w 及其紧跟的值（若有）
     out.push(toks[i])
   }
-  return [tcpdumpPath, ...out, '-w', devicePath]
+  return [tcpdumpPath, ...out, '-w', safeDevicePath(devicePath)]
 }
 
-// 单引号包裹（防路径含空格/特殊字符在 su -c 内被拆词）
-const sq = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'"
-
-// 以 root 运行某条设备内命令：cmdStr 为完整命令串（调用方已对路径单引号包裹）。
-// 返回 ['su','-c','"cmdStr"']：外层双引号保证设备端 `su -c` 取到完整命令串
-// （adb shell 把参数用空格拼接、不自动加引号；若不包双引号，`su -c` 只能拿到第一个词，后半段丢失）。
-function suWrap(cmdStr) { return ['su', '-c', '"' + cmdStr + '"'] }
-
-// 以 root 运行时的 tcpdump 命令串：仅给 tcpdump 提权，参数里用户写的 -w 被丢弃、强制用 devicePath（路径单引号包裹）
+// 以 root 运行时的 tcpdump 命令串：参数与路径都先过白名单，路径再单引号包裹
 function tcpdumpCmdStr(args, devicePath) {
-  const toks = (args && args.trim()) ? args.trim().split(/\s+/).filter(Boolean) : []
+  const toks = safeTokens(args)
   const out = []
   for (let i = 0; i < toks.length; i++) {
     if (toks[i] === '-w') { i++; continue }
     out.push(toks[i])
   }
-  return 'tcpdump ' + out.join(' ') + ' -w ' + sq(devicePath)
+  return 'tcpdump ' + out.join(' ') + ' -w ' + sq(safeDevicePath(devicePath))
 }
 
 // 设备友好标签（机型_序列号），与渲染层 deviceLabel 规则对齐
@@ -81,7 +75,7 @@ export function registerNetcapIpc(win) {
   // asRoot=true 时整条链路以 su -c 提权（仅 tcpdump 进程拿 root，不重启 adbd），用于无 root 的 adbd 设备
   ipcMain.handle(NETCAP_START, async (_e, { serial, deviceDir, args, asRoot }) => {
     if (!serial) throw new Error('serial 必填')
-    const dir = (deviceDir && deviceDir.trim()) || '/sdcard/adbpp_captures/'
+    const dir = safeDevicePath((deviceDir && deviceDir.trim()) || '/sdcard/adbpp_captures/')
     // 先停同设备的旧会话（避免重复抓包）
     if (sessions.has(serial)) {
       const old = sessions.get(serial)
@@ -100,7 +94,7 @@ export function registerNetcapIpc(win) {
     const ts = ymdhms(new Date())
     const rand = Math.random().toString(16).slice(2, 6)
     const name = label + '_' + ts + '_' + rand + '.pcap'
-    const devicePath = dir.replace(/\/$/, '') + '/' + name
+    const devicePath = safeDevicePath(dir.replace(/\/$/, '') + '/' + name)
     // 设备内要执行的 tcpdump 命令：非 root 直接展开为数组；root 用 su -c 包裹整条命令串（路径已单引号包裹）
     const tcpdumpArgv = asRoot ? suWrap(tcpdumpCmdStr(args, devicePath)) : buildTcpdumpCmd('tcpdump', args, devicePath)
     const child = spawn(resolveTool('adb.exe'), ['-s', serial, 'shell', ...tcpdumpArgv], { windowsHide: true })
@@ -143,10 +137,12 @@ export function registerNetcapIpc(win) {
   // root 模式文件可能归 root 所有，先 chmod 644 保证 adb pull 可读
   ipcMain.handle(NETCAP_PULL, async (_e, { serial, devicePath, localDir, asRoot }) => {
     if (!serial || !devicePath || !localDir) throw new Error('serial / devicePath / localDir 必填')
-    if (asRoot) await run('adb.exe', ['-s', serial, 'shell', ...suWrap('chmod 644 ' + sq(devicePath))]).catch(() => {})
+    // devicePath 来自设备端 ls 输出，属外部输入：进入 su -c 命令串前必须校验
+    const p = safeDevicePath(devicePath)
+    if (asRoot) await run('adb.exe', ['-s', serial, 'shell', ...suWrap('chmod 644 ' + sq(p))]).catch(() => {})
     fs.mkdirSync(localDir, { recursive: true })
-    const localPath = path.join(localDir, path.basename(devicePath))
-    const r = await run('adb.exe', ['-s', serial, 'pull', devicePath, localPath])
+    const localPath = path.join(localDir, path.basename(p))
+    const r = await run('adb.exe', ['-s', serial, 'pull', p, localPath])
     if (r.code !== 0) throw new Error('pull 失败：' + (r.err || r.code))
     return { localPath }
   })
@@ -155,7 +151,7 @@ export function registerNetcapIpc(win) {
   // root 模式文件可能归 root 所有，ls 需经 su -c
   ipcMain.handle(NETCAP_LIST, async (_e, { serial, deviceDir, asRoot }) => {
     if (!serial) throw new Error('serial 必填')
-    const dir = (deviceDir && deviceDir.trim()) || '/sdcard/adbpp_captures/'
+    const dir = safeDevicePath((deviceDir && deviceDir.trim()) || '/sdcard/adbpp_captures/')
     const base = dir.replace(/\/$/, '')
     // root 模式文件可能归 root 所有，ls 经 su -c；仅目录单引号包裹，保留 /*.pcap 通配（不包进单引号才能展开）
     const lsArgv = asRoot ? suWrap('ls -l ' + sq(base) + '/*.pcap') : ['ls', '-l', base + '/*.pcap']
@@ -178,7 +174,8 @@ export function registerNetcapIpc(win) {
   // root 模式文件可能归 root 所有，rm 需经 su -c
   ipcMain.handle(NETCAP_RM, async (_e, { serial, devicePath, asRoot }) => {
     if (!serial || !devicePath) throw new Error('serial / devicePath 必填')
-    const rmArgv = asRoot ? suWrap('rm -f ' + sq(devicePath)) : ['rm', '-f', devicePath]
+    const p = safeDevicePath(devicePath)
+    const rmArgv = asRoot ? suWrap('rm -f ' + sq(p)) : ['rm', '-f', p]
     const r = await run('adb.exe', ['-s', serial, 'shell', ...rmArgv])
     if (r.code !== 0) throw new Error('删除失败：' + (r.err || r.code))
     return { ok: true }

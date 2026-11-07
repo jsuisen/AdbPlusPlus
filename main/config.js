@@ -87,12 +87,18 @@ export function loadConfig() {
 }
 
 export function saveConfig(cfg) {
+  // 只落盘 DEFAULT 登记的键：外部 IPC / 导入文件带来的未知键不得写进配置，
+  // 否则下次被 netcap 等模块读出来就可能成为设备端命令的一部分（注入链）。
+  const clean = {}
+  for (const k of Object.keys(DEFAULT)) {
+    if (Object.prototype.hasOwnProperty.call(cfg, k)) clean[k] = cfg[k]
+  }
   // 本次落盘路径：配置里带了自定义 configPath 就用它，否则用默认位置
-  const target = (typeof cfg.configPath === 'string' && cfg.configPath.trim())
-    ? cfg.configPath.trim()
+  const target = (typeof clean.configPath === 'string' && clean.configPath.trim())
+    ? clean.configPath.trim()
     : defaultCfgPath()
   fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.writeFileSync(target, JSON.stringify(cfg, null, 2))
+  fs.writeFileSync(target, JSON.stringify(clean, null, 2))
   // 指针文件同步：自定义路径则记录，否则删除指针（走默认位置）
   if (target === defaultCfgPath()) {
     try { fs.rmSync(pointerPath, { force: true }) } catch {}
@@ -101,7 +107,7 @@ export function saveConfig(cfg) {
     fs.writeFileSync(pointerPath, JSON.stringify({ configPath: target }, null, 2))
   }
   activeCfgPath = target
-  return cfg
+  return clean
 }
 
 export function registerConfigIpc() {

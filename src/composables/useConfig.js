@@ -163,11 +163,14 @@ async function importSettings() {
   if (!known.some(k => k in data)) {
     lastMsg.value = '该文件不含任何 AdbPlusPlus 配置项，已取消导入'; return
   }
-  // 配置存放路径（configPath）与当前设备选择（lastSerial/targetPkg）属于机器/运行态，导入时不覆盖，避免改写到本机配置文件位置或打断当前设备
-  const safe = { ...data }
-  delete safe.configPath
-  delete safe.lastSerial
-  delete safe.targetPkg
+  // 只保留已知键：旧实现用 {...data} 浅合并，任意 JSON 都能往 cfg 里塞未知键，
+  // 再经 saveCfg 落盘、被 netcap 读取，形成「外部配置 -> 设备端 root 命令」的注入链。
+  // 配置存放路径（configPath）与当前设备选择（lastSerial/targetPkg）属机器/运行态，导入时不覆盖。
+  const safe = {}
+  for (const k of known) {
+    if (k === 'configPath' || k === 'lastSerial' || k === 'targetPkg') continue
+    if (Object.prototype.hasOwnProperty.call(data, k)) safe[k] = data[k]
+  }
   applyConfig(safe, { applyDeviceState: false })
   saveCfg()
   lastMsg.value = '已导入设置：' + p
