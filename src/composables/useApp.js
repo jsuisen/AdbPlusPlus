@@ -8,7 +8,7 @@ import { onNetcapError, onNetcapStarted, onNetcapStopped } from './useMedia'
 import { onData, onFindWinFocusChange, onGlobalKey, refreshProcs, stopAutoLogFlush } from './useLogcat'
 import { refreshDevices } from './useDevices'
 
-let offData, offErr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offUpdate
+let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offUpdate
 export function useApp() {
 onMounted(async () => {
   const c = await api.invoke('config:get')
@@ -19,6 +19,15 @@ onMounted(async () => {
 
   offData = api.on('logcat:data', onData)
   offErr = api.on('logcat:error', (p) => { if (p && p.serial) logErrMap[p.serial] = p.text })
+  // adb 的 stderr 提示（如 waiting for device）此前主进程在发、前端无人接收，直接被丢弃。
+  // 分片文本按设备累加但限长，避免把状态栏撑爆。展示位：App.vue 的 currentLogErr。
+  offStderr = api.on('logcat:stderr', (p) => {
+    if (!p || !p.serial) return
+    const t = String(p.text || '').trim()
+    if (!t) return
+    const prev = logErrMap[p.serial] || ''
+    logErrMap[p.serial] = (prev + (prev ? '\n' : '') + t).slice(-500)
+  })
   offClosed = api.on('logcat:closed', (serial) => { runningMap[serial] = false })
   try { maximized.value = await api.invoke('window:isMaximized') } catch {}
   offMax = api.on('window:maximize-state', (v) => { maximized.value = !!v })
@@ -35,7 +44,7 @@ onMounted(async () => {
   loadSystemFonts()   // 异步填充「日志字体」下拉为系统已安装字体（失败则保留兜底选项）
 })
 onBeforeUnmount(() => {
-  offData && offData(); offErr && offErr(); offClosed && offClosed(); offMax && offMax(); offDevicesChanged && offDevicesChanged(); offProcChanged && offProcChanged()
+  offData && offData(); offErr && offErr(); offStderr && offStderr(); offClosed && offClosed(); offMax && offMax(); offDevicesChanged && offDevicesChanged(); offProcChanged && offProcChanged()
   offNetcapStarted && offNetcapStarted(); offNetcapStopped && offNetcapStopped(); offNetcapError && offNetcapError(); offUpdate && offUpdate()
   document.removeEventListener('mousedown', onDocMouseDown)
   document.removeEventListener('keydown', onGlobalKey)
