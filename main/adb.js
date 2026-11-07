@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ipcMain } from 'electron'
 import { run } from './tools.js'
-import { assertIdent, shellLiteral, safeServiceTokens } from './adb-safety.js'
+import { assertIdent, assertNum, shellLiteral, safeServiceTokens } from './adb-safety.js'
 
 // 资源占用采集脚本（静态文件，运行时读取后整体作为 `adb shell` 的脚本参数下发；不含任何来自渲染进程的用户输入，无命令注入风险）
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -180,31 +180,31 @@ export function registerAdbIpc() {
   // ---- 应用生命周期（目标包由渲染进程传入，绝不拼 shell） ----
   ipcMain.handle(ADB_APP_START, async (_e, { serial, pkg }) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', assertIdent(pkg, 'pkg')])
   })
   ipcMain.handle(ADB_APP_STOP, async (_e, { serial, pkg }) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'am', 'force-stop', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'am', 'force-stop', assertIdent(pkg, 'pkg')])
   })
   ipcMain.handle(ADB_APP_RESTART, async (_e, { serial, pkg }) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    await run('adb.exe', ['-s', serial, 'shell', 'am', 'force-stop', pkg])
+    await run('adb.exe', ['-s', serial, 'shell', 'am', 'force-stop', assertIdent(pkg, 'pkg')])
     await new Promise((r) => setTimeout(r, 300))
-    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', assertIdent(pkg, 'pkg')])
   })
   ipcMain.handle(ADB_APP_CLEAR, async (_e, {serial, pkg}) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'pm', 'clear', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'pm', 'clear', assertIdent(pkg, 'pkg')])
   })
   ipcMain.handle(ADB_APP_CLEAR_RESTART, async (_e, { serial, pkg }) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    await run('adb.exe', ['-s', serial, 'shell', 'pm', 'clear', pkg])
+    await run('adb.exe', ['-s', serial, 'shell', 'pm', 'clear', assertIdent(pkg, 'pkg')])
     await new Promise((r) => setTimeout(r, 300))
-    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'am', 'start', '-a', 'android.intent.action.MAIN', '-c', 'android.intent.category.LAUNCHER', '-p', assertIdent(pkg, 'pkg')])
   })
   ipcMain.handle(ADB_APP_UNINSTALL, async (_e, { serial, pkg }) => {
     if (!serial || !pkg) throw new Error('serial 与 pkg 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'pm', 'uninstall', pkg])
+    return run('adb.exe', ['-s', serial, 'shell', 'pm', 'uninstall', assertIdent(pkg, 'pkg')])
   })
 
   // ---- 输入模拟 ----
@@ -215,17 +215,18 @@ export function registerAdbIpc() {
   })
   ipcMain.handle(ADB_INPUT_KEY, async (_e, { serial, key }) => {
     if (!serial || !key) throw new Error('serial 与 key 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'input', 'keyevent', String(key)])
+    return run('adb.exe', ['-s', serial, 'shell', 'input', 'keyevent', assertIdent(key, 'key')])
   })
   ipcMain.handle(ADB_INPUT_TAP, async (_e, { serial, x, y }) => {
     if (!serial || x == null || y == null) throw new Error('serial / x / y 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'input', 'tap', String(x), String(y)])
+    return run('adb.exe', ['-s', serial, 'shell', 'input', 'tap', assertNum(x, 'x'), assertNum(y, 'y')])
   })
   ipcMain.handle(ADB_INPUT_SWIPE, async (_e, { serial, x1, y1, x2, y2, duration }) => {
     if (!serial || [x1, y1, x2, y2].some((v) => v == null)) throw new Error('serial 与坐标必填')
-    const cmd = ['-s', serial, 'shell', 'input', 'swipe', String(x1), String(y1), String(x2), String(y2)]
+    const cmd = ['-s', serial, 'shell', 'input', 'swipe',
+      assertNum(x1, 'x1'), assertNum(y1, 'y1'), assertNum(x2, 'x2'), assertNum(y2, 'y2')]
     // duration 为可选滑动时长（毫秒），adb input swipe 支持在坐标后追加该值
-    if (duration != null) cmd.push(String(duration))
+    if (duration != null) cmd.push(assertNum(duration, 'duration'))
     return run('adb.exe', cmd)
   })
 
