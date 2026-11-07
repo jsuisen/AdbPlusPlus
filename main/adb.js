@@ -254,22 +254,22 @@ export function registerAdbIpc() {
     if (!serial) throw new Error('serial 必填')
     const args = devArgs(serial, ['shell', 'am', 'start'])
     if (wait) args.push('-W')
-    if (action && action.trim()) args.push('-a', action.trim())
-    else if (pkg && activity) args.push('-n', `${pkg}/${activity}`)
+    if (action && action.trim()) args.push('-a', assertIdent(action, 'action'))
+    else if (pkg && activity) args.push('-n', assertIdent(`${pkg}/${activity}`, 'component'))
     else throw new Error('需填 Action（隐式）或 包名+Activity（显式）')
-    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', e.key, String(e.value))
+    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', assertIdent(e.key, 'extra key'), shellLiteral(String(e.value)))
     return run('adb.exe', args)
   })
   ipcMain.handle(ADB_START_SERVICE, async (_e, { serial, pkg, service, foreground = false, extras = [] }) => {
     if (!serial || !pkg || !service) throw new Error('serial / 包名 / Service 类名必填')
     const cmd = foreground ? 'start-foreground-service' : 'startservice'
-    const args = devArgs(serial, ['shell', 'am', cmd, '-n', `${pkg}/${service}`])
-    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', e.key, String(e.value))
+    const args = devArgs(serial, ['shell', 'am', cmd, '-n', assertIdent(`${pkg}/${service}`, 'component')])
+    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', assertIdent(e.key, 'extra key'), shellLiteral(String(e.value)))
     return run('adb.exe', args)
   })
   ipcMain.handle(ADB_STOP_SERVICE, async (_e, { serial, pkg, service }) => {
     if (!serial || !pkg || !service) throw new Error('serial / 包名 / Service 类名必填')
-    return run('adb.exe', devArgs(serial, ['shell', 'am', 'stopservice', '-n', `${pkg}/${service}`]))
+    return run('adb.exe', devArgs(serial, ['shell', 'am', 'stopservice', '-n', assertIdent(`${pkg}/${service}`, 'component')]))
   })
   // 发送广播：必填 action，可选目标组件(-n)、Extra、Flags(-f)
   ipcMain.handle(ADB_BROADCAST, async (_e, { serial, action, component, extras = [], flags }) => {
@@ -284,11 +284,11 @@ export function registerAdbIpc() {
   // ---- 权限管理（pm grant / revoke） ----
   ipcMain.handle(ADB_GRANT, async (_e, { serial, pkg, perm }) => {
     if (!serial || !pkg || !perm) throw new Error('serial / 包名 / 权限必填')
-    return run('adb.exe', devArgs(serial, ['shell', 'pm', 'grant', pkg, perm]))
+    return run('adb.exe', devArgs(serial, ['shell', 'pm', 'grant', assertIdent(pkg, 'pkg'), assertIdent(perm, 'perm')]))
   })
   ipcMain.handle(ADB_REVOKE, async (_e, { serial, pkg, perm }) => {
     if (!serial || !pkg || !perm) throw new Error('serial / 包名 / 权限必填')
-    return run('adb.exe', devArgs(serial, ['shell', 'pm', 'revoke', pkg, perm]))
+    return run('adb.exe', devArgs(serial, ['shell', 'pm', 'revoke', assertIdent(pkg, 'pkg'), assertIdent(perm, 'perm')]))
   })
 
   // ---- 文件传输（push / pull） ----
