@@ -18,7 +18,11 @@ export function registerMediaIpc() {
     const p = spawn(resolveTool('adb.exe'), ['-s', serial, 'exec-out', 'screencap', '-p'], { windowsHide: true })
     const chunks = []
     p.stdout.on('data', (d) => chunks.push(d))
-    const code = await new Promise((r) => p.on('close', r))
+    // 必须监听 error：adb.exe 缺失时 spawn 会 emit 'error'，无监听器会抛未捕获异常拖垮主进程
+    const code = await new Promise((resolve, reject) => {
+      p.on('error', reject)
+      p.on('close', resolve)
+    })
     if (code !== 0) throw new Error('screencap 失败，exit=' + code)
     fs.writeFileSync(outPath, Buffer.concat(chunks))
     return outPath
@@ -32,7 +36,11 @@ export function registerMediaIpc() {
     const p = spawn(resolveTool('adb.exe'), ['-s', serial, 'exec-out', 'screencap', '-p'], { windowsHide: true })
     const chunks = []
     p.stdout.on('data', (d) => chunks.push(d))
-    const code = await new Promise((r) => p.on('close', r))
+    // 必须监听 error：adb.exe 缺失时 spawn 会 emit 'error'，无监听器会抛未捕获异常拖垮主进程
+    const code = await new Promise((resolve, reject) => {
+      p.on('error', reject)
+      p.on('close', resolve)
+    })
     if (code !== 0) throw new Error('screencap 失败，exit=' + code)
     fs.writeFileSync(outPath, Buffer.concat(chunks))
     return outPath
@@ -45,6 +53,13 @@ export function registerMediaIpc() {
     recSerial = serial
     recDevicePath = dev
     recChild = spawn(resolveTool('adb.exe'), ['-s', serial, 'shell', 'screenrecord', dev], { windowsHide: true })
+    // 长驻录屏进程同样要接住 spawn error；失败即清槽位，避免 recordStop 对不存在的会话操作
+    recChild.on('error', (e) => {
+      console.error('[media] screenrecord spawn 失败:', e)
+      recChild = null
+      recSerial = null
+      recDevicePath = null
+    })
     return dev
   })
 
@@ -52,19 +67,25 @@ export function registerMediaIpc() {
   ipcMain.handle(MEDIA_RECORD_STOP, async (_e, { outPath }) => {
     if (!outPath) throw new Error('outPath 必填')
     if (!recSerial || !recDevicePath) throw new Error('没有进行中的录屏')
-    // 1) 只给设备端 screenrecord 发 SIGINT，它捕获后会自行写 moov 元数据并退出（不碰本地 adb 子进程，避免会话断开强杀设备进程）
-    await run('adb.exe', ['-s', recSerial, 'shell', 'pkill', '-INT', 'screenrecord']).catch(() => {})
-    await run('adb.exe', ['-s', recSerial, 'shell', 'kill', '-2', '$(pidof screenrecord)']).catch(() => {})
-    // 2) 等待设备完成 moov 写入（大文件适当放宽，宁可多等也别 pull 半截文件）
-    await new Promise((r) => setTimeout(r, 1500))
-    // 3) 远端退出后本地 adb shell 会自动返回；兜底清掉残留子进程（此时文件已 pull 完成，杀本地不影响产物）
-    if (recChild) { try { recChild.kill() } catch {} recChild = null }
-    // 4) 拉取到本机
-    const pull = await run('adb.exe', ['-s', recSerial, 'pull', recDevicePath, outPath])
-    if (pull.code !== 0) throw new Error('pull 失败：' + pull.err)
-    await run('adb.exe', ['-s', recSerial, 'shell', 'rm', '-f', recDevicePath]).catch(() => {})
-    recSerial = null
-    recDevicePath = null
-    return outPath
+    try {
+      // 1) 只给设备端 screenrecord 发 SIGINT，它捕获后会自行写 moov 元数据并退出（不碰本地 adb 子进程，避免会话断开强杀设备进程）
+      await run('adb.exe', ['-s', recSerial, 'shell', 'pkill', '-INT', 'screenrecord']).catch(() => {})
+      await run('adb.exe', ['-s', recSerial, 'shell', 'kill', '-2', '$(pidof screenrecord)']).catch(() => {})
+      // 2) 等待设备完成 moov 写入（大文件适当放宽，宁可多等也别 pull 半截文件）
+      await new Promise((r) => setTimeout(r, 1500))
+      // 3) 远端退出后本地 adb shell 会自动返回；兜底清掉残留子进程
+      if (recChild) { try { recChild.kill() } catch {} recChild = null }
+      // 4) 拉取到本机
+      const pull = await run('adb.exe', ['-s', recSerial, 'pull', recDevicePath, outPath])
+      if (pull.code !== 0) throw new Error('pull 失败：' + pull.err)
+      await run('adb.exe', ['-s', recSerial, 'shell', 'rm', '-f', recDevicePath]).catch(() => {})
+      return outPath
+    } finally {
+      // 异常路径（pull 失败、run 抛错）也必须重置全局槽位，否则旧 serial/devicePath 永久残留，
+      // 下一次 stop 会对错误设备/路径操作。
+      if (recChild) { try { recChild.kill() } catch {} recChild = null }
+      recSerial = null
+      recDevicePath = null
+    }
   })
 }
