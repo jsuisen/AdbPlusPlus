@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ipcMain } from 'electron'
 import { run } from './tools.js'
+import { assertIdent, shellLiteral, safeServiceTokens } from './adb-safety.js'
 
 // 资源占用采集脚本（静态文件，运行时读取后整体作为 `adb shell` 的脚本参数下发；不含任何来自渲染进程的用户输入，无命令注入风险）
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -17,22 +18,7 @@ const EXTRA_FLAG = { es: '--es', ei: '--ei', ez: '--ez', ef: '--ef', el: '--el' 
 const devArgs = (serial, rest) => ['-s', serial, ...rest]
 
 // adbd 收到 adb shell 的参数后会拼成命令串再交给 /system/bin/sh -c，
-// 所以「本机参数数组 spawn」不等于设备端安全。用户可控字段在主进程统一收口：
-// 标识符类走白名单，自由文本类用单引号包成 shell 字面量（与 netcap-safety.js 的 sq 同规则）。
-const ADB_IDENT_RE = /^[A-Za-z0-9_./:-]+$/
-function assertIdent(v, label) {
-  const s = String(v == null ? '' : v).trim()
-  if (!ADB_IDENT_RE.test(s)) throw new Error(label + ' 含非法字符：' + s)
-  return s
-}
-function shellLiteral(v) {
-  return "'" + String(v == null ? '' : v).replace(/'/g, "'\\''") + "'"
-}
-function safeServiceTokens(v) {
-  const toks = String(v == null ? '' : v).trim().split(/\s+/).filter(Boolean)
-  for (const t of toks) assertIdent(t, 'dumpsys service')
-  return toks
-}
+// 所以「本机参数数组 spawn」不等于设备端安全。用户可控字段统一经 ./adb-safety.js 收口。
 
 // /proc/meminfo 字段（kB）转友好容量
 const memField = (txt, key) => {
