@@ -43,7 +43,7 @@ onBeforeUnmount(() => {
   stopAutoLogFlush()
   // 窗口关闭时停掉所有仍在跑的抓包，避免设备端 tcpdump 残留
   for (const s of Object.keys(capturing)) { if (capturing[s]) { try { api.invoke('netcap:stop', s) } catch {} } }
-  saveCfg()
+  saveCfg(true)   // 退出必须立即落盘，去抖的 200ms 等不到窗口销毁
 })
 
   return {  }

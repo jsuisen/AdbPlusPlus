@@ -102,6 +102,14 @@ export const editingNoteId = ref(null)
 
 export const LEVEL_PRI = { V: 0, D: 1, I: 2, W: 3, E: 4, F: 5 }
 
+// 正则编译结果单独缓存：displayLogs 每 200ms 重算一次，不该在 computed 体内反复 new RegExp。
+// 非法正则返回 null，保持「不过滤」的原有语义。
+const textFilterRe = computed(() => {
+  const txt = textFilter.value.trim()
+  if (!txt || !regexFilter.value) return null
+  try { return new RegExp(txt, 'i') } catch { return null }
+})
+
 export const displayLogs = computed(() => {
   const lvl = levelFilter.value
   const tag = tagFilter.value.trim().toLowerCase()
@@ -111,12 +119,9 @@ export const displayLogs = computed(() => {
   if (tag) arr = arr.filter((l) => (l.tag || '').toLowerCase().includes(tag))
   if (txt) {
     if (regexFilter.value) {
-      // Regex 模式：关键字过滤按正则匹配消息内容（i 不区分大小写）；非法正则则忽略，避免误隐藏
-      try {
-        const re = new RegExp(txt, 'i')
-        // 同时匹配 消息内容 与 标签（标签作为独立字段），以便「快筛」按 Tag 生成的正则能正确过滤
-        arr = arr.filter((l) => re.test(l.msg || '') || re.test(l.tag || ''))
-      } catch { /* 非法正则：保持不过滤 */ }
+      // 同时匹配 消息内容 与 标签（标签作为独立字段），以便「快筛」按 Tag 生成的正则能正确过滤
+      const re = textFilterRe.value
+      if (re) arr = arr.filter((l) => re.test(l.msg || '') || re.test(l.tag || ''))
     } else {
       const t = txt.toLowerCase()
       arr = arr.filter((l) => (l.msg || '').toLowerCase().includes(t))
@@ -143,12 +148,20 @@ export const mergedView = computed(() => {
   const dev = displayLogs.value
   const notes = notesMap[activeLogSerial.value] || []
   if (!notes.length) return dev
+  // 按 anchorId 建索引，避免对每行都遍历全部注释（原来是 O(n·m)）
+  const byAnchor = new Map()
+  for (const n of notes) {
+    if (!byAnchor.has(n.anchorId)) byAnchor.set(n.anchorId, [])
+    byAnchor.get(n.anchorId).push(n)
+  }
   const placed = new Set()
   const out = []
   for (const l of dev) {
     out.push(l)
-    for (const n of notes) if (n.anchorId === l.id) { out.push(n); placed.add(n.id) }
+    const hit = byAnchor.get(l.id)
+    if (hit) for (const n of hit) { out.push(n); placed.add(n.id) }
   }
+  // 锚定行已被缓冲截断的注释仍按原顺序落到末尾
   for (const n of notes) if (!placed.has(n.id)) out.push(n)
   return out
 })

@@ -69,7 +69,9 @@ async function loadSystemFonts() {
   syncFontQuery()
 }
 
-function saveCfg() {
+let saveCfgTimer = null
+function doSaveCfg() {
+  saveCfgTimer = null
   cfg.value.lastSerial = selectedSerial.value
   cfg.value.targetPkg = appPkg.value
   cfg.value.quickCommands = quickCommands.value
@@ -87,6 +89,18 @@ function saveCfg() {
   cfg.value.appLogEnabled = appLogEnabled.value
   // cfg.value 是响应式代理，IPC 无法克隆 Proxy；转成普通对象快照再传，避免 “An object could not be cloned.”
   api.invoke('config:save', JSON.parse(JSON.stringify(cfg.value)))
+    .catch((e) => { console.error('[config] 配置保存失败:', e) })
+}
+// 高频调用（滚轮调字体、快捷命令输入等）200ms 去抖；显式传 true 时立即落盘。
+// 注意模板里写 @change="saveCfg" 会把 Event 当第一实参，所以只认 === true。
+function saveCfg(immediate = false) {
+  if (immediate === true) {
+    if (saveCfgTimer) { clearTimeout(saveCfgTimer); saveCfgTimer = null }
+    doSaveCfg()
+    return
+  }
+  if (saveCfgTimer) return
+  saveCfgTimer = setTimeout(doSaveCfg, 200)
 }
 
 function applyConfig(c, { applyDeviceState = true } = {}) {

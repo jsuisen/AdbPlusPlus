@@ -264,17 +264,21 @@ const { openUpdateDialog } = useUpdate()
             <template v-for="e in mergedView" :key="e.id">
               <div v-if="e.kind !== 'note'" class="logline" :style="logLineStyle(e)" :data-log-id="e.id"
                    title="单击只定位光标（不新增行）；按回车在日志末尾新增注释行">
-                <template v-if="findSegsFor(e)">
-                  <span v-for="(s, i) in findSegsFor(e)" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
+                <template v-for="segs in [findSegsFor(e)]" :key="e.id + '-segs'">
+                  <template v-if="segs">
+                    <span v-for="(s, i) in segs" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
+                  </template>
+                  <template v-else>{{ formatLogLine(e) }}</template>
                 </template>
-                <template v-else>{{ formatLogLine(e) }}</template>
               </div>
               <div v-else class="note-line" :class="{ editing: e.id === editingNoteId }" :data-log-id="e.id" @click="editNote(e)">
                 <span v-if="e.id !== editingNoteId" class="note-text" title="单击编辑此注释 / 空行（Enter 换行，Esc 取消）">
-                  <template v-if="findSegsFor(e)">
-                    <span v-for="(s, i) in findSegsFor(e)" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
+                  <template v-for="segs in [findSegsFor(e)]" :key="e.id + '-segs'">
+                    <template v-if="segs">
+                      <span v-for="(s, i) in segs" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
+                    </template>
+                    <template v-else>{{ e.text }}</template>
                   </template>
-                  <template v-else>{{ e.text }}</template>
                 </span>
                 <textarea v-else :data-note-input="e.id" class="note-input" rows="1" v-model="e.text"
                           @keydown.stop="onNoteKey($event, e)" @input="onNoteInput($event, e)" @blur="commitNote(e)"></textarea>
