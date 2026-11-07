@@ -62,6 +62,12 @@ function stopSession(serial, silent) {
   if (!silent && winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_CLOSED, serial)
 }
 
+// 退出清理：关窗时 Electron 直接销毁渲染进程，Vue 的 onBeforeUnmount（useApp.js 里停抓包）不会执行，
+// 长驻 adb 子进程必须在主进程 before-quit 里统一停掉。
+export function stopAllLogcatSessions() {
+  for (const s of [...sessions.keys()]) stopSession(s, true)
+}
+
 export function registerLogcatIpc(win) {
   winRef = win
 

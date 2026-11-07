@@ -5,15 +5,15 @@ import { checkForUpdates } from './versioncheck.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { registerAdbIpc } from './adb.js'
-import { registerLogcatIpc } from './logcat.js'
+import { registerLogcatIpc, stopAllLogcatSessions } from './logcat.js'
 import { registerMediaIpc } from './media.js'
-import { registerNetcapIpc } from './netcap.js'
+import { registerNetcapIpc, stopAllCaptureSessions } from './netcap.js'
 import { registerApkIpc } from './apk.js'
 import { registerConfigIpc, loadConfig } from './config.js'
 import { registerFileIpc } from './file.js'
 import { registerAppLogIpc, startAppLog } from './applog.js'
 import { registerFontsIpc } from './fonts.js'
-import { registerDeviceTrackerIpc } from './devices.js'
+import { registerDeviceTrackerIpc, stopDeviceTracker } from './devices.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let win = null
@@ -109,5 +109,23 @@ app.whenReady().then(() => {
     }, 30000)
   }
 })
+// 退出清理：渲染进程的 useApp.onBeforeUnmount 在关窗时不会执行（Electron 直接销毁渲染进程），
+// 长驻 adb 子进程、设备端 tcpdump 必须由主进程在退出前统一收掉。
+// 设备端 pkill 走 adb 可能挂起，加 3 秒兜底超时，不让清理卡住退出。
+let quitting = false
+app.on('before-quit', (e) => {
+  if (quitting) return          // 清理完成后 app.quit() 二次触发，直接放行
+  quitting = true
+  e.preventDefault()
+  const cleanup = (async () => {
+    await stopAllCaptureSessions()   // 先停设备端 tcpdump，避免继续写盘
+    stopAllLogcatSessions()
+    stopDeviceTracker()
+  })()
+  let timer
+  const timeout = new Promise((r) => { timer = setTimeout(r, 3000) })
+  Promise.race([cleanup.catch(() => {}), timeout]).finally(() => { clearTimeout(timer); app.quit() })
+})
+
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })

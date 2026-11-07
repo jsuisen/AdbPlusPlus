@@ -9,6 +9,7 @@ let child = null
 let winRef = null
 let sendTimer = null
 let restartTimer = null
+let stopped = false   // 退出清理后置位，阻止 close/error 触发自愈重启
 
 // 单次变动可能伴随多行输出，250ms 内合并为一次通知，避免渲染进程短时间内反复刷新
 function notify() {
@@ -20,7 +21,7 @@ function notify() {
 }
 
 function start() {
-  if (child) return
+  if (stopped || child) return
   child = spawn(resolveTool('adb.exe'), ['track-devices'], { windowsHide: true })
   child.stdout.on('data', notify)
   child.stderr.on('data', () => {})
@@ -30,11 +31,20 @@ function start() {
 
 // 进程异常退出（如 adb server 未起）后延时重启，adb server 恢复即重新跟踪
 function scheduleRestart() {
-  if (restartTimer) return
+  if (stopped || restartTimer) return
   restartTimer = setTimeout(() => { restartTimer = null; start() }, 3000)
 }
 
 export function registerDeviceTrackerIpc(win) {
   winRef = win
   start()
+}
+
+// 退出清理：停掉 track-devices 长驻子进程与所有定时器。
+// 必须先置 stopped，否则 kill 触发的 close 会走 scheduleRestart 又拉起一个 adb.exe。
+export function stopDeviceTracker() {
+  stopped = true
+  if (sendTimer) { clearTimeout(sendTimer); sendTimer = null }
+  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null }
+  if (child) { try { child.kill() } catch {} child = null }
 }

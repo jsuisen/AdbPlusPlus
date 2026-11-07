@@ -60,6 +60,20 @@ async function deviceLabel(serial) {
   return m ? m + '_' + s : s
 }
 
+// 退出清理：停掉所有设备端 tcpdump + 本地 adb shell 子进程。
+// 只杀本地 adb 会留下设备端孤儿进程持续写盘，必须补发 pkill（root 会话经 su -c 提权）。
+export function stopAllCaptureSessions() {
+  const jobs = []
+  for (const [serial, s] of sessions) {
+    if (s.child) { try { s.child.kill('SIGINT') } catch {} }
+    const pkillArgv = s.asRoot ? suWrap('pkill -INT tcpdump') : ['pkill', '-INT', 'tcpdump']
+    jobs.push(run('adb.exe', ['-s', serial, 'shell', ...pkillArgv]).catch(() => {}))
+    // 同步移出 map；child 的 exit 是异步事件，届时已查不到 session，不会误发 NETCAP_STOPPED
+    sessions.delete(serial)
+  }
+  return Promise.all(jobs)
+}
+
 export function registerNetcapIpc(win) {
   winRef = win
 
