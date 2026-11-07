@@ -1,57 +1,35 @@
-// Logcat 多设备并行采集：每个设备独立维护一个 spawn 会话（child + 环缓冲 + 批量推送）。
+// Logcat 多设备并行采集：每个设备独立维护一个 spawn 会话（child + 行读取器 + 环缓冲 + 批量推送）。
 // 通过 serial 区分设备，前端可同时采集多台设备、各自独立开始/停止/查看。
 // 单条日志格式 threadtime：MM-DD HH:MM:SS.mmm  PID  TID  LEVEL  TAG: msg
+// 行解析 / 编码边界 / 折行归并统一交给 ./logcat-ingest.js（纯函数，可单测），本文件只管进程与 IPC。
 import { ipcMain } from 'electron'
 import { LOGCAT_DATA, PROC_CHANGED, LOGCAT_CLOSED, LOGCAT_START, LOGCAT_STDERR, LOGCAT_ERROR, LOGCAT_STARTED, LOGCAT_STOP } from '../shared/ipc-channels.js'
 import { spawn } from 'node:child_process'
+import { StringDecoder } from 'node:string_decoder'
 import { resolveTool } from './tools.js'
+import { createLineReader, createIngestState, ingestLines } from './logcat-ingest.js'
 
 const MAX_BUFFER = 200000          // 单设备主进程内存环缓冲上限（行）
 const FLUSH_INTERVAL = 200         // 批量推送间隔（ms）
 
-const LINE_RE = /^(\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}\.\d{3})\s+(\d+)\s+(\d+)\s+([VDIWEF])\s+(.*?):\s?(.*)$/
-
-// serial -> { serial, child, buffer, pending, batchTimer, procChangeTimer }
+// serial -> { serial, child, reader, errDecoder, state, batchTimer, procChangeTimer }
 const sessions = new Map()
 let winRef = null
 
-function parseLine(raw) {
-  const m = LINE_RE.exec(raw)
-  if (!m) return null
-  return {
-    date: m[1], time: m[2], pid: Number(m[3]), tid: Number(m[4]),
-    level: m[5], tag: m[6], msg: m[7], raw
+function flush(session) {
+  session.batchTimer = null
+  const batch = session.state.pending
+  session.state.pending = []   // 无条件清空：窗口销毁后 pending 也不再无界增长
+  if (batch.length && winRef && !winRef.isDestroyed()) {
+    winRef.webContents.send(LOGCAT_DATA, { serial: session.serial, batch })
   }
 }
 
 function ingest(session, chunk) {
-  const text = chunk.toString()
-  const lines = text.split(/\r?\n/)
-  for (const ln of lines) {
-    if (!ln) continue
-    if (/ActivityManager:.*?(Start proc|has died|Killing \d+)/i.test(ln)) emitProcChanged(session.serial)
-    const parsed = parseLine(ln)
-    if (parsed) {
-      session.buffer.push(parsed)
-      session.pending.push(parsed)
-    } else if (session.buffer.length) {
-      // 折行（wrapped line）：追加到上一条消息，保持可读
-      const tail = session.buffer[session.buffer.length - 1]
-      const tailPending = session.pending[session.pending.length - 1]
-      tail.msg += '\n' + ln
-      tail.raw += '\n' + ln
-      if (tailPending) { tailPending.msg += '\n' + ln; tailPending.raw += '\n' + ln }
-    }
-  }
-  if (session.buffer.length > MAX_BUFFER) session.buffer = session.buffer.slice(session.buffer.length - MAX_BUFFER)
-  if (!session.batchTimer) session.batchTimer = setTimeout(() => flush(session), FLUSH_INTERVAL)
-}
-
-function flush(session) {
-  session.batchTimer = null
-  if (session.pending.length && winRef && !winRef.isDestroyed()) {
-    winRef.webContents.send(LOGCAT_DATA, { serial: session.serial, batch: session.pending })
-    session.pending = []
+  const lines = session.reader.feed(chunk)
+  ingestLines(session.state, lines, () => emitProcChanged(session.serial))
+  if (session.state.pending.length && !session.batchTimer) {
+    session.batchTimer = setTimeout(() => flush(session), FLUSH_INTERVAL)
   }
 }
 
@@ -71,6 +49,12 @@ function emitProcChanged(serial) {
 function stopSession(serial, silent) {
   const session = sessions.get(serial)
   if (!session) return
+  // 会话结束前交出「尚未以换行结尾」的最后一行，避免丢尾行
+  const tailLines = session.reader.end()
+  if (tailLines.length) {
+    ingestLines(session.state, tailLines)   // 停止时不再触发进程刷新事件
+    flush(session)
+  }
   if (session.batchTimer) { clearTimeout(session.batchTimer); session.batchTimer = null }
   if (session.procChangeTimer) { clearTimeout(session.procChangeTimer); session.procChangeTimer = null }
   if (session.child) { try { session.child.kill('SIGINT') } catch {} session.child = null }
@@ -90,12 +74,19 @@ export function registerLogcatIpc(win) {
       ? opts.buffers.flatMap((b) => ['-b', b])
       : ['-b', 'main', '-b', 'system', '-b', 'crash']
     const args = [...serialArgs, 'logcat', '-v', 'threadtime', ...buffers]
-    const session = { serial, child: null, buffer: [], pending: [], batchTimer: null, procChangeTimer: null }
+    const session = {
+      serial, child: null,
+      reader: createLineReader(),
+      errDecoder: new StringDecoder('utf8'),
+      state: createIngestState(MAX_BUFFER),
+      batchTimer: null, procChangeTimer: null
+    }
     sessions.set(serial, session)
     session.child = spawn(resolveTool('adb.exe'), args, { windowsHide: true })
     session.child.stdout.on('data', (chunk) => ingest(session, chunk))
     session.child.stderr.on('data', (d) => {
-      if (winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_STDERR, { serial, text: d.toString() })
+      const text = session.errDecoder.write(d)
+      if (text && winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_STDERR, { serial, text })
     })
     session.child.on('error', (e) => {
       if (winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_ERROR, { serial, text: String(e) })
