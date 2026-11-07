@@ -232,7 +232,7 @@ const { openUpdateDialog } = useUpdate()
               <input type="checkbox" v-model="procFilterByPkg" />按包名过滤
             </label>
             <span class="proc-wrap">
-              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" @mousedown="refreshProcs" title="点开即刷新当前设备进程列表">
+              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" @mousedown="() => refreshProcs()" title="点开即刷新当前设备进程列表">
                 <option value="">{{ procFilterByPkg ? '-包名-' : '-包名进程-' }}</option>
                 <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
               </select>
