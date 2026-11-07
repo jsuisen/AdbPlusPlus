@@ -5,7 +5,7 @@ import { maskClose, saveCfg } from '@/composables/useConfig'
 import { runKey, addKey, removeKey, onKeyColor, cmdTextColor } from '@/composables/useActions'
 
 const {
-  keyModalOpen, keyGroup, keyGroups, keyManaging, displayKeys, keyButtons,
+  keyModalOpen, keyRefOpen, keyGroup, keyGroups, keyManaging, displayKeys, keyButtons,
   newKeyName, newKeyValue, newKeyGroup, keyColorEditIndex, COLOR_PRESETS
 } = State
 </script>
