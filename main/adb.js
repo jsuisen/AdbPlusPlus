@@ -324,10 +324,10 @@ export function registerAdbIpc() {
   // ---- Monkey 压力测试 ----
   ipcMain.handle(ADB_MONKEY, async (_e, { serial, pkg, seed, throttle, count }) => {
     if (!serial || !pkg) throw new Error('serial 与 包名必填')
-    const args = devArgs(serial, ['shell', 'monkey', '-p', pkg, '-v', '-v', '-v'])
-    if (seed != null && seed !== '') args.push('-s', String(seed))
-    if (throttle != null && throttle !== '') args.push('--throttle', String(throttle))
-    args.push(String(count != null && count !== '' ? count : 1000))
+    const args = devArgs(serial, ['shell', 'monkey', '-p', assertIdent(pkg, 'pkg'), '-v', '-v', '-v'])
+    if (seed != null && seed !== '') args.push('-s', assertNum(seed, 'seed'))
+    if (throttle != null && throttle !== '') args.push('--throttle', assertNum(throttle, 'throttle'))
+    args.push(assertNum(count != null && count !== '' ? count : 1000, 'count'))
     return run('adb.exe', args)
   })
 

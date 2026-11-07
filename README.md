@@ -75,7 +75,7 @@ npm test             # 纯函数与轮询列表工厂单测
 
 ## 安全要点
 
-- 所有子进程调用统一在主进程用参数数组 `spawn(tool, [args...])`，**不经本机 shell**。注意设备端 adbd 收到 `adb shell` 的参数后仍会拼成命令串交给 `/system/bin/sh -c`，因此用户可控参数在主进程另过白名单或转 shell 字面量（`main/adb.js`、`main/netcap-safety.js`）。
+- 所有子进程调用统一在主进程用参数数组 `spawn(tool, [args...])`，**不经本机 shell**。注意设备端 adbd 收到 `adb shell` 的参数后仍会拼成命令串交给 `/system/bin/sh -c`，因此用户可控参数在主进程另过白名单或转 shell 字面量（工具见 `main/adb-safety.js`、`main/netcap-safety.js`，调用点见 `main/adb.js`、`main/netcap.js`）。
 - 渲染进程 `nodeIntegration:false` + `contextIsolation:true`，只能通过 preload 的 `window.api` 通信；**invoke/send/on 三方法均有通道白名单**（`shared/ipc-channels.js`），未登记通道直接拒绝。
 - 运行时配置 `adbtool-config.json` 不入库（默认 exe/工程根同级，可自定义路径）；结构样例见 `adbtool-config.sample.json`。
 - 应用版本号以 package.json semver 为准，关于弹窗运行时读取。
