@@ -33,12 +33,12 @@ AdbPlusPlus/
 ├─ shared/                   主进程/渲染进程共用：ipc-channels.js（IPC 通道常量 + 白名单）
 ├─ src/                      渲染进程（Vue 3）
 │  ├─ App.vue                根组件（弹窗均已组件化）
-│  ├─ components/            25 个组件：modals/（21 弹窗）+ 4 个非模态组件
+│  ├─ components/            26 个组件：modals/（22 弹窗）+ 4 个非模态组件
 │  ├─ composables/           状态（state.js barrel + state/ 按域 9 文件）、行为（useXxx）、shared.js 纯函数
 │  └─ styles.css             全局样式
 ├─ tests/                    node:test 单测（npm test）
 ├─ scripts/                  dev.js 开发启动器；check.mjs 静态验证管线（npm run check）
-├─ resources/                adb.exe / aapt.exe（不入库）；icon.png
+├─ resources/                adb.exe / aapt.exe / alipay.jpg（均已入库）；icon.png
 ├─ adbtool-config.sample.json 运行时配置样例（真实配置不入库）
 ├─ docs/                     方法论文档体系
 ├─ index.html / vite.config.js / electron-builder.yml / jsconfig.json / package.json
@@ -75,7 +75,7 @@ npm test             # 纯函数与轮询列表工厂单测
 
 ## 安全要点
 
-- 所有子进程调用统一在主进程用参数数组 `spawn(tool, [args...])`，绝不拼接 shell 字符串，防命令注入。
+- 所有子进程调用统一在主进程用参数数组 `spawn(tool, [args...])`，**不经本机 shell**。注意设备端 adbd 收到 `adb shell` 的参数后仍会拼成命令串交给 `/system/bin/sh -c`，因此用户可控参数在主进程另过白名单或转 shell 字面量（`main/adb.js`、`main/netcap-safety.js`）。
 - 渲染进程 `nodeIntegration:false` + `contextIsolation:true`，只能通过 preload 的 `window.api` 通信；**invoke/send/on 三方法均有通道白名单**（`shared/ipc-channels.js`），未登记通道直接拒绝。
 - 运行时配置 `adbtool-config.json` 不入库（默认 exe/工程根同级，可自定义路径）；结构样例见 `adbtool-config.sample.json`。
 - 应用版本号以 package.json semver 为准，关于弹窗运行时读取。
