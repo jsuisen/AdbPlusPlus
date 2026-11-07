@@ -13,8 +13,26 @@ const THREAD_STAT_SCRIPT = fs.readFileSync(path.join(__dirname, 'device-scripts/
 
 // am 命令 Extra 类型 -> 参数前缀（es 字符串 / ei 整数 / ez 布尔 / ef 浮点 / el 长整）
 const EXTRA_FLAG = { es: '--es', ei: '--ei', ez: '--ez', ef: '--ef', el: '--el' }
-// 设备相关命令统一前缀 -s serial（多设备定向，绝不拼 shell）
+// 设备相关命令统一前缀 -s serial（多设备定向，绝不拼本机 shell）
 const devArgs = (serial, rest) => ['-s', serial, ...rest]
+
+// adbd 收到 adb shell 的参数后会拼成命令串再交给 /system/bin/sh -c，
+// 所以「本机参数数组 spawn」不等于设备端安全。用户可控字段在主进程统一收口：
+// 标识符类走白名单，自由文本类用单引号包成 shell 字面量（与 netcap-safety.js 的 sq 同规则）。
+const ADB_IDENT_RE = /^[A-Za-z0-9_./:-]+$/
+function assertIdent(v, label) {
+  const s = String(v == null ? '' : v).trim()
+  if (!ADB_IDENT_RE.test(s)) throw new Error(label + ' 含非法字符：' + s)
+  return s
+}
+function shellLiteral(v) {
+  return "'" + String(v == null ? '' : v).replace(/'/g, "'\\''") + "'"
+}
+function safeServiceTokens(v) {
+  const toks = String(v == null ? '' : v).trim().split(/\s+/).filter(Boolean)
+  for (const t of toks) assertIdent(t, 'dumpsys service')
+  return toks
+}
 
 // /proc/meminfo 字段（kB）转友好容量
 const memField = (txt, key) => {
@@ -206,7 +224,8 @@ export function registerAdbIpc() {
   // ---- 输入模拟 ----
   ipcMain.handle(ADB_INPUT_TEXT, async (_e, { serial, text }) => {
     if (!serial || !text) throw new Error('serial 与 text 必填')
-    return run('adb.exe', ['-s', serial, 'shell', 'input', 'text', text.replace(/ /g, '%s')])
+    // 单引号包成设备端 shell 字面量：否则 text 里的 ; / $() / 反引号会被 sh -c 执行
+    return run('adb.exe', ['-s', serial, 'shell', 'input', 'text', shellLiteral(text.replace(/ /g, '%s'))])
   })
   ipcMain.handle(ADB_INPUT_KEY, async (_e, { serial, key }) => {
     if (!serial || !key) throw new Error('serial 与 key 必填')
@@ -268,10 +287,10 @@ export function registerAdbIpc() {
   // 发送广播：必填 action，可选目标组件(-n)、Extra、Flags(-f)
   ipcMain.handle(ADB_BROADCAST, async (_e, { serial, action, component, extras = [], flags }) => {
     if (!serial || !action) throw new Error('serial 与 action 必填')
-    const args = devArgs(serial, ['shell', 'am', 'broadcast', '-a', action])
-    if (component && component.trim()) args.push('-n', component.trim())
-    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', e.key, String(e.value))
-    if (flags && flags.trim()) args.push('-f', flags.trim())
+    const args = devArgs(serial, ['shell', 'am', 'broadcast', '-a', assertIdent(action, 'broadcast action')])
+    if (component && component.trim()) args.push('-n', assertIdent(component, 'broadcast component'))
+    for (const e of extras) if (e && e.key) args.push(EXTRA_FLAG[e.type] || '--es', assertIdent(e.key, 'extra key'), shellLiteral(String(e.value)))
+    if (flags && flags.trim()) args.push('-f', assertIdent(flags, 'broadcast flags'))
     return run('adb.exe', args)
   })
 
@@ -299,7 +318,7 @@ export function registerAdbIpc() {
   ipcMain.handle(ADB_REBOOT, async (_e, { serial, mode }) => {
     if (!serial) throw new Error('serial 必填')
     const args = devArgs(serial, ['reboot'])
-    if (mode && mode.trim()) args.push(mode.trim())
+    if (mode && mode.trim()) args.push(assertIdent(mode, 'reboot mode'))
     return run('adb.exe', args)
   })
   ipcMain.handle(ADB_ROOT, async (_e, { serial }) => {
@@ -328,7 +347,8 @@ export function registerAdbIpc() {
   // ---- dumpsys 任意 service（设备信息页自由查询） ----
   ipcMain.handle(ADB_DUMPSYS, async (_e, { serial, service }) => {
     if (!serial || !service) throw new Error('serial 与 service 必填')
-    return run('adb.exe', devArgs(serial, ['shell', 'dumpsys', service]))
+    // 允许 "activity top" 这类多词查询，但每个 token 都必须是安全标识符
+    return run('adb.exe', devArgs(serial, ['shell', 'dumpsys', ...safeServiceTokens(service)]))
   })
 
   // getprop 输出 [key]: [value] 解析为 map；pickProp 先按候选键精确取值，再按 grep 谓词匹配第一个键
