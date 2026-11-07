@@ -715,7 +715,10 @@ function onGlobalKey(e) {
 function onWheel(e) {
   if (e.ctrlKey) {
     e.preventDefault()
-    api.send(e.deltaY < 0 ? 'window:zoomIn' : 'window:zoomOut')
+    // 拆成两个显式字面量调用：静态校验（check.mjs 通道类别归属）只认 api.send('通道') 紧邻形式，
+    // 写成 api.send(cond ? 'a' : 'b') 会绕过扫描， zoom 归类错误就是这么漏网的。
+    if (e.deltaY < 0) api.send('window:zoomIn')
+    else api.send('window:zoomOut')
     return
   }
   if (e.deltaY < 0 && autoscroll.value) {
