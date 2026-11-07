@@ -98,7 +98,17 @@ export function saveConfig(cfg) {
     ? clean.configPath.trim()
     : defaultCfgPath()
   fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.writeFileSync(target, JSON.stringify(clean, null, 2))
+  // 原子写：先写同目录临时文件再 rename，避免写到一半进程退出留下截断的 JSON（下次 loadConfig 解析失败会静默丢全部配置）。
+  // Windows 上 renameSync 覆盖已存在文件走 MoveFileEx(REPLACE_EXISTING)；万一失败回退直写并清临时文件。
+  const body = JSON.stringify(clean, null, 2)
+  const tmp = target + '.tmp'
+  try {
+    fs.writeFileSync(tmp, body)
+    fs.renameSync(tmp, target)
+  } catch {
+    try { fs.rmSync(tmp, { force: true }) } catch {}
+    fs.writeFileSync(target, body)
+  }
   // 指针文件同步：自定义路径则记录，否则删除指针（走默认位置）
   if (target === defaultCfgPath()) {
     try { fs.rmSync(pointerPath, { force: true }) } catch {}
