@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, connectAlias, connectIp, connectOpen, connectPort, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, lastMsg, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial} from './state'
+import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, colorSessionMap, connectAlias, connectIp, connectOpen, connectPort, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, lastMsg, logErrMap, logsMap, monkeyModalOpen, notesMap, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, scrollPosMap, selectedProc, selectedSerial, _logFilter} from './state'
 import { ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
@@ -8,6 +8,19 @@ import { openCmdModal, openInputModal, openInstallModal, openUninstallModal, res
 import { openCaptureManager, screenshotToPath, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer } from './useMedia'
 import { installApk, parseInstalled, parseLocal } from './useApk'
 import { saveCfg } from './useConfig'
+
+// 设备移除时统一回收该 serial 的全部会话状态。
+// 旧实现有两份拷贝且只删 6 个字典，notesMap / _logFilter / scrollPosMap /
+// colorSessionMap / captureList / capturing / deviceAlias 会永久残留（内存泄漏 + 脏状态）。
+function purgeDeviceSession(serial) {
+  if (!serial) return
+  if (runningMap[serial]) { try { api.send('logcat:stop', serial) } catch {} }
+  delete logsMap[serial]; delete runningMap[serial]; delete logErrMap[serial]
+  delete procsMap[serial]; delete autoLogBufMap[serial]; delete autoLogMeta[serial]
+  delete notesMap[serial]; delete _logFilter[serial]; delete scrollPosMap[serial]
+  delete colorSessionMap[serial]; delete captureList[serial]; delete capturing[serial]
+  delete deviceAlias[serial]
+}
 
 async function refreshDevices() {
   if (refreshing.value) return   // 防止设备事件与定时器并发刷新叠加
@@ -17,10 +30,7 @@ async function refreshDevices() {
     const newSerials = list.map((d) => d.serial)
     // 清理已移除设备的日志会话与缓存（停掉其 logcat，删映射，避免内存泄漏）
     for (const s of Object.keys(logsMap)) {
-      if (!newSerials.includes(s)) {
-        if (runningMap[s]) { try { api.send('logcat:stop', s) } catch {} }
-        delete logsMap[s]; delete runningMap[s]; delete logErrMap[s]; delete procsMap[s]; delete autoLogBufMap[s]; delete autoLogMeta[s]
-      }
+      if (!newSerials.includes(s)) purgeDeviceSession(s)
     }
     for (const s of newSerials) { if (!logsMap[s]) logsMap[s] = []; ensureLogFilter(s) }
     devices.value = list
@@ -51,8 +61,7 @@ function toggleDeviceLogcat(serial) {
 
 function removeDeviceFromView(serial) {
   if (!serial) return
-  if (runningMap[serial]) { try { api.send('logcat:stop', serial) } catch {} }
-  delete logsMap[serial]; delete runningMap[serial]; delete logErrMap[serial]; delete procsMap[serial]; delete autoLogBufMap[serial]; delete autoLogMeta[serial]
+  purgeDeviceSession(serial)
   devices.value = devices.value.filter((d) => d.serial !== serial)
   if (selectedSerial.value === serial) selectedSerial.value = devices.value[0]?.serial || ''
   if (activeLogSerial.value === serial) activeLogSerial.value = selectedSerial.value
