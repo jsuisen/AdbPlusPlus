@@ -1,6 +1,6 @@
 // 设备信息与检测：信息卡导出、dumpsys/bugreport、四个轮询列表（经 createPollingList 工厂接线）、组件调试弹窗
 import { watch, onBeforeUnmount } from 'vue'
-import {actAction, actActivity, actCmdPreview, actComponent, actExtras, actFlags, actForms, actModalOpen, actModalType, actPkg, actService, actServiceBackground, activeMainTab, activityAuto, activityInterval, activityList, activityLoading, activityResumed, activityRunning, api, cfg, clearPrev, deviceInfo, deviceInfoLoading, dumpsysOut, dumpsysService, exportTs, getpropList, getpropLoading, lastMsg, procCpus, procPrev, processAuto, processInterval, processList, processLoading, processRunning, deviceLabel, devInvoke, selectedSerial, serviceAuto, serviceInterval, serviceList, serviceLoading, serviceRunning, threadAuto, threadInterval, threadList, threadLoading, threadPrev, threadRunning} from './state'
+import {actAction, actActivity, actCmdPreview, actComponent, actExtras, actFlags, actForms, actModalOpen, actModalType, actPkg, actService, actServiceBackground, activeMainTab, activityAuto, activityInterval, activityList, activityLoading, activityResumed, activityRunning, api, cfg, clearPrev, deviceInfo, deviceInfoLoading, dumpsysOut, dumpsysService, exportTs, getpropList, getpropLoading, procCpus, procPrev, processAuto, processInterval, processList, processLoading, processRunning, deviceLabel, devInvoke, selectedSerial, serviceAuto, serviceInterval, serviceList, serviceLoading, serviceRunning, threadAuto, threadInterval, threadList, threadLoading, threadPrev, threadRunning, showResult} from './state'
 import { createPollingList } from './createPollingList'
 
 import { toast } from './useUi'
@@ -12,7 +12,7 @@ async function fetchDeviceInfo() {
   try {
     deviceInfo.value = await api.invoke('adb:deviceInfo', { serial: selectedSerial.value })
   } catch (e) {
-    lastMsg.value = '获取设备信息失败：' + e.message
+    showResult('设备信息', '获取设备信息失败：' + e.message, false, { dedupe: 'fetchDeviceInfo' })
   } finally {
     deviceInfoLoading.value = false
   }
@@ -21,7 +21,7 @@ async function fetchDeviceInfo() {
 async function exportDeviceInfo() {
   if (deviceInfoLoading.value) return
   const d = deviceInfo.value || {}
-  if (!Object.keys(d).length) { lastMsg.value = '暂无设备信息，请先刷新'; return }
+  if (!Object.keys(d).length) { showResult('导出设备信息', '暂无设备信息，请先刷新', false); return }
   const serial = selectedSerial.value || 'unknown'
   const lines = ['设备信息（序列号: ' + serial + '）']
   lines.push('型号: ' + (d.model || '—'))
@@ -44,7 +44,7 @@ async function exportDeviceInfo() {
   const ts = exportTs()
   const defaultPath = (cfg.value.outDir || '') + '/deviceinfo_' + deviceLabel(serial) + '_' + ts + '.txt'
   const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) lastMsg.value = '已导出：' + path
+  if (path) showResult('导出设备信息', '已导出：' + path, true)
 }
 
 async function fetchServices(silent = false) {
@@ -53,8 +53,8 @@ async function fetchServices(silent = false) {
   try {
     const r = await api.invoke('adb:services', { serial: selectedSerial.value })
     serviceList.value = r.code === 0 ? (r.list || []) : []
-    if (r.code !== 0) lastMsg.value = '获取 Service 失败：' + (r.err || r.code)
-  } catch (e) { serviceList.value = []; lastMsg.value = '获取 Service 异常：' + e.message }
+    if (r.code !== 0) showResult('Service 列表', '获取 Service 失败：' + (r.err || r.code), false, { dedupe: 'fetchServices' })
+  } catch (e) { serviceList.value = []; showResult('Service 列表', '获取 Service 异常：' + e.message, false, { dedupe: 'fetchServices' }) }
   finally { if (!silent) serviceLoading.value = false }
 }
 
@@ -63,7 +63,7 @@ async function fetchProcesses(silent = false) {
   if (!silent) processLoading.value = true
   try {
     const r = await api.invoke('adb:psStat', { serial: selectedSerial.value })
-    if (r.code !== 0) { lastMsg.value = '获取进程失败：' + (r.err || r.code); processList.value = []; return }
+    if (r.code !== 0) { showResult('进程列表', '获取进程失败：' + (r.err || r.code), false, { dedupe: 'fetchProcesses' }); processList.value = []; return }
     procCpus.value = r.cpus || 1
     const now = Date.now()
     processList.value = (r.list || []).map((p) => {
@@ -74,7 +74,7 @@ async function fetchProcesses(silent = false) {
       procPrev[p.pid] = { j, t: now }
       return { ...p, cpu: Math.max(0, Math.min(999, cpu)) }
     })
-  } catch (e) { processList.value = []; lastMsg.value = '获取进程异常：' + e.message }
+  } catch (e) { processList.value = []; showResult('进程列表', '获取进程异常：' + e.message, false, { dedupe: 'fetchProcesses' }) }
   finally { if (!silent) processLoading.value = false }
 }
 
@@ -86,7 +86,7 @@ async function fetchThreads(silent = false) {
       api.invoke('adb:threads', { serial: selectedSerial.value }),
       api.invoke('adb:threadStat', { serial: selectedSerial.value }),
     ])
-    if (tr.code !== 0) { lastMsg.value = '获取线程失败：' + (tr.err || tr.code); threadList.value = []; return }
+    if (tr.code !== 0) { showResult('线程列表', '获取线程失败：' + (tr.err || tr.code), false, { dedupe: 'fetchThreads' }); threadList.value = []; return }
     if (sr.cpus) procCpus.value = sr.cpus
     const map = sr.list || {}
     const now = Date.now()
@@ -101,7 +101,7 @@ async function fetchThreads(silent = false) {
       }
       return { ...t, cpu: Math.max(0, Math.min(999, cpu)) }
     })
-  } catch (e) { threadList.value = []; lastMsg.value = '获取线程异常：' + e.message }
+  } catch (e) { threadList.value = []; showResult('线程列表', '获取线程异常：' + e.message, false, { dedupe: 'fetchThreads' }) }
   finally { if (!silent) threadLoading.value = false }
 }
 
@@ -110,10 +110,10 @@ async function fetchActivities(silent = false) {
   if (!silent) activityLoading.value = true
   try {
     const r = await api.invoke('adb:activities', { serial: selectedSerial.value })
-    if (r.code !== 0) { lastMsg.value = '获取前台 Activity 失败：' + (r.err || r.code); activityList.value = []; return }
+    if (r.code !== 0) { showResult('前台 Activity', '获取前台 Activity 失败：' + (r.err || r.code), false, { dedupe: 'fetchActivities' }); activityList.value = []; return }
     activityResumed.value = r.resumed || ''
     activityList.value = (r.list || []).map((a) => ({ name: a, foreground: a === activityResumed.value }))
-  } catch (e) { activityList.value = []; lastMsg.value = '获取前台 Activity 异常：' + e.message }
+  } catch (e) { activityList.value = []; showResult('前台 Activity', '获取前台 Activity 异常：' + e.message, false, { dedupe: 'fetchActivities' }) }
   finally { if (!silent) activityLoading.value = false }
 }
 
@@ -122,22 +122,22 @@ async function fetchGetprop(silent = false) {
   if (!silent) getpropLoading.value = true
   try {
     const r = await api.invoke('adb:getprop', { serial: selectedSerial.value })
-    if (r.code !== 0) { lastMsg.value = '获取 getprop 失败：' + (r.err || r.code); getpropList.value = []; return }
+    if (r.code !== 0) { showResult('getprop', '获取 getprop 失败：' + (r.err || r.code), false, { dedupe: 'fetchGetprop' }); getpropList.value = []; return }
     getpropList.value = r.list || []
-  } catch (e) { getpropList.value = []; lastMsg.value = '获取 getprop 异常：' + e.message }
+  } catch (e) { getpropList.value = []; showResult('getprop', '获取 getprop 异常：' + e.message, false, { dedupe: 'fetchGetprop' }) }
   finally { if (!silent) getpropLoading.value = false }
 }
 
 async function exportGetprop() {
   if (getpropLoading.value) return
   const list = getpropList.value || []
-  if (!list.length) { lastMsg.value = '暂无 getprop 数据，请先刷新'; return }
+  if (!list.length) { showResult('导出 getprop', '暂无 getprop 数据，请先刷新', false); return }
   const content = list.map((p) => '[' + p.key + ']: [' + (p.value || '') + ']').join('\n')
   const ts = exportTs()
   const serial = selectedSerial.value || 'unknown'
   const defaultPath = (cfg.value.outDir || '') + '/getprop_' + deviceLabel(serial) + '_' + ts + '.txt'
   const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) lastMsg.value = '已导出：' + path
+  if (path) showResult('导出 getprop', '已导出：' + path, true)
 }
 
 async function runDumpsys() {
@@ -154,8 +154,9 @@ async function runBugreport() {
   if (!dir) return
   try {
     const r = await api.invoke('adb:bugreport', { serial: selectedSerial.value, outDir: dir })
-    lastMsg.value = r.code === 0 ? 'bugreport 已保存：' + (r.path || dir) : 'bugreport 失败：' + (r.err || r.code)
-  } catch (e) { lastMsg.value = 'bugreport 异常：' + e.message }
+    const ok = r.code === 0
+    showResult('bugreport', (ok ? 'bugreport 已保存：' + (r.path || dir) : 'bugreport 失败：' + (r.err || r.code)) + '\n目录：' + dir, ok)
+  } catch (e) { showResult('bugreport', 'bugreport 异常：' + e.message, false) }
 }
 
 // 四个轮询列表：状态 ref 在 state 层，启停/刷新/自动刷新定时器由工厂统一接线

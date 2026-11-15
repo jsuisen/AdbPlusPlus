@@ -1,10 +1,11 @@
 // 由 split_app2.cjs 自动拆分生成（media）；网络抓包事件处理器也归本域（netcap 事件的消费方是抓包状态）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {api, captureList, captureOpen, capturing, cfg, lastMsg, recording, screenshotting, selectedSerial, ymdhms} from './state'
+import {api, captureList, captureOpen, capturing, cfg, lastMsg, recording, screenshotting, selectedSerial, showResult, ymdhms} from './state'
 import { sanitizeSerial } from './shared'
 import { toast } from './useUi'
 
-// 网络抓包事件（useApp 订阅）：started/stopped 更新状态栏与抓包中标记，stopped 后刷新设备端文件列表
+// 网络抓包事件（useApp 订阅）：started 是「进行中」状态，只写状态栏提示，不弹结果窗；
+// stopped 后刷新设备端文件列表。
 function onNetcapStarted(p) { if (p && p.serial) { capturing[p.serial] = true; lastMsg.value = '抓包已开始：' + p.serial } }
 
 function onNetcapStopped(p) { if (p && p.serial) { capturing[p.serial] = false; if (captureOpen.value) refreshCaptures() } }
@@ -12,7 +13,7 @@ function onNetcapStopped(p) { if (p && p.serial) { capturing[p.serial] = false; 
 function onNetcapError(p) { if (p && p.serial) toast('抓包错误：' + (p.text || '')) }
 
 async function takeScreenshot() {
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return }
+  if (!selectedSerial.value) { showResult('截图', '未选择设备，请先在侧边栏选择设备', false); return }
   const outPath = await api.invoke('file:pickSave', {
     defaultPath: (cfg.value.outDir || '') + '/screenshot.png',
     filters: [{ name: 'PNG', extensions: ['png'] }]
@@ -20,17 +21,18 @@ async function takeScreenshot() {
   if (!outPath) return
   try {
     const p = await api.invoke('media:screenshot', { serial: selectedSerial.value, outPath })
-    lastMsg.value = '截图已保存：' + p
-  } catch (e) { lastMsg.value = '截图失败：' + e.message }
+    showResult('截图', '截图已保存：' + p, true)
+  } catch (e) { showResult('截图', '截图失败：' + e.message, false) }
 }
 
 async function startRec() {
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return }
+  if (!selectedSerial.value) { showResult('录屏', '未选择设备，请先在侧边栏选择设备', false); return }
   try {
     await api.invoke('media:recordStart', { serial: selectedSerial.value })
     recording.value = true
+    // 「录屏中」是进行中的状态、不是结果：保留在状态栏，不弹窗
     lastMsg.value = '录屏中…（设备端单段 ≤3 分钟，停止后自动 pull 到本机）'
-  } catch (e) { lastMsg.value = '录屏启动失败：' + e.message }
+  } catch (e) { showResult('录屏', '录屏启动失败：' + e.message, false) }
 }
 
 async function stopRec() {
@@ -42,8 +44,9 @@ async function stopRec() {
   try {
     const p = await api.invoke('media:recordStop', { outPath })
     recording.value = false
-    lastMsg.value = '录屏已保存：' + p
-  } catch (e) { lastMsg.value = '录屏停止失败：' + e.message }
+    lastMsg.value = ''
+    showResult('录屏', '录屏已保存：' + p, true)
+  } catch (e) { showResult('录屏', '录屏停止失败：' + e.message, false) }
 }
 
 function shotName() {
@@ -51,18 +54,27 @@ function shotName() {
   return 'screenshot_' + ymdhms(d) + '_' + sanitizeSerial(selectedSerial.value) + '.png'
 }
 
-async function doScreenshotToDir(dir) {
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return false }
+// quiet=true 用于「连续截图」定时流：逐张弹窗会每秒抢占焦点，只刷新状态栏进行中提示。
+async function doScreenshotToDir(dir, quiet = false) {
+  if (!selectedSerial.value) {
+    showResult('截图', '未选择设备，请先在侧边栏选择设备', false, { dedupe: 'screenshotNoDevice' })
+    return false
+  }
   const name = shotName()
   try {
     const p = await api.invoke('media:screenshotToDir', { serial: selectedSerial.value, dir, name })
-    lastMsg.value = '截图已保存：' + p
+    if (quiet) lastMsg.value = '连续截图：已保存 ' + p
+    else showResult('截图', '截图已保存：' + p, true)
     return true
-  } catch (e) { lastMsg.value = '截图失败：' + e.message; return false }
+  } catch (e) {
+    if (quiet) lastMsg.value = '连续截图失败：' + e.message
+    else showResult('截图', '截图失败：' + e.message, false)
+    return false
+  }
 }
 
 async function screenshotToPath() {
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return }
+  if (!selectedSerial.value) { showResult('截图', '未选择设备，请先在侧边栏选择设备', false); return }
   const dir = cfg.value.screenshotDir || cfg.value.outDir || '.'
   await doScreenshotToDir(dir)
 }
@@ -71,15 +83,17 @@ function toggleScreenshotTimer() {
   if (screenshotting.value) {
     if (screenshotTimer) { clearInterval(screenshotTimer); screenshotTimer = null }
     screenshotting.value = false
-    lastMsg.value = '已停止连续截图'
+    lastMsg.value = ''
+    showResult('连续截图', '已停止连续截图', true)
     return
   }
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return }
+  if (!selectedSerial.value) { showResult('连续截图', '未选择设备，请先在侧边栏选择设备', false); return }
   const dir = cfg.value.screenshotDir || cfg.value.outDir || '.'
   const interval = Math.max(200, Number(cfg.value.screenshotInterval) || 1000)
   screenshotting.value = true
-  doScreenshotToDir(dir) // 立即先截一张
-  screenshotTimer = setInterval(() => doScreenshotToDir(dir), interval)
+  doScreenshotToDir(dir, true) // 立即先截一张
+  screenshotTimer = setInterval(() => doScreenshotToDir(dir, true), interval)
+  // 启动/进行中属于状态，保留在状态栏
   lastMsg.value = '连续截图已启动：每 ' + interval + 'ms 保存到 ' + dir
 }
 

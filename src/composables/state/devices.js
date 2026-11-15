@@ -1,7 +1,8 @@
 // 共享状态：设备与连接（设备列表 / 选中设备 / 连接弹窗 / 别名与重命名 / 侧边栏操作分组）
 import { ref, reactive } from 'vue'
-import { api, lastMsg } from './core.js'
-import { sanitizeSerial } from '../shared.js'
+import { api } from './core.js'
+import { cmdDetail, sanitizeSerial } from '../shared.js'
+import { showResult } from './result.js'
 
 export const devices = ref([])
 
@@ -108,13 +109,15 @@ export function deviceLabel(serial) {
   return model ? model + '_' + s : s
 }
 
-// 面向当前选中设备的通用 adb 调用：附带 serial，成功/失败写入状态栏消息
+// 面向当前选中设备的通用 adb 调用：附带 serial，成功/失败统一走结果弹窗（不再写状态栏）
 export async function devInvoke(label, channel, payload) {
-  if (!selectedSerial.value) { lastMsg.value = '未选择设备'; return }
+  if (!selectedSerial.value) { showResult(label, '未选择设备，请先在侧边栏选择设备', false); return }
   try {
     const r = await api.invoke(channel, { serial: selectedSerial.value, ...payload })
-    lastMsg.value = (r.code === 0 ? '完成：' : '失败：') + label + (r.code === 0 ? '' : (' ' + (r.err || r.code)))
+    const ok = r.code === 0
+    const text = (ok ? '完成：' + label : '失败：' + label + ' ' + (r.err || r.code)) + '\n' + cmdDetail(r)
+    showResult(label, text, ok)
   } catch (e) {
-    lastMsg.value = label + '异常：' + e.message
+    showResult(label, label + '异常：' + e.message, false)
   }
 }

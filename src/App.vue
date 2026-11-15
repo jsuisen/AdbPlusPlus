@@ -12,6 +12,7 @@ import { useUi } from './composables/useUi'
 import { useColorrules } from './composables/useColorrules'
 import { useApp } from './composables/useApp'
 import { useUpdate } from './composables/useUpdate'
+import { useDeviceClock } from './composables/useDeviceClock'
 import PollingListTab from './components/PollingListTab.vue'
 import AboutModal from './components/modals/AboutModal.vue'
 import ApkModal from './components/modals/ApkModal.vue'
@@ -36,9 +37,11 @@ import MonkeyModal from './components/modals/MonkeyModal.vue'
 import InstallModal from './components/modals/InstallModal.vue'
 import UninstallModal from './components/modals/UninstallModal.vue'
 import UpdateModal from './components/modals/UpdateModal.vue'
+import ResultModal from './components/modals/ResultModal.vue'
+import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
@@ -127,6 +130,7 @@ const { exportDeviceInfo, exportGetprop, fetchGetprop, manualRefresh, runBugrepo
 const { winClose, winMax, winMin, winTop } = useUi()
 const { logLineStyle, openColorWin } = useColorrules()
 useApp()
+const { refreshDeviceClock } = useDeviceClock()
 const { openUpdateDialog } = useUpdate()
 </script>
 
@@ -144,6 +148,12 @@ const { openUpdateDialog } = useUpdate()
         <button @click="aboutOpen = true">关于</button>
       </div>
       <div class="win-ctl">
+        <!-- 设备时钟：紧邻最小化左侧。启动后默认不记时，点击一次才激活并开始同步设备时间（MM-dd HH:mm:ss） -->
+        <div class="dev-clock" :class="{ off: !deviceClockOk, idle: !deviceClockActive }" @click="refreshDeviceClock"
+             :title="!deviceClockActive ? '点击时钟开始同步设备时间' : (deviceClockOk ? '设备 ' + deviceClockSerial + ' 的时间（每 10 秒校准，点击立即校准）' : '未连接设备，时间未同步（点击重试）')">
+          <span class="dev-clock-dot"></span>
+          <span class="dev-clock-text">{{ deviceClockText }}</span>
+        </div>
         <button class="win-top" :class="{ active: alwaysOnTop }" @click="winTop" :title="alwaysOnTop ? '取消置顶' : '窗口置顶'" :aria-pressed="alwaysOnTop">
           <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5.4 2.2h5.2l-.8 4 2 2.1v1.1H4.2V8.3l2-2.1-.8-4Z" />
@@ -478,7 +488,7 @@ const { openUpdateDialog } = useUpdate()
       <div v-if="cmdOutput" class="output">{{ cmdOutput }}</div>
     </div>
 
-    <!-- 状态栏 -->
+    <!-- 状态栏：只展示设备连接态与「进行中」提示；所有结果性文字已迁到 ResultModal -->
     <div class="statusbar">
       <span class="status-dot" :class="selectedSerial ? 'dot-ok' : 'dot-idle'"></span>
       <span>{{ selectedSerial || '未连接' }}</span>
@@ -560,6 +570,13 @@ const { openUpdateDialog } = useUpdate()
 
     <!-- 卸载应用弹窗 -->
     <UninstallModal />
+
+    <!-- 统一结果弹窗：成功/失败 + 可选中复制的结果文本 -->
+    <ResultModal />
+
+    <!-- 非阻断式进行中指示（安装 APK 等后台任务），不遮挡任何元素 -->
+    <BusyIndicator />
+
     <!-- Toast -->
     <div v-if="toastShow" class="toast">{{ toastMsg }}</div>
   </div>

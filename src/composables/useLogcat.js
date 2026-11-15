@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, lastMsg, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms} from './state'
+import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
 import { saveCfg } from './useConfig'
@@ -847,7 +847,7 @@ async function exportLogs() {
   const path = await api.invoke('file:saveText', {
     content, defaultPath, filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
   })
-  if (path) lastMsg.value = '已导出：' + path
+  if (path) showResult('导出日志', '已导出：' + path, true)
 }
 
 // 「浏览」按钮：立即用系统文件管理器打开自动保存日志的目录（outDir）

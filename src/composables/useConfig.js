@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, fontNames, fontPickerOpen, fontQuery, keyButtons, lastMsg, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter} from './state'
+import {DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
 
 function setTab(name) { settingsTab.value = name }
@@ -155,7 +155,7 @@ async function exportSettings() {
     defaultPath: 'adbplusplus-settings.json',
     filters: [{ name: 'JSON 配置', extensions: ['json'] }]
   })
-  if (p) lastMsg.value = '已导出设置：' + p
+  if (p) showResult('导出设置', '已导出设置：' + p, true)
 }
 
 async function importSettings() {
@@ -164,18 +164,18 @@ async function importSettings() {
   let raw
   try {
     raw = await api.invoke('file:readText', { path: p })
-  } catch (e) { lastMsg.value = '读取文件失败：' + e.message; return }
+  } catch (e) { showResult('导入设置', '读取文件失败：' + e.message + '\n文件：' + p, false); return }
   let data
   try {
     data = JSON.parse(raw)
-  } catch (e) { lastMsg.value = '文件不是合法 JSON：' + e.message; return }
+  } catch (e) { showResult('导入设置', '文件不是合法 JSON：' + e.message + '\n文件：' + p, false); return }
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    lastMsg.value = '配置文件格式不正确（应为 JSON 对象）'; return
+    showResult('导入设置', '配置文件格式不正确（应为 JSON 对象）\n文件：' + p, false); return
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
   const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
-    lastMsg.value = '该文件不含任何 AdbPlusPlus 配置项，已取消导入'; return
+    showResult('导入设置', '该文件不含任何 AdbPlusPlus 配置项，已取消导入\n文件：' + p, false); return
   }
   // 只保留已知键：旧实现用 {...data} 浅合并，任意 JSON 都能往 cfg 里塞未知键，
   // 再经 saveCfg 落盘、被 netcap 读取，形成「外部配置 -> 设备端 root 命令」的注入链。
@@ -187,7 +187,7 @@ async function importSettings() {
   }
   applyConfig(safe, { applyDeviceState: false })
   saveCfg()
-  lastMsg.value = '已导入设置：' + p
+  showResult('导入设置', '已导入设置：' + p, true)
 }
 
 async function browseOutDir() {

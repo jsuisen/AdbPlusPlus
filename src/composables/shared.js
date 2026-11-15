@@ -30,6 +30,17 @@ export function unescapeRegexTag(s) {
   return s.replace(/\\([.*+?^${}()|[\]\\])/g, '$1')
 }
 
+// 结果弹窗正文：把 adb 子进程的 exit code / stdout / stderr 一起带上，方便复制排查。
+// cmd 可选，传入时首行写成可复用的 "$ adb ..." 命令行。
+export function cmdDetail(r, cmd) {
+  const lines = []
+  if (cmd) lines.push('$ ' + cmd)
+  lines.push('[exit ' + (r ? r.code : '?') + ']')
+  if (r && r.out) lines.push(String(r.out).trim())
+  if (r && r.err) lines.push(String(r.err).trim())
+  return lines.join('\n')
+}
+
 // 包名排序：android./com.android. 系统类沉底，其余升序（进程包名下拉与已装应用列表共用）
 export function sortPkgs(list) {
   return list.slice().sort((a, b) => {

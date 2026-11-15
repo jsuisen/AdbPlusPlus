@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, colorSessionMap, connectAlias, connectIp, connectOpen, connectPort, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, lastMsg, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial} from './state'
+import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, colorSessionMap, connectAlias, connectIp, connectOpen, connectPort, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
 import { ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
@@ -119,7 +119,7 @@ async function runAction(item) {
     : (item.act === 'screenshotTimer' && screenshotting.value) ? '停止截图'
     : item.label
   toast('已点击：' + effLabel)
-  if (item.needPkg && !appPkg.value) { lastMsg.value = '请先在侧边栏填写应用包名'; return }
+  if (item.needPkg && !appPkg.value) { showResult('设备操作', '请先在侧边栏填写应用包名', false); return }
   switch (item.act) {
     case 'appStart': return devInvoke('启动应用', 'adb:appStart', { pkg: appPkg.value })
     case 'appStop': return devInvoke('停止应用', 'adb:appStop', { pkg: appPkg.value })
@@ -133,14 +133,15 @@ async function runAction(item) {
         const exact = procs.filter((p) => p.pkg === selectedProc.value)
         if (exact.length) targets = exact
       }
-      if (!targets.length) { lastMsg.value = '未找到运行中的进程（' + base + '）'; toast('未找到运行中的进程'); break }
+      if (!targets.length) { showResult('停止进程', '未找到运行中的进程（' + base + '）', false); break }
       const pids = targets.map((t) => String(t.pid))
+      const killArgs = ['-s', selectedSerial.value, 'shell', 'kill', '-9', ...pids]
       try {
-        const r = await api.invoke('adb:run', ['-s', selectedSerial.value, 'shell', 'kill', '-9', ...pids])
-        lastMsg.value = r.code === 0
-          ? ('已停止进程：' + targets.map((t) => t.pkg + '(' + t.pid + ')').join(', '))
-          : ('停止进程失败：' + (r.err || r.code))
-      } catch (e) { lastMsg.value = '停止进程异常：' + e.message }
+        const r = await api.invoke('adb:run', killArgs)
+        const ok = r.code === 0
+        const text = (ok ? '已停止进程：' + targets.map((t) => t.pkg + '(' + t.pid + ')').join(', ') : '停止进程失败：' + (r.err || r.code)) + '\n' + cmdDetail(r, 'adb ' + killArgs.join(' '))
+        showResult('停止进程', text, ok)
+      } catch (e) { showResult('停止进程', '停止进程异常：' + e.message, false) }
       break
     }
     case 'appRestart': return devInvoke('重启应用', 'adb:appRestart', { pkg: appPkg.value })

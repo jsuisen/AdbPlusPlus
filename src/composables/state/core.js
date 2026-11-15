@@ -15,7 +15,8 @@ export const DEFAULT_LOG_FONT = { size: 12, family: '"Cascadia Code", Consolas, 
 
 export const cfg = ref({ quickCommands: [], lastSerial: '', outDir: '', targetPkg: '', configPath: '', autoLog: false, appLogEnabled: false, appLogDir: '', closeOnOuterClick: false, checkUpdateOnStartup: true, updateDismissedDate: '', cursorMoveNoScroll: true, logColors: { ...DEFAULT_LOG_COLORS }, logBgColors: { ...DEFAULT_LOG_BG_COLORS }, logBgOn: { ...DEFAULT_LOG_BG_ON }, logFont: { ...DEFAULT_LOG_FONT }, captureArgs: '-p -vv -s 0 -w', captureDeviceDir: '/sdcard/adbpp_captures/', captureLocalDir: '', captureAsRoot: false, screenshotDir: '', maxRender: 20000, screenshotInterval: 1000 })
 
-// 状态栏消息（各操作的即时反馈）
+// 状态栏消息：仅承载「进行中 / 瞬时状态」提示（录屏中、连续截图中、抓包已开始等）。
+// 所有成功/失败/导出路径等结果性文字一律改走 showResult() -> ResultModal，不再写这里。
 export const lastMsg = ref('')
 
 // 程序日志（app.log）运行时开关
