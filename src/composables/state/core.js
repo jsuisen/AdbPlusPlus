@@ -29,6 +29,9 @@ export const updateInfo = ref(null)   // 当前应展示的升级信息（null =
 
 export const maximized = ref(false)
 
+// 窗口置顶开关（默认不置顶；窗口真实状态以主进程为准，启动时查询同步）
+export const alwaysOnTop = ref(false)
+
 export const collapsedSidebar = ref(false)
 
 // 快捷按钮区是否展开（默认收起隐藏；状态栏「快捷按钮」开关切换）

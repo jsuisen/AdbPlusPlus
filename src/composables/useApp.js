@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（app）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {api, capturing, logErrMap, maximized, refreshing, runningMap} from './state'
+import {api, alwaysOnTop, capturing, logErrMap, maximized, refreshing, runningMap} from './state'
 import { APP_UPDATE_AVAILABLE } from '@shared/ipc-channels.js'
 import { onUpdateAvailable } from './useUpdate'
 import { applyConfig, loadSystemFonts, onDocMouseDown, saveCfg } from './useConfig'
@@ -30,6 +30,7 @@ onMounted(async () => {
   })
   offClosed = api.on('logcat:closed', (serial) => { runningMap[serial] = false })
   try { maximized.value = await api.invoke('window:isMaximized') } catch {}
+  try { alwaysOnTop.value = !!(await api.invoke('window:isAlwaysOnTop')) } catch {}
   offMax = api.on('window:maximize-state', (v) => { maximized.value = !!v })
   offDevicesChanged = api.on('adb:devicesChanged', () => { if (!refreshing.value) refreshDevices() })
   offProcChanged = api.on('proc:changed', (serial) => refreshProcs(serial))   // 日志流中检测到进程启停即刷新该设备进程下拉

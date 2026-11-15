@@ -69,6 +69,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 }
 .win-ctl button:hover { background: #e9edf2; }
 .win-ctl .win-close:hover { background: var(--danger); color: #fff; }
+/* 置顶按钮激活态：主色底 + 白色图钉，与普通窗口控制区分开 */
+.win-ctl button.win-top.active { background: var(--primary); color: #fff; }
+.win-ctl button.win-top.active:hover { background: var(--primary-d); }
 
 .body { flex: 1; display: flex; overflow: hidden; }
 

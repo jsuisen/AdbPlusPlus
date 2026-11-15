@@ -38,7 +38,7 @@ import UninstallModal from './components/modals/UninstallModal.vue'
 import UpdateModal from './components/modals/UpdateModal.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg } = useConfig()
 const { parseLocal } = useApk()
@@ -124,7 +124,7 @@ onMounted(() => document.addEventListener('selectionchange', onSelectionChange))
 onBeforeUnmount(() => document.removeEventListener('selectionchange', onSelectionChange))
 const { addCmd, closeCmdOutput, cmdTextColor, onCmdArgsInput, onCmdColor, removeCmd, runCmd } = useActions()
 const { exportDeviceInfo, exportGetprop, fetchGetprop, manualRefresh, runBugreport, runDumpsys, toggleDetect } = useDeviceinfo()
-const { winClose, winMax, winMin } = useUi()
+const { winClose, winMax, winMin, winTop } = useUi()
 const { logLineStyle, openColorWin } = useColorrules()
 useApp()
 const { openUpdateDialog } = useUpdate()
@@ -144,6 +144,12 @@ const { openUpdateDialog } = useUpdate()
         <button @click="aboutOpen = true">关于</button>
       </div>
       <div class="win-ctl">
+        <button class="win-top" :class="{ active: alwaysOnTop }" @click="winTop" :title="alwaysOnTop ? '取消置顶' : '窗口置顶'" :aria-pressed="alwaysOnTop">
+          <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5.4 2.2h5.2l-.8 4 2 2.1v1.1H4.2V8.3l2-2.1-.8-4Z" />
+            <path d="M8 9.4v4.4" />
+          </svg>
+        </button>
         <button @click="winMin" title="最小化">–</button>
         <button @click="winMax" :title="maximized ? '还原' : '最大化'">{{ maximized ? '❐' : '▢' }}</button>
         <button class="win-close" @click="winClose" title="关闭">✕</button>

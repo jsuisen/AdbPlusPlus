@@ -1,6 +1,6 @@
 // Bootstrap：创建窗口、注册各模块 IPC。所有子进程调用收口在主进程。
 import { app, BrowserWindow, Menu, ipcMain } from 'electron'
-import { WINDOW_MINIMIZE, WINDOW_TOGGLE_MAX, WINDOW_CLOSE, WINDOW_IS_MAXIMIZED, WINDOW_ZOOM_IN, WINDOW_ZOOM_OUT, WINDOW_MAXIMIZE_STATE, APP_META, APP_CHECK_UPDATE, APP_UPDATE_AVAILABLE } from '../shared/ipc-channels.js'
+import { WINDOW_MINIMIZE, WINDOW_TOGGLE_MAX, WINDOW_CLOSE, WINDOW_IS_ALWAYS_ON_TOP, WINDOW_TOGGLE_ALWAYS_ON_TOP, WINDOW_IS_MAXIMIZED, WINDOW_ZOOM_IN, WINDOW_ZOOM_OUT, WINDOW_MAXIMIZE_STATE, APP_META, APP_CHECK_UPDATE, APP_UPDATE_AVAILABLE } from '../shared/ipc-channels.js'
 import { checkForUpdates } from './versioncheck.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -27,6 +27,7 @@ function createWindow() {
     height: 820,
     frame: false,        // 去掉原生标题栏，改用菜单栏内自定义窗口控制
     thickFrame: true,     // Windows：保留可拖拽改变窗口大小的边框
+    alwaysOnTop: false,   // 默认不置顶；每次启动都复位，由标题栏「置顶」按钮切换
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -52,7 +53,7 @@ function createWindow() {
   registerFontsIpc()   // 系统已安装字体列表（设置面板「日志字体」下拉用，零依赖读注册表）
   registerAppLogIpc()   // 程序日志运行时启停（设置页「程序日志路径」开关 / 目录）
 
-  // 自定义标题栏：窗口控制（最小化 / 最大化切换 / 关闭）
+  // 自定义标题栏：窗口控制（置顶切换 / 最小化 / 最大化切换 / 关闭）
   ipcMain.on(WINDOW_MINIMIZE, () => win.minimize())
   ipcMain.on(WINDOW_TOGGLE_MAX, () => {
     if (win.isMaximized()) win.unmaximize()
@@ -60,6 +61,13 @@ function createWindow() {
   })
   ipcMain.on(WINDOW_CLOSE, () => win.close())
   ipcMain.handle(WINDOW_IS_MAXIMIZED, () => win.isMaximized())
+  // 置顶：主进程读取窗口真实状态后翻转，返回实际结果供渲染层同步按钮显示。
+  // 不用渲染层传目标值，避免界面状态与窗口状态漂移时点一次不生效。
+  ipcMain.handle(WINDOW_IS_ALWAYS_ON_TOP, () => win.isAlwaysOnTop())
+  ipcMain.handle(WINDOW_TOGGLE_ALWAYS_ON_TOP, () => {
+    win.setAlwaysOnTop(!win.isAlwaysOnTop())
+    return win.isAlwaysOnTop()
+  })
   win.on('maximize', () => win.webContents.send(WINDOW_MAXIMIZE_STATE, true))
   win.on('unmaximize', () => win.webContents.send(WINDOW_MAXIMIZE_STATE, false))
 
