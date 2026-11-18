@@ -180,10 +180,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   line-height: 1.5; padding: 6px 8px; caret-color: transparent; outline: none;
 }
 .logview:focus, .logview:focus-visible { outline: none; }
-/* 隐藏日志区纵向滚动条：Windows Chromium 滚动条为占位式、内容可滚时永久常驻，视觉多余。
-   仅隐藏纵向（:vertical）；横向滚动条保留，超宽行仍可拖动查看。
-   滚轮 / Ctrl+上下逐行 / 方向键 / 自动滚动 / 「底部」按钮均不受影响。 */
-.logview::-webkit-scrollbar:vertical { width: 0; display: none; }
 /* 日志区点击光标：纯视觉闪烁竖条，不拦截事件、不影响输入/选中/右键 */
 .log-caret {
   position: absolute; width: 2px; height: 1.2em; background: var(--text);
@@ -258,11 +254,18 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .outdir-btn:hover { background: var(--primary-d); border-color: var(--primary-d); }
 
 /* 状态栏 */
+/* overflow:hidden 兜底：statusbar 有明确 height:24px（flex 的 min-height:auto 最小尺寸失效，
+   不会被内容撑高），内部超高元素会向下溢出并计入文档 scrollable overflow，
+   曾导致窗口最右侧出现一根从视口顶部开始的常驻文档级垂直滚动条（关闭按钮右侧） */
 .statusbar {
   height: 24px; display: flex; align-items: center; gap: 8px;
   padding: 0 12px; background: var(--panel); border-top: 1px solid var(--border);
   font-size: 12px; color: var(--muted);
+  overflow: hidden;
 }
+/* 状态栏按钮收紧到 24px 内（全局 button 规则 padding:5px 8px + 13px 字号实测高约 28.8px，
+   在 24px 状态栏内上下各溢出约 2.4px，是上述文档级滚动条的直接溢出源） */
+.statusbar button { height: 18px; padding: 0 8px; font-size: 11px; }
 .sb-sep { color: var(--border); }
 .sb-msg { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 
