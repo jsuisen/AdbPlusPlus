@@ -92,7 +92,11 @@ export function registerLogcatIpc(win) {
       const child = spawn(resolveTool('adb.exe'), args, { windowsHide: true })
       session.child = child
       let stderr = ''
-      child.stdout.on('data', (chunk) => ingest(session, chunk))
+      let stdoutDiagnostic = ''
+      child.stdout.on('data', (chunk) => {
+        stdoutDiagnostic = (stdoutDiagnostic + chunk.toString('utf8')).slice(-2000)
+        ingest(session, chunk)
+      })
       child.stderr.on('data', (d) => {
         const text = session.errDecoder.write(d)
         stderr = (stderr + text).slice(-2000)
@@ -104,7 +108,7 @@ export function registerLogcatIpc(win) {
       })
       child.on('close', () => {
         if (sessions.get(serial) !== session || session.child !== child) return
-        if (selectedBuffers.includes('crash') && /Unable to open log device '\/dev\/log\/crash': No such file or directory/.test(stderr)) {
+        if (selectedBuffers.includes('crash') && /Unable to open log device '\/dev\/log\/crash': No such file or directory/.test(stdoutDiagnostic + stderr)) {
           session.reader = createLineReader()
           session.errDecoder = new StringDecoder('utf8')
           const fallback = []
