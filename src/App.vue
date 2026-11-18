@@ -41,7 +41,7 @@ import ResultModal from './components/modals/ResultModal.vue'
 import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
@@ -254,12 +254,13 @@ const { openUpdateDialog } = useUpdate()
           </div>
           <div class="toolbar">
             <button :class="currentRunning ? 'danger' : 'primary'" @click="toggleLogcat">{{ currentRunning ? '停止' : '开始' }}</button>
-            <select v-model="levelFilter">
-              <option value="">级别</option>
-                <option value="V">V</option><option value="D">D</option>
-                <option value="I">I</option><option value="W">W</option>
-                <option value="E">E</option><option value="F">F</option>
-              </select>
+            <span class="toolbar-gap"></span>
+            <select v-model="levelFilter" class="level-select">
+              <option value="V">Verbose</option><option value="D">Debug</option>
+              <option value="I">Info</option><option value="W">Warn</option>
+              <option value="E">Error</option><option value="F">Assert</option>
+            </select>
+            <span class="toolbar-gap"></span>
             <label class="proc-chk" title="勾选后下拉按包名（去重）过滤，可一次抓取某 APK 的全部进程；不勾选则按完整进程名过滤单个进程">
               <input type="checkbox" v-model="procFilterByPkg" />按包名过滤
             </label>
@@ -269,6 +270,7 @@ const { openUpdateDialog } = useUpdate()
                 <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
               </select>
             </span>
+            <span class="toolbar-gap"></span>
             <span class="kwfilter-wrap tag-wrap">
               <span class="filter-history">
                 <button class="fh-btn" type="button" title="Tag 过滤历史：点选已保存的过滤词填入"
@@ -287,10 +289,12 @@ const { openUpdateDialog } = useUpdate()
                   </div>
                 </div>
               </span>
-              <input v-model="tagFilter" placeholder="Tag 过滤" @keydown.enter="commitFilterHistory('tag')" @change="commitFilterHistory('tag')" />
+              <input v-model="tagFilter" placeholder="Tag过滤" @keydown.enter="commitFilterHistory('tag')" @change="commitFilterHistory('tag')" />
               <button v-if="tagFilter" class="kw-clear" type="button" @click="clearTagFilter" title="清空 Tag 过滤">×</button>
             </span>
-            <label><input type="checkbox" v-model="regexFilter" /> Regex</label>
+            <label title="勾选后 Tag 过滤只匹配完全相等的 Tag（忽略大小写），不再匹配包含"><input type="checkbox" v-model="tagWholeWord" />全词匹配</label>
+            <span class="toolbar-gap"></span>
+            <label><input type="checkbox" v-model="regexFilter" />Regex</label>
             <span class="kwfilter-wrap">
               <span class="filter-history">
                 <button class="fh-btn" type="button" title="关键字过滤历史：点选已保存的过滤词填入"
@@ -313,6 +317,7 @@ const { openUpdateDialog } = useUpdate()
               <button v-if="textFilter" class="kw-clear" type="button" @click="clearKeywordFilter" title="清空关键字过滤">×</button>
             </span>
             <button @click="openQuickFilter" title="按 Tag 快速筛选：勾选要显示的 Tag，自动生成正则过滤">快筛</button>
+            <span class="toolbar-gap"></span>
             <button @click="exportLogs">导出</button>
             <button @click="browseLogDir" title="立即打开自动保存日志的目录（outDir）">浏览</button>
             <span v-if="currentLogErr" class="muted" style="color:var(--danger)">{{ currentLogErr }}</span>

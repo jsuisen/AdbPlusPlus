@@ -159,6 +159,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .toolbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 /* 工具栏按钮：收紧内边距（内边距），与上面 gap/margin 一起缩小外边距 */
 .toolbar button { padding: 3px 6px; }
+/* 工具栏控件间的竖直分隔符（原 1em 汉字空白 → 2px 竖线 + 左右各 3px 留白） */
+.toolbar-gap { display: inline-block; flex: 0 0 2px; width: 2px; height: 22px; margin: 0 2px; align-self: center; background: var(--border); }
+/* 级别下拉 / 包名进程下拉 / Tag 过滤输入框：统一字号 12px、内边距 2px 4px */
+.level-select, .proc-wrap select, .kwfilter-wrap.tag-wrap input { font-size: 12px; padding: 2px 4px; }
 /* 进程包名下拉 */
 .proc-wrap { display: inline-flex; align-items: center; gap: 4px; }
 /* 「底部」按钮激活态 */

@@ -24,7 +24,7 @@ export const runningMap = reactive({}) // serial -> 是否采集中
 export const logErrMap = reactive({})  // serial -> 错误信息
 export const procsMap = reactive({})   // serial -> 进程列表
 
-export const LOG_FILTER_DEFAULTS = () => ({ level: '', pkg: '', tag: '', regex: false, text: '', autoscroll: true, wrap: false, byPkg: false })
+export const LOG_FILTER_DEFAULTS = () => ({ level: 'D', pkg: '', tag: '', tagWhole: false, regex: false, text: '', autoscroll: true, wrap: false, byPkg: false })
 
 export const _logFilter = reactive({})   // serial -> 过滤状态对象
 
@@ -36,13 +36,19 @@ export function ensureLogFilter(serial) {
 
 // 读时回落默认（不创建，避免 computed 副作用）；写时按当前查看设备落地
 export const levelFilter = computed({
-  get: () => (activeLogSerial.value && _logFilter[activeLogSerial.value] ? _logFilter[activeLogSerial.value].level : ''),
+  get: () => (activeLogSerial.value && _logFilter[activeLogSerial.value] ? _logFilter[activeLogSerial.value].level : 'D'),
   set: (v) => { const s = activeLogSerial.value; if (s) ensureLogFilter(s).level = v }
 })
 
 export const tagFilter = computed({
   get: () => (activeLogSerial.value && _logFilter[activeLogSerial.value] ? _logFilter[activeLogSerial.value].tag : ''),
   set: (v) => { const s = activeLogSerial.value; if (s) ensureLogFilter(s).tag = v }
+})
+
+// 「全词匹配」：勾选后 Tag 过滤从「包含」改为「完全等于」（仍忽略大小写）
+export const tagWholeWord = computed({
+  get: () => (activeLogSerial.value && _logFilter[activeLogSerial.value] ? !!_logFilter[activeLogSerial.value].tagWhole : false),
+  set: (v) => { const s = activeLogSerial.value; if (s) ensureLogFilter(s).tagWhole = !!v }
 })
 
 export const textFilter = computed({
@@ -116,7 +122,10 @@ export const displayLogs = computed(() => {
   const txt = textFilter.value.trim()
   let arr = logsMap[activeLogSerial.value] || []
   if (lvl) arr = arr.filter((l) => (LEVEL_PRI[l.level] ?? 0) >= LEVEL_PRI[lvl])
-  if (tag) arr = arr.filter((l) => (l.tag || '').toLowerCase().includes(tag))
+  if (tag) arr = arr.filter((l) => {
+    const lt = (l.tag || '').toLowerCase()
+    return tagWholeWord.value ? lt === tag : lt.includes(tag)
+  })
   if (txt) {
     if (regexFilter.value) {
       // 同时匹配 消息内容 与 标签（标签作为独立字段），以便「快筛」按 Tag 生成的正则能正确过滤
