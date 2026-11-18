@@ -349,6 +349,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .cf-row { display: flex; align-items: center; gap: 10px; }
 .cf-row > span { width: 40px; font-size: 13px; }
 .cf-row input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
+.cf-row select { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: #fff; color: var(--text); font-size: 13px; }
+.cf-row select:disabled { color: var(--muted); background: #f7f8fa; }
+.connect-progress { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: #f7f8fa; color: var(--text); font-size: 13px; }
+.connect-progress-tip { color: var(--muted); font-size: 12px; }
+.connect-timeout { padding: 8px 10px; border: 1px solid #f3c2bd; border-radius: 6px; background: #fdeaea; color: #b42318; font-size: 13px; }
 .apkinfo { font-family: monospace; font-size: 12px; white-space: pre-wrap; margin: 0; }
 
 /* Toast */

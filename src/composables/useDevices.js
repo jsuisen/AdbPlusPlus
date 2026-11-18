@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, colorSessionMap, connectAlias, connectIp, connectOpen, connectPort, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
+import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, cfg, colorSessionMap, connectAlias, connectHistorySel, connectIp, connectOpen, connectPort, connecting, connectTimedOut, CONNECT_TIMEOUT_MS, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
 import { ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
@@ -191,37 +191,136 @@ function openConnectModal(prefill) {
     connectPort.value = prefill.port || '5555'
     connectAlias.value = prefill.alias || ''
   } else {
-    connectIp.value = ''
-    connectPort.value = '5555'
+    // 常规入口：回填上次连接过的 IP/端口；别名不跨连接继承，避免误覆盖新设备
+    connectIp.value = cfg.value.lastConnectIp || ''
+    connectPort.value = cfg.value.lastConnectPort || '5555'
     connectAlias.value = ''
   }
+  connectHistorySel.value = ''
+  connecting.value = false
+  connectTimedOut.value = false
   connectOpen.value = true
 }
 
+// 「历史」下拉选中项：按 ip:port 找回记录回填三字段。回填后立即清空选中值，
+// 保证再次选择同一历史项仍能触发 change（select 值不变时不会派发 change）。
+function applyConnectHistory() {
+  const key = connectHistorySel.value
+  if (!key) return
+  const hist = Array.isArray(cfg.value.connectHistory) ? cfg.value.connectHistory : []
+  const hit = hist.find((h) => `${h.ip}:${h.port}` === key)
+  connectHistorySel.value = ''
+  if (!hit) return
+  connectIp.value = hit.ip || ''
+  connectPort.value = hit.port || '5555'
+  connectAlias.value = hit.alias || ''
+  connectTimedOut.value = false
+}
+
+// 当前连接尝试的私有句柄（不进 state，无 UI 绑定需求）：
+// runId 作主进程可取消子进程的键；cancelled 用于抑制强杀后 AbortError 的误报。
+let activeConnect = null
+
+// 强杀底层 adb 子进程 + 显式 disconnect。
+// adb 连接状态由 adb server 维护，仅杀 CLI 进程不会断连，必须再发 disconnect 清理。
+async function abortConnect(runId, target, silent) {
+  if (runId) {
+    try { await api.invoke('adb:runCancel', runId) } catch {}
+  }
+  if (target) {
+    let t = null
+    try {
+      await Promise.race([
+        api.invoke('adb:run', ['disconnect', target]),
+        new Promise((_, rej) => { t = setTimeout(() => rej(new Error('DISCONNECT_TIMEOUT')), 3000) })
+      ])
+    } catch {} finally { if (t) clearTimeout(t) }
+  }
+  if (!silent) toast('已取消连接：' + target)
+}
+
+// 用户点「取消」：立即结束等待并强杀本次 adb connect
+async function cancelConnect() {
+  const attempt = activeConnect
+  if (!attempt) { connecting.value = false; return }
+  attempt.cancelled = true
+  activeConnect = null   // 先清，防止重复点击触发两次强杀
+  await abortConnect(attempt.runId, attempt.target, false)
+  connecting.value = false
+  connectTimedOut.value = false
+}
+
 async function confirmConnect() {
+  if (connecting.value) return   // 连接中重复点确认直接忽略
   const ip = connectIp.value.trim()
   const port = connectPort.value.trim() || '5555'
   if (!ip) { toast('请输入 IP'); return }
-  connectOpen.value = false
+  const target = `${ip}:${port}`
+
+  // 上次值：点确认即记录（含失败尝试），与「仅成功才入历史」分开
+  cfg.value.lastConnectIp = ip
+  cfg.value.lastConnectPort = port
+  saveCfg()
+
+  // 连接期间保持弹窗打开，让用户看到「连接中…」；成功才关，失败/超时/取消留在弹窗里改
+  connectTimedOut.value = false
+  connecting.value = true
+  const attempt = {
+    target,
+    cancelled: false,
+    runId: 'connect-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)
+  }
+  activeConnect = attempt
+  let timer = null
+  const watchdog = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('CONNECT_TIMEOUT')), CONNECT_TIMEOUT_MS)
+  })
   try {
-    // 命令本身即 adb 参数，不再额外拼 "adb" 前缀
-    const r = await api.invoke('adb:run', ['connect', `${ip}:${port}`])
+    // 第三参数 runId：主进程据此登记可取消的 adb 子进程；其它 adb:run 调用不传，行为不变
+    const r = await Promise.race([
+      api.invoke('adb:run', ['connect', target], attempt.runId),
+      watchdog
+    ])
+    if (attempt.cancelled) return   // 已强杀，忽略迟到的成功响应
     const msg = (r.code === 0 ? '已连接：' : '连接失败：') + (r.out || r.err || r.code)
     toast(msg)
-    // 连接成功：把连接信息存为快捷命令（命令名为完整 adb 命令，分组 adb）
     if (r.code === 0) {
-      const name = `adb connect ${ip}:${port}`
-      const args = ['connect', `${ip}:${port}`]
+      // 历史：按 ip:port 去重置顶；新别名非空则覆盖，未填则保留已有别名
+      let hist = cfg.value.connectHistory
+      if (!Array.isArray(hist)) hist = cfg.value.connectHistory = []
+      const idx = hist.findIndex((h) => `${h.ip}:${h.port}` === target)
+      if (idx >= 0) {
+        const [old] = hist.splice(idx, 1)
+        hist.unshift({ ip, port, alias: connectAlias.value.trim() || old.alias || '' })
+      } else {
+        hist.unshift({ ip, port, alias: connectAlias.value.trim() })
+      }
+      // 快捷命令：保持原有行为，避免重复
+      const name = `adb connect ${target}`
+      const args = ['connect', target]
       if (!quickCommands.value.some((c) => c.name === name)) {
         quickCommands.value.push({ name, args, group: 'adb' })
-        saveCfg()
       }
-      // 别名非空：关联到该设备（serial 即 ip:port），用作侧边栏与设备信息显示名
+      // 别名写入内存字典（serial 即 ip:port），用作侧边栏与设备信息显示名
       const alias = connectAlias.value.trim()
-      if (alias) deviceAlias[`${ip}:${port}`] = alias
+      if (alias) deviceAlias[target] = alias
+      saveCfg()
+      connectOpen.value = false
     }
   } catch (e) {
-    toast('连接异常：' + e.message)
+    if (attempt.cancelled) {
+      // 用户主动取消：异常由强杀引起，静默（提示已在 cancelConnect 给过）
+    } else if (e && e.message === 'CONNECT_TIMEOUT') {
+      await abortConnect(attempt.runId, target, true)   // 超时也强杀，避免挂死的 adb 残留
+      connectTimedOut.value = true
+      toast('连接超时（' + (CONNECT_TIMEOUT_MS / 1000) + ' 秒），请检查设备 IP/端口与网络')
+    } else {
+      toast('连接异常：' + (e && e.message ? e.message : e))
+    }
+  } finally {
+    if (timer) clearTimeout(timer)
+    // 若已取消且用户又发起新连接，不能让旧请求把新请求的 connecting 清掉
+    if (activeConnect === attempt) { activeConnect = null; connecting.value = false }
   }
 }
 
@@ -283,6 +382,6 @@ async function loadDeviceFromFile() {
 
 export function useDevices() {
 
-  return { adbDevices, adbDisconnectAll, adbKillServer, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
 }
-export { adbDevices, adbDisconnectAll, adbKillServer, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }

@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
 
 function setTab(name) { settingsTab.value = name }
@@ -208,6 +208,16 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   // 过滤历史形状归一化：旧配置缺字段 → 空列表；异常形状 → 回落空列表，避免下拉渲染时抛错。
   cfg.value.filterHistory = normalizeFilterHistory(c.filterHistory)
   cfg.value.filterHistoryMax = normalizeFilterHistoryMax(c.filterHistoryMax)
+  // 连接历史形状归一化：旧配置缺字段 → 空数组；异常形状 → 空数组，避免下拉渲染时抛错。
+  // 同时按历史里的别名重建 deviceAlias：别名此前只在内存，现随配置跨重启恢复。
+  const hist = Array.isArray(c.connectHistory) ? c.connectHistory : []
+  cfg.value.connectHistory = hist.filter((h) => h && typeof h === 'object' && h.ip)
+    .map((h) => ({ ip: String(h.ip), port: String(h.port || '5555'), alias: String(h.alias || '') }))
+  if (Array.isArray(cfg.value.connectHistory)) {
+    for (const h of cfg.value.connectHistory) {
+      if (h.alias) deviceAlias[`${h.ip}:${h.port}`] = h.alias
+    }
+  }
   quickCommands.value = c.quickCommands || []
   keyButtons.value = c.keyButtons || []
   textButtons.value = c.textButtons || []
@@ -275,7 +285,7 @@ async function importSettings() {
     showResult('导入设置', '配置文件格式不正确（应为 JSON 对象）\n文件：' + p, false); return
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
     showResult('导入设置', '该文件不含任何 AdbPlusPlus 配置项，已取消导入\n文件：' + p, false); return
   }

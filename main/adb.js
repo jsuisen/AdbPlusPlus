@@ -1,6 +1,6 @@
 // adb 通用能力：设备列表、版本、任意 adb 子命令（参数数组）。
 import path from 'node:path'
-import { ADB_DEVICES, ADB_VERSION, ADB_PS, ADB_RUN, ADB_APP_START, ADB_APP_STOP, ADB_APP_RESTART, ADB_APP_CLEAR, ADB_APP_CLEAR_RESTART, ADB_APP_UNINSTALL, ADB_INPUT_TEXT, ADB_INPUT_KEY, ADB_INPUT_TAP, ADB_INPUT_SWIPE, ADB_INSTALL, ADB_CLEAR_DEVICE_CACHE, ADB_DISCONNECT, ADB_AM_START, ADB_START_SERVICE, ADB_STOP_SERVICE, ADB_BROADCAST, ADB_GRANT, ADB_REVOKE, ADB_PUSH, ADB_PULL, ADB_REBOOT, ADB_ROOT, ADB_UNROOT, ADB_REMOUNT, ADB_MONKEY, ADB_DUMPSYS, ADB_DEVICE_INFO, ADB_SERVICES, ADB_ACTIVITIES, ADB_GETPROP, ADB_PS_ALL, ADB_THREADS, ADB_PS_STAT, ADB_THREAD_STAT, ADB_BUGREPORT } from '../shared/ipc-channels.js'
+import { ADB_DEVICES, ADB_VERSION, ADB_PS, ADB_RUN, ADB_RUN_CANCEL, ADB_APP_START, ADB_APP_STOP, ADB_APP_RESTART, ADB_APP_CLEAR, ADB_APP_CLEAR_RESTART, ADB_APP_UNINSTALL, ADB_INPUT_TEXT, ADB_INPUT_KEY, ADB_INPUT_TAP, ADB_INPUT_SWIPE, ADB_INSTALL, ADB_CLEAR_DEVICE_CACHE, ADB_DISCONNECT, ADB_AM_START, ADB_START_SERVICE, ADB_STOP_SERVICE, ADB_BROADCAST, ADB_GRANT, ADB_REVOKE, ADB_PUSH, ADB_PULL, ADB_REBOOT, ADB_ROOT, ADB_UNROOT, ADB_REMOUNT, ADB_MONKEY, ADB_DUMPSYS, ADB_DEVICE_INFO, ADB_SERVICES, ADB_ACTIVITIES, ADB_GETPROP, ADB_PS_ALL, ADB_THREADS, ADB_PS_STAT, ADB_THREAD_STAT, ADB_BUGREPORT } from '../shared/ipc-channels.js'
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ipcMain } from 'electron'
@@ -16,6 +16,10 @@ const THREAD_STAT_SCRIPT = fs.readFileSync(path.join(__dirname, 'device-scripts/
 const EXTRA_FLAG = { es: '--es', ei: '--ei', ez: '--ez', ef: '--ef', el: '--el' }
 // 设备相关命令统一前缀 -s serial（多设备定向，绝不拼本机 shell）
 const devArgs = (serial, rest) => ['-s', serial, ...rest]
+
+// 可取消的 adb:run：runId -> AbortController。只登记传了 runId 的调用（目前只有连接设备），
+// 其它调用保持原样。runId 仅作 Map 键，不进任何命令参数，渲染层无法借此注入。
+const runControllers = new Map()
 
 // adbd 收到 adb shell 的参数后会拼成命令串再交给 /system/bin/sh -c，
 // 所以「本机参数数组 spawn」不等于设备端安全。用户可控字段统一经 ./adb-safety.js 收口。
@@ -169,12 +173,31 @@ export function registerAdbIpc() {
     }
     return procs
   })
-  // 通用命令：args 必须是字符串数组，主进程只转交，绝不拼 shell
-  ipcMain.handle(ADB_RUN, async (_e, args) => {
+  // 通用命令：args 必须是字符串数组，主进程只转交，绝不拼 shell。
+  // 第三参数 runId 可选：传入后登记 AbortController，使渲染层能强杀挂起的 adb 子进程。
+  ipcMain.handle(ADB_RUN, async (_e, args, runId) => {
     if (!Array.isArray(args) || !args.every((a) => typeof a === 'string')) {
       throw new Error('args 必须是字符串数组')
     }
-    return run('adb.exe', args)
+    if (typeof runId !== 'string' || !runId || runId.length > 128) return run('adb.exe', args)
+    const ctrl = new AbortController()
+    runControllers.set(runId, ctrl)
+    try {
+      // spawn 的 signal 选项在 abort 时自动杀掉该子进程（Node 内部按平台处理），不碰其它 adb 进程
+      return await run('adb.exe', args, { signal: ctrl.signal })
+    } finally {
+      runControllers.delete(runId)
+    }
+  })
+
+  // 强行断开：按 runId 找到并 abort 对应 adb 子进程。未找到返回 false（已自然结束或已取消）
+  ipcMain.handle(ADB_RUN_CANCEL, (_e, runId) => {
+    if (typeof runId !== 'string' || !runId) return false
+    const ctrl = runControllers.get(runId)
+    if (!ctrl) return false
+    runControllers.delete(runId)
+    ctrl.abort()
+    return true
   })
 
   // ---- 应用生命周期（目标包由渲染进程传入，绝不拼 shell） ----

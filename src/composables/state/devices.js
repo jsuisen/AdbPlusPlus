@@ -86,6 +86,15 @@ export const connectPort = ref('5555')
 // 连接弹窗的别名输入（可选）；非空且连接成功则作为该设备显示名
 export const connectAlias = ref('')
 
+// 连接弹窗「历史」下拉当前选中项，值为 `${ip}:${port}`（唯一键），选中并回填后立即清空以支持重复选择同一项
+export const connectHistorySel = ref('')
+
+// adb connect 请求期间：保持弹窗打开并展示进度；超时后置 connectTimedOut 给明确提示
+export const connecting = ref(false)
+export const connectTimedOut = ref(false)
+// adb connect 正常 1~3 秒返回；挂起时不能让渲染层无限 await。渲染文案与此共用同一常量。
+export const CONNECT_TIMEOUT_MS = 15000
+
 // 设备别名：serial->别名（仅当前会话，不持久化）；连接成功或右键「重命名」时写入
 export const deviceAlias = reactive({})
 
