@@ -123,7 +123,9 @@ export const displayLogs = computed(() => {
   let arr = logsMap[activeLogSerial.value] || []
   if (lvl) arr = arr.filter((l) => (LEVEL_PRI[l.level] ?? 0) >= LEVEL_PRI[lvl])
   if (tag) arr = arr.filter((l) => {
-    const lt = (l.tag || '').toLowerCase()
+    // logcat threadtime 会把 Tag 左对齐填充空格（解析出的 tag 形如 "ps      "），parseLine 未 trim；
+    // 输入侧 tagFilter 已 trim，这里必须同步 trim，否则「全词匹配」严格相等 (lt === tag) 恒不命中。
+    const lt = (l.tag || '').trim().toLowerCase()
     return tagWholeWord.value ? lt === tag : lt.includes(tag)
   })
   if (txt) {
