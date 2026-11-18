@@ -79,7 +79,6 @@ export function registerLogcatIpc(win) {
     const buffers = (opts.buffers && opts.buffers.length)
       ? opts.buffers.flatMap((b) => ['-b', b])
       : ['-b', 'main', '-b', 'system', '-b', 'crash']
-    const args = [...serialArgs, 'logcat', '-v', 'threadtime', ...buffers]
     const session = {
       serial, child: null,
       reader: createLineReader(),
@@ -88,18 +87,41 @@ export function registerLogcatIpc(win) {
       batchTimer: null, procChangeTimer: null
     }
     sessions.set(serial, session)
-    session.child = spawn(resolveTool('adb.exe'), args, { windowsHide: true })
-    session.child.stdout.on('data', (chunk) => ingest(session, chunk))
-    session.child.stderr.on('data', (d) => {
-      const text = session.errDecoder.write(d)
-      if (text && winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_STDERR, { serial, text })
-    })
-    session.child.on('error', (e) => {
-      if (winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_ERROR, { serial, text: String(e) })
-    })
-    session.child.on('close', () => {
-      if (winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_CLOSED, serial)
-    })
+    const start = (selectedBuffers) => {
+      const args = [...serialArgs, 'logcat', '-v', 'threadtime', ...selectedBuffers]
+      const child = spawn(resolveTool('adb.exe'), args, { windowsHide: true })
+      session.child = child
+      let stderr = ''
+      child.stdout.on('data', (chunk) => ingest(session, chunk))
+      child.stderr.on('data', (d) => {
+        const text = session.errDecoder.write(d)
+        stderr = (stderr + text).slice(-2000)
+      })
+      child.on('error', (e) => {
+        if (sessions.get(serial) === session && winRef && !winRef.isDestroyed()) {
+          winRef.webContents.send(LOGCAT_ERROR, { serial, text: String(e) })
+        }
+      })
+      child.on('close', () => {
+        if (sessions.get(serial) !== session || session.child !== child) return
+        if (selectedBuffers.includes('crash') && /Unable to open log device '\/dev\/log\/crash': No such file or directory/.test(stderr)) {
+          session.reader = createLineReader()
+          session.errDecoder = new StringDecoder('utf8')
+          const fallback = []
+          for (let i = 0; i < selectedBuffers.length; i += 2) {
+            if (selectedBuffers[i + 1] !== 'crash') fallback.push(selectedBuffers[i], selectedBuffers[i + 1])
+          }
+          start(fallback)
+          return
+        }
+        sessions.delete(serial)
+        if (winRef && !winRef.isDestroyed()) {
+          if (stderr) winRef.webContents.send(LOGCAT_STDERR, { serial, text: stderr })
+          winRef.webContents.send(LOGCAT_CLOSED, serial)
+        }
+      })
+    }
+    start(buffers)
     if (winRef && !winRef.isDestroyed()) winRef.webContents.send(LOGCAT_STARTED, serial)
   })
 
