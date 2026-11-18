@@ -1,6 +1,6 @@
 {
   "name": "adb-enhance-tool",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "ADB++：类 AS Logcat / 日志导出 / 截图录屏 / 快捷命令（Electron 37 + Vue 3，仅 Windows）",
   "type": "module",
