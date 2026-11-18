@@ -187,11 +187,11 @@ const { openUpdateDialog } = useUpdate()
         <div class="side-scroll">
           <div class="dev-mgmt">
             <div class="dev-head">
-              <span>设备管理</span>
               <div class="dev-head-btns">
                 <button @click="expandAll">全部展开</button>
                 <button @click="collapseAll">全部收起</button>
               </div>
+              <span>设备管理</span>
             </div>
             <div class="dev-list">
               <div v-if="!devices.length" class="dev-empty muted">（无设备）</div>
@@ -201,7 +201,7 @@ const { openUpdateDialog } = useUpdate()
                   <span class="dev-status" :class="{ off: d.status !== 'device' }">{{ d.status }}</span>
                 </div>
                 <div class="dev-acts" @click.stop>
-                  <button class="dev-disc" title="断开设备" @click="disconnectDevice(d.serial)">×</button>
+                  <button class="dev-disc" title="断开设备" @click="disconnectDevice(d.serial)">关闭</button>
                 </div>
               </div>
             </div>
@@ -219,6 +219,7 @@ const { openUpdateDialog } = useUpdate()
                     primary: (it.act === 'recordStart' && !recording) || (it.act === 'screenshotTimer' && !screenshotting),
                     danger: (it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting) || it.danger
                   }]"
+                    :data-icon="it.icon || ''"
                     :disabled="(!selectedSerial && !it.server) || (it.needProc && !selectedProc) || (it.needPkg && !appPkg)"
                     @click="runAction(it)">
                     {{ (it.act === 'recordStart' && recording) ? '停止录屏' : (it.act === 'screenshotTimer' && screenshotting) ? '停止截图' : (it.act === 'captureToggle' && capturing[selectedSerial]) ? '停止抓包' : it.label }}

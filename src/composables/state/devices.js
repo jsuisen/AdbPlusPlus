@@ -19,60 +19,61 @@ export const appPkg = ref('')
 
 export const groupOpen = reactive({ app: true, pkgops: true, media: true, netcap: true, input: true, perm: true, file: true, other: true })
 
+// 每个功能项的 icon 用于侧边栏按钮文字左侧的语义 emoji（data-icon + CSS ::before）
 export const devGroups = [
   { key: 'pkgops', title: '包名操作', items: [
     { kind: 'pkg' },
-    { label: '加载包名', act: 'loadPkg', needProc: true },
-    { label: '启动应用', act: 'appStart', needPkg: true },
-    { label: '停止应用', act: 'appStop', needPkg: true },
-    { label: '停止进程', act: 'procKill', needPkg: true },
-    { label: '重启应用', act: 'appRestart', needPkg: true },
-    { label: '清除缓存', act: 'appClear', needPkg: true },
-    { label: '清除缓存并重启', act: 'appClearRestart', needPkg: true },
-    { label: '卸载', act: 'appUninstall', needPkg: true, danger: true },
-    { label: 'Monkey测试', act: 'monkey', needPkg: true }
+    { label: '加载包名', act: 'loadPkg', needProc: true, icon: '🔍' },
+    { label: '启动应用', act: 'appStart', needPkg: true, icon: '▶️' },
+    { label: '停止应用', act: 'appStop', needPkg: true, icon: '⏹️' },
+    { label: '停止进程', act: 'procKill', needPkg: true, icon: '🛑' },
+    { label: '重启应用', act: 'appRestart', needPkg: true, icon: '🔄' },
+    { label: '清除缓存', act: 'appClear', needPkg: true, icon: '🧹' },
+    { label: '清除缓存并重启', act: 'appClearRestart', needPkg: true, icon: '♻️' },
+    { label: '卸载', act: 'appUninstall', needPkg: true, danger: true, icon: '🗑️' },
+    { label: 'Monkey测试', act: 'monkey', needPkg: true, icon: '🐒' }
   ]},
   { key: 'app', title: '应用操作', items: [
-    { label: '启动Activity', act: 'actActivity' },
-    { label: '启动Service', act: 'actStartService' },
-    { label: '停止Service', act: 'actStopService' },
-    { label: '发送广播', act: 'actBroadcast' }
+    { label: '启动Activity', act: 'actActivity', icon: '🪟' },
+    { label: '启动Service', act: 'actStartService', icon: '⚙️' },
+    { label: '停止Service', act: 'actStopService', icon: '⛔' },
+    { label: '发送广播', act: 'actBroadcast', icon: '📢' }
   ]},
   { key: 'media', title: '媒体操作', items: [
-    { label: '截图', act: 'screenshot' },
-    { label: '截图到路径', act: 'screenshotToPath' },
-    { label: '开始截图', act: 'screenshotTimer' },
-    { label: '开始录屏', act: 'recordStart' }
+    { label: '截图', act: 'screenshot', icon: '📷' },
+    { label: '截图到路径', act: 'screenshotToPath', icon: '💾' },
+    { label: '开始截图', act: 'screenshotTimer', icon: '📸' },
+    { label: '开始录屏', act: 'recordStart', icon: '🎥' }
   ]},
   { key: 'netcap', title: '网络抓包', items: [
-    { label: '开始抓包', act: 'captureToggle' },
-    { label: '抓包管理', act: 'captureManager' }
+    { label: '开始抓包', act: 'captureToggle', icon: '📡' },
+    { label: '抓包管理', act: 'captureManager', icon: '📋' }
   ]},
   { key: 'input', title: '输入操作', items: [
-    { label: '输入文本', act: 'inputText' },
-    { label: '模拟按键', act: 'inputKey' },
-    { label: '模拟点击', act: 'inputTap' },
-    { label: '模拟滑动', act: 'inputSwipe' }
+    { label: '输入文本', act: 'inputText', icon: '✏️' },
+    { label: '模拟按键', act: 'inputKey', icon: '⌨️' },
+    { label: '模拟点击', act: 'inputTap', icon: '👆' },
+    { label: '模拟滑动', act: 'inputSwipe', icon: '👉' }
   ]},
   { key: 'perm', title: '权限操作', items: [
-    { label: '授予权限(Beta)', act: 'grant' },
-    { label: '撤销权限(Beta)', act: 'revoke', danger: true }
+    { label: '授予权限(Beta)', act: 'grant', icon: '✅' },
+    { label: '撤销权限(Beta)', act: 'revoke', danger: true, icon: '❌' }
   ]},
   { key: 'file', title: '文件操作', items: [
-    { label: '推送文件', act: 'pushFile' },
-    { label: '拉取文件', act: 'pullFile' }
+    { label: '推送文件', act: 'pushFile', icon: '⬆️' },
+    { label: '拉取文件', act: 'pullFile', icon: '⬇️' }
   ]},
   { key: 'other', title: '设备操作', items: [
-    { label: '安装APK', act: 'installApk' },
-    { label: '解析已装APK', act: 'parseInstalled' },
-    { label: '清除设备缓存(Beta)', act: 'clearDeviceCache' },
-    { label: '重启设备', act: 'reboot', danger: true },
-    { label: 'root', act: 'root' },
-    { label: 'unroot', act: 'unroot' },
-    { label: 'remount', act: 'remount' },
-    { label: 'adb devices', act: 'adbDevices', server: true },
-    { label: 'adb disconnect', act: 'adbDisconnectAll', server: true },
-    { label: 'adb kill-server', act: 'adbKillServer', server: true, danger: true }
+    { label: '安装APK', act: 'installApk', icon: '📦' },
+    { label: '解析已装APK', act: 'parseInstalled', icon: '📱' },
+    { label: '清除设备缓存(Beta)', act: 'clearDeviceCache', icon: '🧽' },
+    { label: '重启设备', act: 'reboot', danger: true, icon: '🔁' },
+    { label: 'root', act: 'root', icon: '🔑' },
+    { label: 'unroot', act: 'unroot', icon: '🔒' },
+    { label: 'remount', act: 'remount', icon: '💿' },
+    { label: 'adb devices', act: 'adbDevices', server: true, icon: '🖥️' },
+    { label: 'adb disconnect', act: 'adbDisconnectAll', server: true, icon: '🔌' },
+    { label: 'adb kill-server', act: 'adbKillServer', server: true, danger: true, icon: '💀' }
   ]}
 ]
 

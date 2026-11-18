@@ -87,16 +87,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 侧边栏 */
 .sidebar {
-  width: 248px; flex: 0 0 248px; background: var(--panel);
+  width: 208px; flex: 0 0 208px; background: var(--panel);
   border-right: 1px solid var(--border); overflow: hidden;
 }
 .sidebar.collapsed { width: 0; flex-basis: 0; border-right: none; }
-.side-scroll { width: 248px; height: 100%; overflow: auto; padding: 10px; }
+/* padding-right 收紧到 2px：让垂直滚动条尽可能紧贴右侧内容元素 */
+.side-scroll { width: 208px; height: 100%; overflow: auto; padding: 10px 2px 10px 8px; }
 
-.dev-mgmt { border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
-.dev-head { font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; }
+.dev-mgmt { padding: 8px; }
+.dev-head { font-weight: 600; margin-bottom: 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .dev-head-btns { display: flex; gap: 4px; }
-.dev-head-btns button { font-size: 11px; padding: 2px 6px; font-weight: 400; }
+.dev-head-btns button { font-size: 12px; padding: 2px 6px; font-weight: 400; }
 .dev-row { display: flex; gap: 6px; margin-bottom: 6px; }
 .dev-row select { flex: 1; min-width: 0; }
 .pkg-row { display: block; font-size: 12px; color: var(--muted); margin-bottom: 8px; grid-column: 1 / -1; }
@@ -106,19 +107,20 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* 设备列表（多设备并行） */
 .dev-add { width: 100%; margin-bottom: 6px; }
 .dev-list { max-height: 210px; overflow: auto; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 8px; }
-.dev-item { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 6px; border-bottom: 1px solid var(--border); cursor: pointer; }
+.dev-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 5px 6px; border-bottom: 1px solid var(--border); cursor: pointer; }
 .dev-item:last-child { border-bottom: none; }
 .dev-item.active { background: #eaf1fe; }
-.dev-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.dev-meta { display: flex; flex-direction: column; min-width: 0; width: 100%; }
 .dev-serial { font-size: 12px; font-family: "Cascadia Code", Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dev-status { font-size: 11px; color: var(--muted); }
 .dev-status.off { color: var(--danger); }
 .dev-acts { display: flex; gap: 4px; }
-.dev-acts button { width: 26px; height: 24px; padding: 0; border-radius: 5px; font-size: 13px; line-height: 1; }
+/* 关闭按钮与「全部展开/收起」同款：字号 12px、padding 2px 6px、常规字重 */
+.dev-acts button { font-size: 12px; padding: 2px 6px; font-weight: 400; }
 .dev-log { color: var(--muted); border: 1px solid var(--border); background: #fff; }
 .dev-log.on { color: #fff; background: var(--primary); border-color: var(--primary); }
-.dev-disc { color: var(--danger); border: 1px solid var(--border); background: #fff; }
-.dev-disc:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+.dev-disc { color: var(--text); border: 1px solid var(--border); background: #fff; }
+.dev-disc:hover { background: #f2f3f5; }
 .dev-empty { padding: 8px; text-align: center; }
 
 /* 日志 tab 栏（多设备并行） */
@@ -130,10 +132,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .logtab.active .tab-dot { background: #fff; }
 
 .sgroup { margin-bottom: 6px; }
-.sg-head { cursor: pointer; font-weight: 600; font-size: 12px; padding: 4px 2px; user-select: none; }
+.sg-head { cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 2px; user-select: none; }
 .sg-head .caret { display: inline-block; width: 14px; }
-.sg-body { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 2px 0 4px; }
-.sbtn { font-size: 12px; padding: 5px 4px; }
+.sg-body { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 2px 0 4px; }
+.sbtn { font-size: 12px; padding: 2px 6px; text-align: left; }
+.sbtn::before { content: '⚙️'; margin-right: 5px; }
 .sbtn.danger { color: #fff; background: var(--danger); border-color: var(--danger); }
 
 /* 功能区 */
