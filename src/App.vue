@@ -41,12 +41,27 @@ import ResultModal from './components/modals/ResultModal.vue'
 import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, textFilter, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
-const { saveCfg } = useConfig()
+const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
 
 const { clearKeywordFilter, clearLogs, browseLogDir, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onLogWheel, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
+
+// 过滤框「历史」下拉：同一时刻只展开一个；点选直接写入对应过滤条件的 computed setter。
+function toggleFilterHistoryMenu(kind) {
+  filterHistoryOpen.value = filterHistoryOpen.value === kind ? '' : kind
+}
+function pickFilterHistory(kind, h) {
+  if (kind === 'tag') tagFilter.value = h.text
+  else textFilter.value = h.text
+  filterHistoryOpen.value = ''
+}
+// 回车 / 失焦（值有变化）时提交当前过滤文本；空文本不入库。
+function commitFilterHistory(kind) {
+  addFilterHistory(kind, kind === 'tag' ? tagFilter.value : textFilter.value)
+}
+
 // 日志区点击光标：纯视觉闪烁光标，落在点击处；同时放置一个真实折叠选区，
 // 使浏览器原生 Shift+方向键 能从该点扩展文本选区（跨行/换行均有效）
 const logCaret = reactive({ visible: false, x: 0, y: 0 })
@@ -254,12 +269,46 @@ const { openUpdateDialog } = useUpdate()
               </select>
             </span>
             <span class="kwfilter-wrap tag-wrap">
-              <input v-model="tagFilter" placeholder="Tag 过滤" />
+              <span class="filter-history">
+                <button class="fh-btn" type="button" title="Tag 过滤历史：点选已保存的过滤词填入"
+                        @click="toggleFilterHistoryMenu('tag')">
+                  <svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor" /></svg>
+                </button>
+                <div v-if="filterHistoryOpen === 'tag'" class="fh-menu">
+                  <div class="fh-menu-head">Tag 历史<span class="fh-menu-tip">点选填入</span></div>
+                  <div v-if="!tagHistory.length" class="fh-empty">暂无历史</div>
+                  <div v-for="h in tagHistory" :key="h.text" class="fh-item" :class="{ locked: h.locked }"
+                       :title="h.locked ? '已锁定：点选填入' : '点选填入'" @click="pickFilterHistory('tag', h)">
+                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">锁</span>
+                    <button class="fh-x" type="button" :disabled="h.locked"
+                            :title="h.locked ? '锁定的记录不可删除，请先到设置里解锁' : '删除这条历史'"
+                            @click.stop="removeFilterHistory('tag', h.text)">×</button>
+                  </div>
+                </div>
+              </span>
+              <input v-model="tagFilter" placeholder="Tag 过滤" @keydown.enter="commitFilterHistory('tag')" @change="commitFilterHistory('tag')" />
               <button v-if="tagFilter" class="kw-clear" type="button" @click="clearTagFilter" title="清空 Tag 过滤">×</button>
             </span>
             <label><input type="checkbox" v-model="regexFilter" /> Regex</label>
             <span class="kwfilter-wrap">
-              <input v-model="textFilter" placeholder="关键字过滤" />
+              <span class="filter-history">
+                <button class="fh-btn" type="button" title="关键字过滤历史：点选已保存的过滤词填入"
+                        @click="toggleFilterHistoryMenu('text')">
+                  <svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor" /></svg>
+                </button>
+                <div v-if="filterHistoryOpen === 'text'" class="fh-menu">
+                  <div class="fh-menu-head">关键字历史<span class="fh-menu-tip">点选填入</span></div>
+                  <div v-if="!textHistory.length" class="fh-empty">暂无历史</div>
+                  <div v-for="h in textHistory" :key="h.text" class="fh-item" :class="{ locked: h.locked }"
+                       :title="h.locked ? '已锁定：点选填入' : '点选填入'" @click="pickFilterHistory('text', h)">
+                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">锁</span>
+                    <button class="fh-x" type="button" :disabled="h.locked"
+                            :title="h.locked ? '锁定的记录不可删除，请先到设置里解锁' : '删除这条历史'"
+                            @click.stop="removeFilterHistory('text', h.text)">×</button>
+                  </div>
+                </div>
+              </span>
+              <input v-model="textFilter" placeholder="关键字过滤" @keydown.enter="commitFilterHistory('text')" @change="commitFilterHistory('text')" />
               <button v-if="textFilter" class="kw-clear" type="button" @click="clearKeywordFilter" title="清空关键字过滤">×</button>
             </span>
             <button @click="openQuickFilter" title="按 Tag 快速筛选：勾选要显示的 Tag，自动生成正则过滤">快筛</button>

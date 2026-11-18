@@ -1,11 +1,13 @@
 <script setup>
-// 设置面板：通用 / 窗口属性 / 程序日志路径 / 日志字体 / 日志级别颜色 / 日志内容颜色 / 日志自动保存 / 抓包设置 / 截图设置
+// 设置面板：通用 / 窗口属性 / 程序日志路径 / 日志字体 / 日志级别颜色 / 日志内容颜色 / 日志自动保存 / 历史过滤设置 / 抓包设置 / 截图设置
+import { reactive, computed } from 'vue'
 import * as State from '@/composables/state'
 import {
   maskClose, setTab, resetLogColors, onLogColorChange, onHexInput, onBgInput,
   browseOutDir, onMaxRenderChange, browseConfigPath, exportSettings, importSettings,
   onFontChange, openFontPicker, pickFont, saveCfg,
-  browseCaptureLocalDir, browseScreenshotDir
+  browseCaptureLocalDir, browseScreenshotDir,
+  addFilterHistory, clearFilterHistory, removeFilterHistory, toggleFilterHistoryLock, onFilterHistoryMaxChange
 } from '@/composables/useConfig'
 import { onAutoLogChange, onAppLogChange, browseAppLogDir } from '@/composables/useLogcat'
 import { openAddColorRule } from '@/composables/useColorrules'
@@ -14,8 +16,21 @@ import ColorRulesTable from '../ColorRulesTable.vue'
 const {
   settingsOpen, settingsTab, levelList, logColors, logColorBold, logBgColors, logBgOn,
   autoLog, cfg, appLogEnabled, globalColorRulesView,
-  logFont, fontQuery, fontPickerOpen, filteredFonts, logFontStyle
+  logFont, fontQuery, fontPickerOpen, filteredFonts, logFontStyle,
+  tagHistory, textHistory
 } = State
+
+// 手动新增历史：两个输入框各自暂存，添加成功后清空。
+const fhDraft = reactive({ tag: '', text: '' })
+// 注意：computed 必须在此 `.value` 取成普通数组。若把 ref 直接塞进普通对象，
+// 模板里的 sect.list 不会被自动解包，v-for 拿到的是 ref 对象而非数组。
+const fhSections = computed(() => [
+  { kind: 'tag', title: 'Tag 过滤历史', list: tagHistory.value },
+  { kind: 'text', title: '关键字过滤历史', list: textHistory.value }
+])
+function fhAdd(kind) {
+  if (addFilterHistory(kind, fhDraft[kind])) fhDraft[kind] = ''
+}
 </script>
 
 <template>
@@ -34,6 +49,7 @@ const {
           <button :class="{ active: settingsTab === 'colors' }" @click="setTab('colors')">日志级别颜色</button>
           <button :class="{ active: settingsTab === 'contentcolor' }" @click="setTab('contentcolor')">日志内容颜色</button>
           <button :class="{ active: settingsTab === 'autolog' }" @click="setTab('autolog')">日志自动保存</button>
+          <button :class="{ active: settingsTab === 'filterhistory' }" @click="setTab('filterhistory')">历史过滤设置</button>
           <button :class="{ active: settingsTab === 'capture' }" @click="setTab('capture')">抓包设置</button>
           <button :class="{ active: settingsTab === 'shot' }" @click="setTab('shot')">截图设置</button>
         </div>
@@ -66,6 +82,37 @@ const {
               <button class="outdir-btn" @click="browseOutDir">浏览…</button>
             </div>
             <p class="muted small">开启后，每台设备的日志按天写入 <code>{{ cfg.outDir }}/logcat_&lt;机型_序列号&gt;_yyyyMMddHHmmss.log</code>：文件名含设备机型与序列号便于多设备区分，文件名为开始写日志的时刻，每天一个文件；写入在后台异步完成，不卡界面。</p>
+          </div>
+          <div v-if="settingsTab === 'filterhistory'" class="fh-settings-box">
+            <div class="outdir-row">
+              <span class="outdir-label">每条最多保存</span>
+              <input class="font-input" type="number" min="1" max="200" step="1" v-model.number="cfg.filterHistoryMax" @change="onFilterHistoryMaxChange" />
+              <span class="muted small">条（1~200，默认 20；Tag / 关键字各自独立）</span>
+            </div>
+            <p class="muted small">在日志工具栏的过滤框按回车或离开输入框（内容有变化）时，当前文本自动存入对应历史，最近使用的排在最前；点过滤框左侧的向下箭头即可从历史中选一条填入。标记「已锁」的记录不会被清空、也不会被新记录挤出；上限对锁定记录不生效。</p>
+            <div v-for="sect in fhSections" :key="sect.kind" class="fh-sect">
+              <div class="fh-sect-head">
+                <strong>{{ sect.title }}</strong>
+                <span class="muted small">共 {{ sect.list.length }} 条</span>
+              </div>
+              <div class="fh-add-row">
+                <input class="outdir-input" v-model="fhDraft[sect.kind]" :placeholder="'手动增加一条' + sect.title" spellcheck="false" @keydown.enter="fhAdd(sect.kind)" />
+                <button class="outdir-btn" @click="fhAdd(sect.kind)">添加</button>
+                <button class="outdir-btn" @click="clearFilterHistory(sect.kind)">清空（保留已锁）</button>
+              </div>
+              <div class="fh-list">
+                <div v-if="!sect.list.length" class="fh-empty">暂无历史记录</div>
+                <div v-for="h in sect.list" :key="h.text" class="fh-row" :class="{ locked: h.locked }">
+                  <button class="fh-lock-btn" :class="{ active: h.locked }"
+                          :title="h.locked ? '已锁定：不被清空、不被新记录挤出；点此解锁' : '点此锁定，长期保留'"
+                          @click="toggleFilterHistoryLock(sect.kind, h.text)">{{ h.locked ? '已锁' : '锁定' }}</button>
+                  <span class="fh-row-text" :title="h.text">{{ h.text }}</span>
+                  <button class="fh-del-btn" :disabled="h.locked"
+                          :title="h.locked ? '锁定的记录不可删除，请先解锁' : '删除该条'"
+                          @click="removeFilterHistory(sect.kind, h.text)">删除</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div v-if="settingsTab === 'contentcolor'" class="contentcolor-box">
             <div class="contentcolor-head">

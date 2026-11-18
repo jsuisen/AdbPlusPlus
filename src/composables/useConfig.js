@@ -1,9 +1,107 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
 
 function setTab(name) { settingsTab.value = name }
+
+// ---------- 过滤历史（Tag / 关键字，各自独立列表；随 cfg 一起持久化） ----------
+// 元素形态 { text, locked }；数组顺序 = 最近操作在前。锁定项：不被清空、不被新记录挤出上限裁剪。
+const FILTER_HISTORY_KINDS = ['tag', 'text']
+
+function normalizeFilterHistoryMax(v) {
+  let n = Number(v)
+  if (!Number.isFinite(n) || n < 1) n = DEFAULT_FILTER_HISTORY_MAX
+  n = Math.floor(n)
+  return n > 200 ? 200 : n
+}
+
+// 兼容旧配置 / 导入文件：忽略非对象、非数组、空文本、重复项，锁定标志强制布尔化。
+function normalizeFilterHistory(fh) {
+  const out = { tag: [], text: [] }
+  const src = (fh && typeof fh === 'object' && !Array.isArray(fh)) ? fh : {}
+  for (const kind of FILTER_HISTORY_KINDS) {
+    const arr = Array.isArray(src[kind]) ? src[kind] : []
+    const seen = new Set()
+    for (const it of arr) {
+      const text = typeof it === 'string' ? it.trim() : String((it && it.text) || '').trim()
+      if (!text || seen.has(text)) continue
+      seen.add(text)
+      out[kind].push({ text, locked: !!(it && typeof it === 'object' && it.locked) })
+    }
+  }
+  return out
+}
+
+// 取（必要时建）对应类型的数组引用；所有增删改都就地改数组，保持 computed 视图响应。
+function fhList(kind) {
+  if (!cfg.value.filterHistory || typeof cfg.value.filterHistory !== 'object' || Array.isArray(cfg.value.filterHistory)) {
+    cfg.value.filterHistory = { tag: [], text: [] }
+  }
+  const fh = cfg.value.filterHistory
+  if (!Array.isArray(fh[kind])) fh[kind] = []
+  return fh[kind]
+}
+
+// 裁剪到上限：从最旧一端开始删「未锁定」项；若全锁定则视为软上限，一条都不删。
+function trimFilterHistory(kind) {
+  const list = fhList(kind)
+  const max = cfg.value.filterHistoryMax = normalizeFilterHistoryMax(cfg.value.filterHistoryMax)
+  while (list.length > max) {
+    let idx = -1
+    for (let i = list.length - 1; i >= 0; i--) { if (!list[i].locked) { idx = i; break } }
+    if (idx < 0) break
+    list.splice(idx, 1)
+  }
+}
+
+// 提交一条过滤文本到历史：去重置顶（保留原锁定标志），再按上限裁剪并落盘。
+function addFilterHistory(kind, raw) {
+  if (!FILTER_HISTORY_KINDS.includes(kind)) return false
+  const text = String(raw == null ? '' : raw).trim()
+  if (!text) return false
+  const list = fhList(kind)
+  const i = list.findIndex((h) => h.text === text)
+  if (i >= 0) {
+    const [hit] = list.splice(i, 1)
+    list.unshift(hit)
+  } else {
+    list.unshift({ text, locked: false })
+  }
+  trimFilterHistory(kind)
+  saveCfg()
+  return true
+}
+
+// 清空：仅删未锁定项；锁定项始终保留。
+function clearFilterHistory(kind) {
+  const list = fhList(kind)
+  cfg.value.filterHistory[kind] = list.filter((h) => h.locked)
+  saveCfg()
+}
+
+function removeFilterHistory(kind, text) {
+  const list = fhList(kind)
+  const i = list.findIndex((h) => h.text === text)
+  if (i < 0) return
+  list.splice(i, 1)
+  saveCfg()
+}
+
+function toggleFilterHistoryLock(kind, text) {
+  const hit = fhList(kind).find((h) => h.text === text)
+  if (!hit) return
+  hit.locked = !hit.locked
+  saveCfg()
+}
+
+// 上限改小立即裁剪；改大不动现有记录。
+function onFilterHistoryMaxChange() {
+  cfg.value.filterHistoryMax = normalizeFilterHistoryMax(cfg.value.filterHistoryMax)
+  trimFilterHistory('tag')
+  trimFilterHistory('text')
+  saveCfg()
+}
 
 function maskClose(action) { if (cfg.value.closeOnOuterClick) action() }
 
@@ -59,6 +157,7 @@ function syncFontQuery() { fontQuery.value = currentFontLabel.value }
 
 function onDocMouseDown(e) {
   if (!e.target.closest || !e.target.closest('.font-picker')) fontPickerOpen.value = false
+  if (!e.target.closest || !e.target.closest('.filter-history')) filterHistoryOpen.value = ''
 }
 
 async function loadSystemFonts() {
@@ -106,6 +205,9 @@ function saveCfg(immediate = false) {
 function applyConfig(c, { applyDeviceState = true } = {}) {
   if (!c || typeof c !== 'object' || Array.isArray(c)) return
   cfg.value = { ...cfg.value, ...c }
+  // 过滤历史形状归一化：旧配置缺字段 → 空列表；异常形状 → 回落空列表，避免下拉渲染时抛错。
+  cfg.value.filterHistory = normalizeFilterHistory(c.filterHistory)
+  cfg.value.filterHistoryMax = normalizeFilterHistoryMax(c.filterHistoryMax)
   quickCommands.value = c.quickCommands || []
   keyButtons.value = c.keyButtons || []
   textButtons.value = c.textButtons || []
@@ -173,7 +275,7 @@ async function importSettings() {
     showResult('导入设置', '配置文件格式不正确（应为 JSON 对象）\n文件：' + p, false); return
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'closeOnOuterClick', 'cursorMoveNoScroll']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
     showResult('导入设置', '该文件不含任何 AdbPlusPlus 配置项，已取消导入\n文件：' + p, false); return
   }
@@ -224,6 +326,6 @@ async function browseScreenshotDir() {
 
 export function useConfig() {
 
-  return { applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, resetLogColors, saveCfg, setTab, syncFontQuery }
+  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
 }
-export { applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, resetLogColors, saveCfg, setTab, syncFontQuery }
+export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }

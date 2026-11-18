@@ -180,6 +180,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   line-height: 1.5; padding: 6px 8px; caret-color: transparent; outline: none;
 }
 .logview:focus, .logview:focus-visible { outline: none; }
+/* 隐藏日志区纵向滚动条：Windows Chromium 滚动条为占位式、内容可滚时永久常驻，视觉多余。
+   仅隐藏纵向（:vertical）；横向滚动条保留，超宽行仍可拖动查看。
+   滚轮 / Ctrl+上下逐行 / 方向键 / 自动滚动 / 「底部」按钮均不受影响。 */
+.logview::-webkit-scrollbar:vertical { width: 0; display: none; }
 /* 日志区点击光标：纯视觉闪烁竖条，不拦截事件、不影响输入/选中/右键 */
 .log-caret {
   position: absolute; width: 2px; height: 1.2em; background: var(--text);
@@ -439,12 +443,30 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .qf-clear { flex: 0 0 auto; width: 32px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-size: 16px; line-height: 1; color: #888; }
 .qf-clear:hover { color: #333; background: #f0f2f5; }
 
-/* 关键字过滤框 + 清空 × */
-.kwfilter-wrap { display: inline-flex; align-items: stretch; width: 180px; gap: 4px; }
-.kwfilter-wrap.tag-wrap { width: 140px; }
+/* 关键字过滤框 + 左侧「历史」下拉 + 右侧清空 × */
+.kwfilter-wrap { display: inline-flex; align-items: stretch; width: 214px; gap: 3px; position: relative; }
+.kwfilter-wrap.tag-wrap { width: 174px; }
 .kwfilter-wrap input { flex: 1 1 auto; min-width: 0; }
 .kw-clear { flex: 0 0 auto; width: 26px; border: 1px solid var(--border); background: #fff; border-radius: 4px; cursor: pointer; font-size: 15px; line-height: 1; color: #888; }
 .kw-clear:hover { color: #333; background: #f0f2f5; }
+
+/* 过滤历史下拉：按钮贴在输入框内左侧，菜单浮在按钮下方 */
+.filter-history { position: relative; flex: 0 0 auto; display: inline-flex; align-items: stretch; }
+/* .toolbar button{padding:3px 6px} 优先级高于单类 .fh-btn，故用双类提权 */
+.toolbar .fh-btn { flex: 0 0 auto; width: 20px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-right: 0; border-radius: 4px 0 0 4px; background: #f7f8fa; color: #666; cursor: pointer; }
+.toolbar .fh-btn:hover { background: #e9edf3; color: #222; }
+.fh-menu { position: absolute; top: calc(100% + 4px); left: 0; z-index: 50; width: 260px; max-height: 300px; overflow-y: auto; background: #fff; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 14px rgba(0,0,0,.14); padding: 4px 0; }
+.fh-menu-head { display: flex; justify-content: space-between; gap: 8px; padding: 4px 10px 6px; font-size: 12px; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); }
+.fh-menu-tip { font-weight: 400; color: var(--muted); }
+.fh-empty { padding: 10px; text-align: center; font-size: 12px; color: var(--muted); }
+.fh-item { display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 12px; color: var(--text); cursor: pointer; }
+.fh-item:hover { background: #f0f5fb; }
+.fh-item-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Cascadia Code", Consolas, monospace; }
+.fh-lock-tag { flex: 0 0 auto; font-size: 11px; color: var(--primary); }
+/* 行尾快速删除 ×：双类提权压过 .toolbar button{padding:3px 6px}；.stop 阻止冒泡触发「点选填入」 */
+.fh-menu .fh-x { flex: 0 0 auto; width: 18px; height: 18px; padding: 0; margin-left: 2px; border: 1px solid var(--border); border-radius: 3px; background: #fff; color: #999; font-size: 13px; line-height: 1; cursor: pointer; }
+.fh-menu .fh-x:hover:not(:disabled) { background: #fff2f2; border-color: var(--danger); color: var(--danger); }
+.fh-menu .fh-x:disabled { color: #ccc; cursor: not-allowed; }
 .qf-table-scroll { max-height: 46vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; }
 .qf-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .qf-table th, .qf-table td { border-bottom: 1px solid var(--border); padding: 5px 8px; text-align: left; }
@@ -565,3 +587,19 @@ button:disabled { opacity: .5; cursor: not-allowed; }
    当前定位到的那一处换成更粗的红框 + 淡黄底，便于「查找下一个」后一眼看到 */
 .logline .find-hit, .note-line .find-hit { outline: 2px solid #e08a1e; }
 .logline .find-hit.find-cur, .note-line .find-hit.find-cur { outline: 4px solid var(--danger); background: #fff3c4; }
+
+/* 设置-历史过滤设置：上限、手动增删、清空、锁定 */
+.fh-settings-box { padding-right: 4px; }
+.fh-sect { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 12px; }
+.fh-sect-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; font-size: 13px; color: var(--text); }
+.fh-add-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.fh-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.fh-row { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-bottom: 1px solid var(--border); font-size: 12px; }
+.fh-row:last-child { border-bottom: 0; }
+.fh-row.locked { background: #f7faff; }
+.fh-row-text { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "Cascadia Code", Consolas, monospace; color: var(--text); }
+.fh-lock-btn { flex: 0 0 auto; min-width: 44px; height: 24px; padding: 0 8px; border: 1px solid var(--border); border-radius: 4px; background: #fff; color: var(--muted); font-size: 12px; cursor: pointer; }
+.fh-lock-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.fh-del-btn { flex: 0 0 auto; height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: 4px; background: #fff; color: var(--danger); font-size: 12px; cursor: pointer; }
+.fh-del-btn:hover:not(:disabled) { background: #fff2f2; border-color: var(--danger); }
+.fh-del-btn:disabled { color: #b9bcc2; cursor: not-allowed; }

@@ -1,5 +1,5 @@
 // 共享状态：跨域基础（api 桥 / 配置 / 全局消息 / 窗口状态）+ 日志默认配色/字体常量
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export const api = window.api
 
@@ -13,7 +13,18 @@ export const DEFAULT_LOG_BG_ON = { V: false, D: false, I: false, W: false, E: fa
 
 export const DEFAULT_LOG_FONT = { size: 12, family: '"Cascadia Code", Consolas, monospace', bold: false, lineHeight: 1.4 }
 
-export const cfg = ref({ quickCommands: [], lastSerial: '', outDir: '', targetPkg: '', configPath: '', autoLog: false, appLogEnabled: false, appLogDir: '', closeOnOuterClick: false, checkUpdateOnStartup: true, updateDismissedDate: '', cursorMoveNoScroll: true, logColors: { ...DEFAULT_LOG_COLORS }, logBgColors: { ...DEFAULT_LOG_BG_COLORS }, logBgOn: { ...DEFAULT_LOG_BG_ON }, logFont: { ...DEFAULT_LOG_FONT }, captureArgs: '-p -vv -s 0 -w', captureDeviceDir: '/sdcard/adbpp_captures/', captureLocalDir: '', captureAsRoot: false, screenshotDir: '', maxRender: 20000, screenshotInterval: 1000 })
+export const DEFAULT_FILTER_HISTORY_MAX = 20
+
+// 过滤历史：tag = Tag 过滤，text = 关键字过滤；元素 { text, locked }，数组顺序即「最近在前」。
+// 与 cfg 同域：cfg 是唯一持久化入口，历史随 config:save 一起落盘，不另开 IPC。
+export const cfg = ref({ quickCommands: [], lastSerial: '', outDir: '', targetPkg: '', configPath: '', autoLog: false, appLogEnabled: false, appLogDir: '', closeOnOuterClick: false, checkUpdateOnStartup: true, updateDismissedDate: '', cursorMoveNoScroll: true, logColors: { ...DEFAULT_LOG_COLORS }, logBgColors: { ...DEFAULT_LOG_BG_COLORS }, logBgOn: { ...DEFAULT_LOG_BG_ON }, logFont: { ...DEFAULT_LOG_FONT }, captureArgs: '-p -vv -s 0 -w', captureDeviceDir: '/sdcard/adbpp_captures/', captureLocalDir: '', captureAsRoot: false, screenshotDir: '', maxRender: 20000, filterHistoryMax: DEFAULT_FILTER_HISTORY_MAX, filterHistory: { tag: [], text: [] }, screenshotInterval: 1000 })
+
+// 过滤框「历史」下拉当前展开项：'' | 'tag' | 'text'（同一时刻只开一个）
+export const filterHistoryOpen = ref('')
+
+// 供过滤框下拉与设置面板共用的列表视图（computed 跟随 cfg 持久化数据，避免两处状态源）
+export const tagHistory = computed(() => (cfg.value.filterHistory && cfg.value.filterHistory.tag) || [])
+export const textHistory = computed(() => (cfg.value.filterHistory && cfg.value.filterHistory.text) || [])
 
 // 状态栏消息：仅承载「进行中 / 瞬时状态」提示（录屏中、连续截图中、抓包已开始等）。
 // 所有成功/失败/导出路径等结果性文字一律改走 showResult() -> ResultModal，不再写这里。

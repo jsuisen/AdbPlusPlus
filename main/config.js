@@ -66,6 +66,8 @@ const DEFAULT = {
   screenshotDir: '',    // 截图保存目录：空 → 落到 exe 所在目录
   screenshotInterval: 1000, // “开始截图”连续截图间隔（毫秒），默认 1000（每秒 1 张）
   maxRender: 20000,        // 日志窗口渲染上限（过滤后截取尾部行数）；日志刷得快的设大些可看更久历史
+  filterHistoryMax: 20,    // 过滤历史每条（Tag / 关键字）最多保存条数；锁定项不占上限、不被裁剪/清空
+  filterHistory: { tag: [], text: [] }, // [{ text, locked }]：tag=Tag 过滤，text=关键字过滤；数组顺序=最近在前
   checkUpdateOnStartup: true, // 启动后是否异步检测一次版本升级（默认开启）
   updateDismissedDate: ''     // 本日已「取消提醒」的日期（YYYY-MM-DD），当天不再弹升级对话框
 }
