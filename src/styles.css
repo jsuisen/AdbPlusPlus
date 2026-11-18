@@ -155,7 +155,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .qb-edit { margin-top: 8px; border-top: 1px dashed var(--border); padding-top: 8px; }
 
 /* logcat 日志区 */
-.logarea { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px; }
+.logarea { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 10px 10px 10px 4px; }
 .toolbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
 /* 工具栏按钮：收紧内边距（内边距），与上面 gap/margin 一起缩小外边距 */
 .toolbar button { padding: 3px 6px; }
@@ -163,6 +163,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .proc-wrap { display: inline-flex; align-items: center; gap: 4px; }
 /* 「底部」按钮激活态 */
 .toolbar button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* 日志区主体：左侧竖向工具条 + 日志窗口，仿 Android Studio Logcat */
+.log-body { flex: 1; display: flex; min-height: 0; }
+.log-side-tools { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-right: 4px; padding-top: 46px; }
+/* 与「全部展开/收起」同款字号字重，左右内边距收紧到 4px */
+.log-side-tools button { font-size: 12px; padding: 2px 4px; font-weight: 400; white-space: nowrap; }
+/* 「底部」跟随中激活态，与工具栏同款蓝底 */
+.log-side-tools button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* 竖条分组分隔线：换行/格式 之间、颜色/搜索 之间 */
+.log-side-sep { flex: 0 0 auto; height: 1px; background: var(--border); margin: 2px 0; }
 
 /* 日志格式弹窗 */
 /* 必须用 .modal-body .fmt-row 提权：.modal-body label(display:block) 与 .modal-body label input(width:100%) 优先级更高，

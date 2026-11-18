@@ -313,18 +313,24 @@ const { openUpdateDialog } = useUpdate()
               <button v-if="textFilter" class="kw-clear" type="button" @click="clearKeywordFilter" title="清空关键字过滤">×</button>
             </span>
             <button @click="openQuickFilter" title="按 Tag 快速筛选：勾选要显示的 Tag，自动生成正则过滤">快筛</button>
-            <button @click="openColorWin" title="按关键字给日志行上色：全局规则 + 当前会话规则，本会话优先">颜色</button>
-            <button @click="scrollToTop" title="跳转到日志顶部">顶部</button>
-            <button :class="{ active: autoscroll }" @click="toggleLatest" title="蓝=跟随中：新日志始终滚到底部；再点一次关闭跟随；在日志窗口中点击或滚轮上滚也会取消">底部</button>
-            <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" title="开启后日志自动换行；关闭则始终不换行且支持水平滚动">换行</button>
-            <button @click="clearLogs">清空</button>
-            <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）">搜索</button>
             <button @click="exportLogs">导出</button>
             <button @click="browseLogDir" title="立即打开自动保存日志的目录（outDir）">浏览</button>
-            <button @click="openFmt">格式</button>
             <span v-if="currentLogErr" class="muted" style="color:var(--danger)">{{ currentLogErr }}</span>
           </div>
-          <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @wheel="onLogWheel" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
+          <!-- 日志区主体：左侧竖向工具条（顶部/底部/清空）+ 日志窗口，仿 Android Studio Logcat -->
+          <div class="log-body">
+            <div class="log-side-tools">
+              <button @click="clearLogs" title="清空当前日志">清空</button>
+              <button @click="scrollToTop" title="跳转到日志顶部">顶部</button>
+              <button :class="{ active: autoscroll }" @click="toggleLatest" title="蓝=跟随中：新日志始终滚到底部；再点一次关闭跟随；在日志窗口中点击或滚轮上滚也会取消">底部</button>
+              <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" title="开启后日志自动换行；关闭则始终不换行且支持水平滚动">换行</button>
+              <div class="log-side-sep"></div>
+              <button @click="openFmt" title="配置日志显示格式（日期/pid/包名/tag）">格式</button>
+              <button @click="openColorWin" title="按关键字给日志行上色：全局规则 + 当前会话规则，本会话优先">颜色</button>
+              <div class="log-side-sep"></div>
+              <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）">搜索</button>
+            </div>
+            <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @wheel="onLogWheel" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
             <div v-if="logCaret.visible" class="log-caret" :style="{ left: logCaret.x + 'px', top: logCaret.y + 'px' }"></div>
             <div v-if="!mergedView.length" class="muted">点击「开始」采集 {{ activeLogSerial || '设备' }} 的日志…</div>
             <template v-for="e in mergedView" :key="e.id">
@@ -352,6 +358,7 @@ const { openUpdateDialog } = useUpdate()
             </template>
             <div class="logview-tail" title="按回车在日志末尾新增注释行（此处仅供点击定位光标）"></div>
           </div>
+            </div><!-- /.log-body -->
           <!-- 右键菜单：Teleport 到 body，彻底脱离日志区 overflow 容器，避免被裁剪看不见 -->
           <Teleport to="body">
             <div v-if="ctxMenu.visible" class="ctx-overlay" @click="closeCtxMenu" @contextmenu.prevent="closeCtxMenu">
