@@ -26,13 +26,18 @@ export function createLineReader() {
       const text = leftover + decoder.write(buf)
       const parts = text.split(/\r?\n/)
       leftover = parts.pop() ?? ''   // 末段可能是不完整的行，留到下一次 feed
-      return parts
+      // 部分设备（如 Android 4.4 创维经网络 adb）行尾为 \r\r\n，split(/\r?\n/) 只消耗一个 \r，
+      // 残留的 \r 会让 parseLine 的 (.*)$ 失配（JS 里 . 不匹配 \r、无 m 标志的 $ 也不在 \r 前匹配），
+      // 导致整行被判为「非日志行」丢弃、日志窗口空白。在唯一入口统一剥掉行尾残留 \r，
+      // 同时避免 \r 污染 msg（导出 / 自动写盘 / 查找）。leftover 不处理：它可能正好以 \r 结尾，
+      // 而真正的 \n 在下一个 chunk 才到。
+      return parts.map((p) => p.replace(/\r+$/, ''))
     },
     // 会话结束：交出尚未以换行结尾的最后一行（可能为空）
     end() {
       const tail = leftover + decoder.end()
       leftover = ''
-      return tail ? [tail] : []
+      return tail ? [tail.replace(/\r+$/, '')] : []
     }
   }
 }
