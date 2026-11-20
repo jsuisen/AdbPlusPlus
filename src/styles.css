@@ -112,15 +112,17 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .dev-item.active { background: #eaf1fe; }
 .dev-meta { display: flex; flex-direction: column; min-width: 0; width: 100%; }
 .dev-serial { font-size: 12px; font-family: "Cascadia Code", Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dev-status { font-size: 11px; color: var(--muted); }
+.dev-status { font-size: 12px; color: var(--muted); font-family: "Cascadia Code", Consolas, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .dev-status.off { color: var(--danger); }
 .dev-acts { display: flex; gap: 4px; }
-/* 关闭按钮与「全部展开/收起」同款：字号 12px、padding 2px 6px、常规字重 */
+/* 关闭/重连按钮与「全部展开/收起」同款：字号 12px、padding 2px 6px、常规字重 */
 .dev-acts button { font-size: 12px; padding: 2px 6px; font-weight: 400; }
 .dev-log { color: var(--muted); border: 1px solid var(--border); background: #fff; }
 .dev-log.on { color: #fff; background: var(--primary); border-color: var(--primary); }
 .dev-disc { color: var(--text); border: 1px solid var(--border); background: #fff; }
 .dev-disc:hover { background: #f2f3f5; }
+.dev-reconn { color: var(--text); border: 1px solid var(--border); background: #fff; }
+.dev-reconn:hover { background: #f2f3f5; }
 .dev-empty { padding: 8px; text-align: center; }
 
 /* 日志 tab 栏（多设备并行） */

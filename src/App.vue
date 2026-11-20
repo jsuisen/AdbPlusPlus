@@ -41,8 +41,8 @@ import ResultModal from './components/modals/ResultModal.vue'
 import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
-const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
 
@@ -198,10 +198,11 @@ const { openUpdateDialog } = useUpdate()
               <div v-for="d in devices" :key="d.serial" class="dev-item" :class="{ active: d.serial === selectedSerial }" @click="selectDevice(d.serial)" @contextmenu.prevent="openDeviceMenu(d, $event)">
                 <div class="dev-meta">
                   <span class="dev-serial">{{ displayName(d.serial) }}</span>
-                  <span class="dev-status" :class="{ off: d.status !== 'device' }">{{ d.status }}</span>
+                  <span v-if="deviceAlias[d.serial]" class="dev-status" :class="{ off: d.status !== 'device' }" :title="d.status">{{ d.serial }}</span>
                 </div>
                 <div class="dev-acts" @click.stop>
                   <button class="dev-disc" title="断开设备" @click="disconnectDevice(d.serial)">关闭</button>
+                  <button class="dev-reconn" title="断开后重新连接该设备（仅网络设备）" @click="reconnectDevice(d.serial)">重连</button>
                 </div>
               </div>
             </div>

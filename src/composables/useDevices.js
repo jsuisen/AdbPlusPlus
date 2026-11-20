@@ -1,7 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, cfg, colorSessionMap, connectAlias, connectHistorySel, connectIp, connectOpen, connectPort, connecting, connectTimedOut, CONNECT_TIMEOUT_MS, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
-import { ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
+import { enableAutoscroll, ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
 import { openCmdModal, openInputModal, openInstallModal, openUninstallModal, resetFileForm } from './useActions'
@@ -80,6 +80,62 @@ async function disconnectDevice(serial) {
       // 主进程未注册该通道（如未重启即改了 main 进程代码）时，设备已从视图移除，仅提示命令未执行
       toast('断开命令未执行（设备已从列表移除）：' + e.message)
     }
+  }
+}
+
+// 连接/重连成功后：把目标设备切为当前日志设备并自动开始采集（等价于点日志窗口「开始」）。
+// 必须先对齐 activeLogSerial，否则「开始/停止」按钮绑定的是旧设备，看起来没有自动开始。
+// runningMap 守卫避免重复 start 造成两条 adb logcat 子进程；日志缓冲不清，历史日志保留。
+function autoStartLogcatOnConnect(serial) {
+  if (!serial) return
+  selectedSerial.value = serial
+  activeLogSerial.value = serial
+  ensureLogFilter(serial)
+  if (!runningMap[serial]) startLogcat(serial)
+  // 底部跟随自动激活：新日志始终停在最新一行
+  enableAutoscroll()
+}
+
+// 重连：仅网络设备 serial 形如 ip:port，adb disconnect 断开服务端连接，等 1 秒再 adb connect 回去。
+// USB 本地设备无法用 adb disconnect 移除，直接提示用户重新插拔。
+// 两步都走 adb:run（参数数组 spawn，不拼 shell）；connect 步骤带 runId + 看门狗，
+// 避免设备无响应时 adb connect 挂死渲染进程，与连接弹窗共用 CONNECT_TIMEOUT_MS。
+async function reconnectDevice(serial) {
+  if (!serial) return
+  if (!serial.includes(':')) { toast('USB/本地设备不支持 adb 重连，请重新插拔 USB 线'); return }
+  toast('正在重连：' + serial)
+  try {
+    const disc = await api.invoke('adb:run', ['disconnect', serial])
+    await new Promise((r) => setTimeout(r, 1000))
+    const runId = 'reconnect-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)
+    let timer = null
+    const watchdog = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('CONNECT_TIMEOUT')), CONNECT_TIMEOUT_MS)
+    })
+    let conn
+    try {
+      conn = await Promise.race([
+        api.invoke('adb:run', ['connect', serial], runId),
+        watchdog
+      ])
+    } catch (e) {
+      if (e && e.message === 'CONNECT_TIMEOUT') {
+        try { await api.invoke('adb:runCancel', runId) } catch {}
+        throw new Error('连接超时（' + (CONNECT_TIMEOUT_MS / 1000) + ' 秒），请检查设备网络')
+      }
+      throw e
+    } finally {
+      if (timer) clearTimeout(timer)
+    }
+    const ok = conn.code === 0
+    const detail = cmdDetail(disc, 'adb disconnect ' + serial) + '\n' + cmdDetail(conn, 'adb connect ' + serial)
+    showResult('重连设备', (ok ? '已重连：' : '重连失败：') + serial + '\n' + detail, ok)
+    if (ok) {
+      await refreshDevices()
+      autoStartLogcatOnConnect(serial)
+    }
+  } catch (e) {
+    showResult('重连设备', '重连异常：' + (e && e.message ? e.message : e), false)
   }
 }
 
@@ -306,6 +362,9 @@ async function confirmConnect() {
       if (alias) deviceAlias[target] = alias
       saveCfg()
       connectOpen.value = false
+      // 连接成功后自动开始采集：先刷新设备列表让目标 serial 进入 devices，再切 tab 启动
+      await refreshDevices()
+      autoStartLogcatOnConnect(target)
     }
   } catch (e) {
     if (attempt.cancelled) {
@@ -382,6 +441,6 @@ async function loadDeviceFromFile() {
 
 export function useDevices() {
 
-  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
 }
-export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
