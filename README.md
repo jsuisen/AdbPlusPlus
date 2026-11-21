@@ -1,87 +1,131 @@
 # ADB++
 
-工程级 ADB 桌面实用工具，支持各种细粒度配置，依赖 adb、aapt。
+Windows 平台的工程级 ADB 桌面工具。Electron 37 + Vue 3，专注日志分析与设备调试，所有 adb/aapt 子进程统一收口在主进程。
 
 ![](screensave/img.png)
 
-参考：
+参考：Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy。
 
-- Android Studio Logcat(lengency)
+## 功能一览
 
-- Android Studio Logcat 
+### 日志（类 Android Studio Logcat）
 
-- Android Turbo Tools
+- 多设备并行：按设备分 tab 与独立采集状态，日志按设备分文件自动写盘。
+- 实时流式采集，级别（V/D/I/W/E/F）、Tag、关键字、正则、包名过滤；Tag 全词匹配、按包名一次选中该 APK 的全部进程。
+- Tag / 关键字过滤历史，可锁定条目（锁定项不被裁剪/清空）；按 Tag 快速筛选（自动生成正则）。
+- 日志级别颜色（文本/背景/加粗）+ 按内容关键字上色（全局规则 + 会话规则，会话优先）；显示格式可配日期 / pid / 包名 / Tag。
+- 查找（Ctrl+F，浮动非遮挡窗口）、换行开关、导出 `.log`、自动保存到磁盘。
+- 日志内可回车插入注释行；单击定位光标（折叠选区），方向键移动光标、Ctrl+↑/↓ 逐行滚窗、Ctrl+←/→ 按词移动，行为可在「设置 - 窗口属性」切换。
+- 渲染策略：全量缓存在内存，过滤后只取尾部 `maxRender`（默认 20000）行交给 Vue，避免 DOM 爆炸。
 
-- SecureCRT
+### 设备信息与检测
 
-- WorkBuddy
+- 信息卡：型号、Android 版本、分辨率、密度、内存、存储、CPU、android_id、stbid、oid、多网卡 MAC、前台 Activity；可导出。
+- `dumpsys <service>` 查询、`bugreport`、`getprop` 列表（过滤 + 导出）。
+- 四个轮询列表：前台 Activity / 运行中 Service / 进程（PID、CPU、RSS、VSZ、线程、状态、IO）/ 线程，各自独立开关、间隔、过滤与手动刷新。
 
-- Notepad++
+### 设备操作（侧边栏分组）
 
-- ADB++
+- 包名操作：加载包名、启动/停止/重启应用、停止进程、清缓存、清缓存并重启、卸载、Monkey 测试。
+- 组件调试：启动 Activity / Service、发送广播、停止 Service。
+- 媒体：截图、截图到路径、连续截图（间隔可配）、录屏。
+- 网络抓包：设备端 `tcpdump` 常驻，停止时 `pkill -INT` 刷盘，按需 pull / 列表 / 删除 pcap；支持 `su -c` 仅给 tcpdump 提权；抓包管理弹窗统一操作。
+- 输入：输入文本、模拟按键（含 KEYCODE 速查表）、模拟点击、模拟滑动；动作可保存为快捷按钮。
+- 权限授予/撤销（Beta）、推送/拉取文件、安装/卸载 APK、解析已装 APK、root/unroot/remount、重启、`adb devices` / `disconnect` / `kill-server`。
+
+### 其他
+
+- **APK 解析**：本地 APK 与设备已装包两条路，`aapt dump badging` 输出包名、版本、label、启动 Activity、权限列表和 MD5；中文路径自动走临时 ASCII 副本规避 aapt 编码问题。
+- **快捷命令**：按分组筛选，增删改、颜色预设、忽略响应、执行输出（复制/保存）；支持开机式持久化到配置。
+- **自定义窗口**：无原生标题栏（自绘菜单栏），置顶（图钉按钮，主进程读真实状态翻转）、最小化/最大化/关闭；Ctrl+/-/0 与 Ctrl+滚轮缩放（0.3~3）；顶部设备时钟点击激活后同步设备时间（10 秒校准，重启复位）。
+- **设置面板 10 页**：通用（maxRender、光标行为、启动检测升级、配置路径、设置导入导出）、窗口属性、程序日志路径、日志字体（系统字体下拉）、日志级别颜色、日志内容颜色、日志自动保存、历史过滤设置、抓包设置、截图设置。
+- **版本检测**：启动 30 秒后异步检测一次（可关），关于弹窗手动检测；有新版本时状态栏徽标 + 升级对话框，可「本日不再提醒」。数据源为 GitHub Releases，失败回退读仓库 `package.json`。
 
 ## 目录结构
 
 ```
 AdbPlusPlus/
-├─ main/                     主进程（Node，ESM）：spawn adb/aapt、IPC 注册
-│  ├─ index.js               入口（package.json main 指向）：窗口创建 + 各模块 IPC 注册
-│  ├─ preload.js             安全桥：window.api（invoke/send/on + 通道白名单）
-│  ├─ adb.js / logcat.js / media.js / netcap.js / apk.js / config.js
-│  │  / file.js / fonts.js / devices.js / applog.js / tools.js
-│  └─ device-scripts/        设备端 shell 脚本（运行时推送设备）
-├─ shared/                   主进程/渲染进程共用：ipc-channels.js（IPC 通道常量 + 白名单）
-├─ src/                      渲染进程（Vue 3）
-│  ├─ App.vue                根组件（弹窗均已组件化）
-│  ├─ components/            26 个组件：modals/（22 弹窗）+ 4 个非模态组件
-│  ├─ composables/           状态（state.js barrel + state/ 按域 9 文件）、行为（useXxx）、shared.js 纯函数
-│  └─ styles.css             全局样式
-├─ tests/                    node:test 单测（npm test）
-├─ scripts/                  dev.js 开发启动器；check.mjs 静态验证管线（npm run check）
-├─ resources/                adb.exe / aapt.exe / alipay.jpg（均已入库）；icon.png
-├─ adbtool-config.sample.json 运行时配置样例（真实配置不入库）
-├─ docs/                     方法论文档体系
+├─ main/                      主进程（ESM）：窗口、IPC 注册、子进程调用
+│  ├─ index.js                入口：窗口创建 + 各模块注册 + 更新检测 + 退出清理
+│  ├─ preload.js              安全桥 window.api（invoke/send/on 三通道白名单）
+│  ├─ adb.js / adb-safety.js  adb 命令与设备端参数白名单
+│  ├─ logcat.js / logcat-ingest.js  日志采集、跨 chunk 行合并与推送
+│  ├─ netcap.js / netcap-safety.js  设备端 tcpdump 抓包与参数白名单
+│  ├─ media.js / apk.js / file.js / config.js / fonts.js / applog.js
+│  ├─ devices.js              设备热插拔跟踪
+│  ├─ tools.js                adb/aapt 路径解析与 spawn 封装
+│  ├─ versioncheck.js         版本检测（GitHub Releases / raw package.json）
+│  └─ device-scripts/         设备端 shell 脚本
+├─ shared/                    主/渲染共用：ipc-channels.js（通道常量 + 白名单）、version.js
+├─ src/                       渲染进程（Vue 3）
+│  ├─ App.vue                 根组件（布局 + 弹窗装配）
+│  ├─ components/             5 个非模态组件 + modals/（23 个弹窗）
+│  ├─ composables/            state.js 桶文件 + state/ 11 个域模块 + shared.js 纯函数
+│  │                          + useXxx.js 行为层（12 个）+ createPollingList.js
+│  └─ styles.css              全局样式
+├─ tests/                     5 组 node:test 单测（安全白名单 / 日志 ingest / 轮询 / 纯函数）
+├─ scripts/                   dev.js 开发启动器；check.mjs 静态验证管线
+├─ resources/                 adb.exe / aapt.exe / icon.png / alipay.jpg（二进制已入库）
+├─ adbtool-config.sample.json 配置样例（真实配置 adbtool-config.json 不入库）
+├─ docs/                      本地文档（已由 .gitignore 排除，不入库）
 ├─ index.html / vite.config.js / electron-builder.yml / jsconfig.json / package.json
-└─ .gitignore
+└─ LICENSE
 ```
 
 ## 前置
 
-- Node.js 22.x（开发机用，仅跑 Vite/打包脚本；Electron 内置的是 Chromium 138 + Node 22.x 组合）
-- 把 `adb.exe`、`aapt.exe` 放进 `resources/`（见 resources/README.txt）
+- 仅 Windows。开发机用 Node.js 22.x（跑 Vite / 打包脚本）；运行时由 Electron 37 提供 Chromium 138 + Node 22。
+- `resources/adb.exe`、`resources/aapt.exe` 已随仓库提供；升级版本时直接替换这两个文件。开发态从 `app.getAppPath()/resources` 解析，打包态从 `process.resourcesPath/resources` 解析。
+- 内网 / GitHub 不可达时，安装依赖与打包前设置镜像：
+
+```bash
+export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+export ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+npm install
+```
 
 ## 开发
 
 ```bash
-npm install
-npm run dev          # 启动 Vite(5173) + Electron，加载开发服务器
-npm run check        # 提交前静态验证（tsc/通道校验/无环/barrel/模板绑定）
-npm test             # 纯函数与轮询列表工厂单测
+npm run dev          # Vite(5173, strictPort) + Electron；端口被占会直接失败，先释放 5173
+npm run check        # 静态验证：tsc checkJs / 通道常量与白名单 / 无环 / barrel 完整 / 模板绑定
+npm test             # 单测：安全白名单(logcat/netcap/adb) / 轮询工厂 / 纯函数
 ```
+
+- `scripts/dev.js` 只启动一次主进程，**不监听 main/ 目录、不自动重启**。改了 `main/` 或 `shared/` 后必须完全退出 `npm run dev` 再重跑，否则渲染层是新代码、主进程仍是旧代码。
+- Vite 开发用 `base:'/'`，打包用 `base:'./'`（Electron 以 `file://` 加载 dist）。
 
 ## 打包
 
-三条命令都先做 `vite build` 把渲染产物写进 dist/，再交给 electron-builder。区别只在打包目标：
+三条命令都先 `vite build` 写入 `dist/`，再由 electron-builder 打包；产物目录由 `electron-builder.yml` 的 `directories.output: release` 决定。
 
 | 命令 | 等价命令 | 产物 |
 |------|----------|------|
-| `npm run build` | `vite build && electron-builder --win nsis` | 安装版 `release/*.exe`（NSIS 安装包） |
-| `npm run dist`  | 同上（与 build 完全一致） | 安装版，同 build |
-| `npm run pack`  | `vite build && electron-builder --win dir` | **免安装绿色版目录 `release/win-unpacked/`** |
+| `npm run build` | `vite build && electron-builder --win nsis` | 安装版 `release/*.exe` |
+| `npm run dist`  | 同上 | 安装版，同 build |
+| `npm run pack`  | `vite build && electron-builder --win dir` | 绿色版目录 `release/win-unpacked/`，拷贝整目录后双击 `adb++.exe` 即可 |
 
-- 产物目录由 `electron-builder.yml` 的 `directories.output: release` 决定。
-- `pack` 用 `dir` 目标，只产出解包后的程序目录、不生成安装包：把 `release/win-unpacked/` 整目录拷到任意 Windows 机器，双击里面的 `adb++.exe` 即可运行，无需安装。
-- `build` / `dist` 用 `nsis` 目标，产出可分发安装包 `release/*.exe`。
+NSIS 配置为非一键安装，允许选安装目录并创建桌面快捷方式。
+
+## 配置
+
+- 默认 `adbtool-config.json` 放在 exe 所在目录（开发态为工程根），便于整体拷贝；可通过设置面板指定完整文件路径，路径指针存于 `userData/adbtool-path.json`，规避 `C:\Program Files` 写权限问题。
+- 启动加载时把默认值与磁盘 JSON 合并；保存时**只写 DEFAULT 登记的键**，外部导入的未知字段直接丢弃（防止进入设备端命令）；写入走同目录临时文件 + rename 的原子替换。
+- 字段说明见 `adbtool-config.sample.json`，含快捷命令、过滤条件、日志字体/颜色、抓包与截图参数、`maxRender`、更新开关等。
 
 ## 安全要点
 
-- 所有子进程调用统一在主进程用参数数组 `spawn(tool, [args...])`，**不经本机 shell**。注意设备端 adbd 收到 `adb shell` 的参数后仍会拼成命令串交给 `/system/bin/sh -c`，因此用户可控参数在主进程另过白名单或转 shell 字面量（工具见 `main/adb-safety.js`、`main/netcap-safety.js`，调用点见 `main/adb.js`、`main/netcap.js`）。
-- 渲染进程 `nodeIntegration:false` + `contextIsolation:true`，只能通过 preload 的 `window.api` 通信；**invoke/send/on 三方法均有通道白名单**（`shared/ipc-channels.js`），未登记通道直接拒绝。
-- 运行时配置 `adbtool-config.json` 不入库（默认 exe/工程根同级，可自定义路径）；结构样例见 `adbtool-config.sample.json`。
-- 应用版本号以 package.json semver 为准，关于弹窗运行时读取。
+- 本机子进程一律在主进程用参数数组 `spawn(tool, [args...])`，不拼本机 shell。但 adbd 收到 `adb shell` 参数后仍会拼成串交给设备端 `/system/bin/sh -c`，因此用户可控参数另过白名单或转成 shell 字面量：`main/adb-safety.js`、`main/netcap-safety.js`，调用点见 `main/adb.js`、`main/netcap.js`。这些边界有专门单测覆盖注入串。
+- 渲染进程 `nodeIntegration:false` + `contextIsolation:true`，只能经 preload 的 `window.api` 通信；invoke / send / on 三类通道各有白名单，未登记通道直接拒绝。通道常量定义在 `shared/ipc-channels.js`，是三方共用的单一事实来源。
+- 配置保存有键白名单；抓包参数会剔除用户传入的 `-w` 路径值，输出路径由程序生成的规则文件名接管。
+- 应用版本以 `package.json` semver 为准（`app.getVersion()`），关于弹窗运行时读取，不硬编码。
+- 进程 `before-quit` 统一收掉设备端 tcpdump、logcat 与设备跟踪，带 3 秒兜底超时，避免退出挂死。
 
-## 已知限制 / 后续可增强
+## 已知限制
 
-- Logcat 渲染采用「全缓冲 + 过滤后截取尾部渲染」策略：每台设备的日志全量缓存在内存（`logsMap`），`displayLogs` 先按级别 / Tag / 关键字 / 包名过滤，再 `slice` 取尾部至多 `maxRender`（默认 20000，可在「设置 - 通用」中修改；该值越大 DOM 节点越多，过大可能卡顿，按需调整）行交给 Vue 渲染。因渲染行数已封顶，普通吞吐下 DOM 规模可控；若日志刷得很快仍不够看，可调大该值，或进一步考虑 `vue-virtual-scroller` 做虚拟列表。
-- 录屏依赖设备 `screenrecord`，单段 ≤3 分钟；需要更长可用 `screenrecord --output-format=h264 - | ffmpeg` 流式方案（需自带 ffmpeg）。
-- 环境提示：本机若同时存在多个版本的 adb（如雷电模拟器自带 adb 与 resources/adb.exe 版本不同），会互相重启对方 server，导致日志采集/进程检测间歇性无数据且无报错；`adb kill-server` 或统一两端 adb 版本可解。
+- 日志为全量内存缓冲 + 尾部截取渲染。日志极快时可加大 `maxRender`，或考虑虚拟列表。
+- 录屏依赖设备 `screenrecord`：单段最长 180 秒、不采音频、DRM 保护内容录出来是黑屏；更长时间需分段录制 + ffmpeg 拼接（当前未内置 ffmpeg）。
+- 抓包要求设备已预装 `tcpdump`；`su -c` 提权模式还要求设备已 root 且存在 `su`。
+- 权限授予/撤销、清除设备缓存仍标注 Beta。
+- 多版本 adb 共存（如模拟器自带 adb）会互相重启 server，表现为日志/进程间歇无数据且无报错；统一版本或 `adb kill-server` 可解。
+- 版本检测只提示、不自动下载安装；GitHub 不可达时回退读 raw `package.json`，仍失败则静默跳过。
