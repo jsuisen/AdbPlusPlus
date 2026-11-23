@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
+import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, wrapLines, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
 import { saveCfg } from './useConfig'
@@ -18,7 +18,7 @@ function onLogScrollSave() {
   const s = activeLogSerial.value
   if (!s || !logEl.value) return
   scrollPosMap[s] = logEl.value.scrollTop
-  if (autoscroll.value && !suppressScrollCancel && !editingNoteId.value) {
+  if (autoscroll.value && !suppressScrollCancel && !suppressWrapScrollCancel && !editingNoteId.value) {
     const el = logEl.value
     const atBottomNow = el.scrollHeight - el.scrollTop - el.clientHeight < 4
     if (!atBottomNow) autoscroll.value = false
@@ -886,6 +886,9 @@ async function browseLogDir() {
 
 let autoLogTimer = null
 let suppressScrollCancel = false
+// 切换「换行」会改变日志区高度并派发一次 scroll，不能把它当作用户手动上滚而取消底部跟随
+let suppressWrapScrollCancel = false
+let wrapScrollTimer = null
 export function useLogcat() {
 watch(() => {
   const arr = logsMap[activeLogSerial.value]
@@ -921,6 +924,20 @@ watch(() => [findDraft.target, findDraft.mode, findDraft.matchCase, findDraft.wh
 })
 // 切换「按包名过滤」模式时清空已选进程名/包名：两种模式可选值集合不同，旧选中值在新模式下无效，避免停在空选项
 watch(procFilterByPkg, () => { selectedProc.value = '' })
+// 换行开关改变行高/滚动高度，浏览器会补发 scroll；底部跟随开启时必须忽略这次 scroll 并重新贴底
+watch(wrapLines, () => {
+  if (!autoscroll.value || !logEl.value) return
+  suppressWrapScrollCancel = true
+  if (wrapScrollTimer) clearTimeout(wrapScrollTimer)
+  nextTick(() => {
+    const el = logEl.value
+    if (el) el.scrollTop = el.scrollHeight
+    wrapScrollTimer = setTimeout(() => {
+      suppressWrapScrollCancel = false
+      wrapScrollTimer = null
+    }, 100)
+  })
+})
 
   return { anyAutoLogActive, applyAutoLog, browseAppLogDir, browseLogDir, cancelFmt, clearKeywordFilter, clearLogs, clearTagFilter, closeCtxMenu, closeFindWindow, closeQuickFilter, collectTagStats, commitNote, commitNoteById, commitQuickFilter, confirmFmt, copySelection, countFind, deviceLabel, editNote, enableAutoscroll, ensureAutoLogPath, ensureLogFilter, escapeRegExp, escapeRegexTag, exportLogs, findLineEl, findSegsFor, flushAutoLog, fmtLineOf, focusFindInput, formatLogLine, insertNote, insertTailNote, invertQf, loadProcToPkg, noteFileAppend, onAppLogChange, onAutoLogChange, onData, onDataAutoLog, onFindWinFocusChange, onFindWinMouseDown, onGlobalKey, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onNoteInput, onNoteKey, onWheel, onLogWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, pidMapFor, pushFindHistory, refreshFindScope, refreshProcs, removeNote, resetFindPosOnce, resetQf, sanitizeSerial, scrollToBottom, scrollToTop, selectAllLogs, sortPkgs, startAutoLogFlush, startFindDrag, startFindResize, startLogcat, stepFind, stopAutoLogFlush, stopLogcat, syncCheckFromRegex, toggleAllQf, toggleLatest, toggleLogcat, unescapeRegexTag }
 }
