@@ -60,9 +60,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* 菜单栏左侧按钮：收紧内边距（内边距），与上面 gap 一起缩小外边距 */
 .menu-left button { padding: 3px 8px; }
 /* 侧栏折叠图标按钮：固定尺寸，与其他文字按钮同高；图标 16×16，颜色随按钮 color（default/hover 可见） */
-.menu-left button.sidebar-toggle { width: 26px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
-.menu-ico { display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; color: var(--muted); }
-.menu-ico svg { display: block; width: 16px; height: 16px; }
+/* 按钮尺寸与日志窗口左侧工具条一致（28×28）。
+   图标设 20px 而非 16px：Lucide panel-left 是 24 网格描边、有效图形约占画布 75%，
+   16px 时目视比 AS 16 网格实心图标小一圈；放大到 20px 才有同等视觉重量。 */
+.menu-left button.sidebar-toggle { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.menu-ico { display: inline-flex; width: 20px; height: 20px; flex: 0 0 20px; color: var(--muted); }
+.menu-ico svg { display: block; width: 20px; height: 20px; }
 .menu-left button.sidebar-toggle:hover .menu-ico { color: var(--text); }
 
 /* 窗口控制按钮 */
