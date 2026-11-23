@@ -159,11 +159,16 @@ export function registerAdbIpc() {
   ipcMain.handle(ADB_DEVICES, async () => listDevices())
   ipcMain.handle(ADB_VERSION, async () => run('adb.exe', ['version']))
   // 进程列表：用于日志窗口「进程包名」下拉；NAME 即进程名（应用即包名），格式 包名(进程号)
+  // 返回 { procs } 或 { error }：设备瞬断 / adb server 重启 / 看门狗杀进程都会拿非零退出码，
+  // 这是可恢复的查询失败，不能在 ipcMain.handle 里 throw —— 否则 Electron 会把整段 stack 打到控制台，
+  // 用户只看到「报错」而不知道下拉其实保留了上次成功结果。
   ipcMain.handle(ADB_PS, async (_e, { serial }) => {
-    if (!serial) throw new Error('serial 必填')
-    const { out, code } = await run('adb.exe', ['-s', serial, 'shell', 'ps'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
-    // 失败必须抛错：返回 [] 会让渲染层把「设备无响应」误当成「该设备没有应用进程」而清空下拉。
-    if (code !== 0) throw new Error('adb shell ps 失败（code=' + code + '）')
+    if (!serial) return { error: 'serial 必填' }
+    const { out, err, code } = await run('adb.exe', ['-s', serial, 'shell', 'ps'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
+    if (code !== 0) {
+      const detail = String(err || out || '').trim().slice(-300)
+      return { error: `adb shell ps 失败（code=${code}）${detail ? '：' + detail : ''}` }
+    }
     const procs = []
     for (const ln of out.split(/\r?\n/)) {
       const f = ln.trim().split(/\s+/)
@@ -175,7 +180,7 @@ export function registerAdbIpc() {
       if (!name.includes('.') || name.startsWith('/')) continue
       procs.push({ pid, pkg: name })
     }
-    return procs
+    return { procs }
   })
   // 通用命令：args 必须是字符串数组，主进程只转交，绝不拼 shell。
   // 第三参数 runId 可选：传入后登记 AbortController，使渲染层能强杀挂起的 adb 子进程。

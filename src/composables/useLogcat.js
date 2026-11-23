@@ -244,8 +244,12 @@ async function refreshProcs(serial) {
   procsLoading[serial] = true
   const task = (async () => {
     try {
-      const list = await api.invoke('adb:ps', { serial })
-      procsMap[serial] = sortPkgs(Array.isArray(list) ? list : [])
+      const res = await api.invoke('adb:ps', { serial })
+      // 兼容旧主进程：直接返回数组。新主进程返回 { procs } 或 { error }。
+      // 失败在此抛出后由本函数 catch 吞掉并保留上次成功列表，不会再冒到 IPC 层刷 stack。
+      const list = Array.isArray(res) ? res : (res && Array.isArray(res.procs) ? res.procs : null)
+      if (!list) throw new Error((res && res.error) || 'adb:ps 返回格式异常')
+      procsMap[serial] = sortPkgs(list)
     } catch {
       // 保留上一次成功结果。首次拉取才置空，避免一次超时把已有列表清掉且没有恢复入口。
       if (!procsMap[serial]) procsMap[serial] = []
