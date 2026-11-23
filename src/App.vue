@@ -49,6 +49,8 @@ import WrapIcon from './assets/icons/as-logcat/wrap.svg?raw'
 import FormatIcon from './assets/icons/as-logcat/format.svg?raw'
 import ColorsIcon from './assets/icons/as-logcat/colors.svg?raw'
 import SearchIcon from './assets/icons/as-logcat/search.svg?raw'
+import SidebarCloseIcon from './assets/icons/as-logcat/sidebar-close.svg?raw'
+import SidebarOpenIcon from './assets/icons/as-logcat/sidebar-open.svg?raw'
 
 const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
@@ -163,7 +165,12 @@ const { openUpdateDialog } = useUpdate()
     <!-- 菜单栏（已合并自定义标题栏：左侧 收起/关于，右侧 窗口控制） -->
     <div class="menubar">
       <div class="menu-left">
-        <button @click="collapsedSidebar = !collapsedSidebar">{{ collapsedSidebar ? '展开侧边栏' : '收起侧边栏' }}</button>
+        <!-- 侧栏折叠：双态图标。collapsedSidebar=true 表示已收起 → 显示「展开」图标；否则显示「收起」图标 -->
+        <button class="sidebar-toggle" @click="collapsedSidebar = !collapsedSidebar"
+                :title="collapsedSidebar ? '展开侧边栏' : '收起侧边栏'"
+                :aria-label="collapsedSidebar ? '展开侧边栏' : '收起侧边栏'">
+          <span class="menu-ico" v-html="collapsedSidebar ? SidebarOpenIcon : SidebarCloseIcon" />
+        </button>
         <button @click="openConnectModal">连接设备</button>
         <button @click="loadDeviceFromFile">加载设备</button>
         <button @click="refreshDevices">刷新设备</button>
