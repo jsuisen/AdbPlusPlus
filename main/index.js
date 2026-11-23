@@ -14,6 +14,7 @@ import { registerFileIpc } from './file.js'
 import { registerAppLogIpc, startAppLog } from './applog.js'
 import { registerFontsIpc } from './fonts.js'
 import { registerDeviceTrackerIpc, stopDeviceTracker } from './devices.js'
+import { getResourcesDir } from './tools.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let win = null
@@ -25,6 +26,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1280,
     height: 820,
+    icon: path.join(getResourcesDir(), 'icon.ico'),  // 开发与打包都用同一份多尺寸图标
     frame: false,        // 去掉原生标题栏，改用菜单栏内自定义窗口控制
     thickFrame: true,     // Windows：保留可拖拽改变窗口大小的边框
     alwaysOnTop: false,   // 默认不置顶；每次启动都复位，由标题栏「置顶」按钮切换
