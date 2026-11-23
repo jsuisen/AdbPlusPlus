@@ -38,9 +38,13 @@ async function refreshDevices() {
       selectedSerial.value = list[0]?.serial || ''
       activeLogSerial.value = selectedSerial.value
     }
-    await refreshProcs(activeLogSerial.value)
+    // 进程列表不阻塞设备列表：adb shell ps 在网络设备上可能很慢，旧实现 await 它期间
+    // refreshing 一直为 true，后续 devicesChanged 全被守卫吞掉，界面看起来「卡死」。
+    // 进程拉取自身有并发去重 + 超时，结果到齐后自行填入下拉。
+    refreshProcs(activeLogSerial.value)
   } catch (e) {
-    devices.value = []
+    // adb server 冷启动偶发失败：保留已显示的设备，等下一次 devicesChanged 自然校正；
+    // 直接置空会让「包名进程」下拉被禁用成空白，且没有任何自恢复入口。
   } finally {
     refreshing.value = false
   }

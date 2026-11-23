@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（app）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {api, alwaysOnTop, capturing, logErrMap, maximized, refreshing, runningMap} from './state'
+import {activeLogSerial, api, alwaysOnTop, capturing, logErrMap, maximized, procsMap, refreshing, runningMap} from './state'
 import { APP_UPDATE_AVAILABLE } from '@shared/ipc-channels.js'
 import { onUpdateAvailable } from './useUpdate'
 import { applyConfig, loadSystemFonts, onDocMouseDown, saveCfg } from './useConfig'
@@ -9,6 +9,7 @@ import { onData, onFindWinFocusChange, onGlobalKey, refreshProcs, stopAutoLogFlu
 import { refreshDevices } from './useDevices'
 
 let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offUpdate
+let startupProcTimer = null
 export function useApp() {
 onMounted(async () => {
   const c = await api.invoke('config:get')
@@ -43,6 +44,12 @@ onMounted(async () => {
 
   await refreshDevices()
   loadSystemFonts()   // 异步填充「日志字体」下拉为系统已安装字体（失败则保留兜底选项）
+  // 启动补拉：冷启动瞬间 adb server 未就绪会让首轮 ps 失败，3 秒后若仍无列表再试一次。
+  // refreshProcs 内部有按 serial 去重和超时，重复触发不会叠加 adb 子进程。
+  startupProcTimer = setTimeout(() => {
+    startupProcTimer = null
+    if (activeLogSerial.value && !(procsMap[activeLogSerial.value] || []).length) refreshProcs(activeLogSerial.value)
+  }, 3000)
 })
 onBeforeUnmount(() => {
   offData && offData(); offErr && offErr(); offStderr && offStderr(); offClosed && offClosed(); offMax && offMax(); offDevicesChanged && offDevicesChanged(); offProcChanged && offProcChanged()
@@ -50,6 +57,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onDocMouseDown)
   document.removeEventListener('keydown', onGlobalKey)
   document.removeEventListener('focusin', onFindWinFocusChange)
+  if (startupProcTimer) { clearTimeout(startupProcTimer); startupProcTimer = null }
   stopAutoLogFlush()
   // 窗口关闭时停掉所有仍在跑的抓包，避免设备端 tcpdump 残留
   for (const s of Object.keys(capturing)) { if (capturing[s]) { try { api.invoke('netcap:stop', s) } catch {} } }

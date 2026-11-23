@@ -22,15 +22,33 @@ export function resolveTool(name) {
 }
 
 // 通用运行：返回 { code, out, err }
+// opts.timeoutMs > 0 时给子进程加看门狗：超时杀掉本条 adb CLI 并返回带标记的部分输出，
+// 绝不把「设备/adb server 无响应」变成永不 settle 的 Promise（启动期 refreshDevices 会因此卡在 refreshing=true）。
+// 不给 timeoutMs 的调用（bugreport/pull/install 等长命令）行为完全不变。
 export function run(tool, args, opts = {}) {
   return new Promise((resolve, reject) => {
     const exe = resolveTool(tool)
-    const p = spawn(exe, args, { windowsHide: true, ...opts })
+    const { timeoutMs, ...spawnOpts } = opts
+    const p = spawn(exe, args, { windowsHide: true, ...spawnOpts })
     let out = ''
     let err = ''
+    let timer = null
+    let settled = false
+    const finish = (fn, value) => {
+      if (settled) return
+      settled = true
+      if (timer) clearTimeout(timer)
+      fn(value)
+    }
+    if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
+      timer = setTimeout(() => {
+        err += `\n[超时 ${timeoutMs}ms，已终止 ${tool}]`
+        try { p.kill() } catch {}
+      }, timeoutMs)
+    }
     if (p.stdout) p.stdout.on('data', (d) => { out += d.toString() })
     if (p.stderr) p.stderr.on('data', (d) => { err += d.toString() })
-    p.on('error', reject)
-    p.on('close', (code) => resolve({ code, out, err }))
+    p.on('error', (e) => finish(reject, e))
+    p.on('close', (code) => finish(resolve, { code, out, err }))
   })
 }

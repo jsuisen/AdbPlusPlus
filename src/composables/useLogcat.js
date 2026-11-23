@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
+import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
 import { saveCfg } from './useConfig'
@@ -233,13 +233,29 @@ function loadProcToPkg() {
   if (selectedProc.value) { appPkg.value = selectedProc.value; saveCfg() }
 }
 
+// 同一 serial 的并发刷新去重：切设备、proc:changed、启动补拉、手动 ↻ 可能同时触发，
+// 旧实现让最后回来的空/失败结果覆盖有效列表，是「下拉偶发空白」的直接来源之一。
+const procsInFlight = Object.create(null)
+
 async function refreshProcs(serial) {
   serial = serial || activeLogSerial.value
   if (!serial) return
-  try {
-    const list = await api.invoke('adb:ps', { serial })
-    procsMap[serial] = sortPkgs(list)
-  } catch { procsMap[serial] = [] }
+  if (procsInFlight[serial]) return procsInFlight[serial]
+  procsLoading[serial] = true
+  const task = (async () => {
+    try {
+      const list = await api.invoke('adb:ps', { serial })
+      procsMap[serial] = sortPkgs(Array.isArray(list) ? list : [])
+    } catch {
+      // 保留上一次成功结果。首次拉取才置空，避免一次超时把已有列表清掉且没有恢复入口。
+      if (!procsMap[serial]) procsMap[serial] = []
+    } finally {
+      procsLoading[serial] = false
+      if (procsInFlight[serial] === task) delete procsInFlight[serial]
+    }
+  })()
+  procsInFlight[serial] = task
+  return task
 }
 
 function openFmt() { Object.assign(fmtDraft, logFmt); fmtModalOpen.value = true }

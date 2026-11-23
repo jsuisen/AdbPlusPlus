@@ -23,6 +23,7 @@ export const nextNoteId = () => 'n_' + (++_noteSeq)
 export const runningMap = reactive({}) // serial -> 是否采集中
 export const logErrMap = reactive({})  // serial -> 错误信息
 export const procsMap = reactive({})   // serial -> 进程列表
+export const procsLoading = reactive({}) // serial -> 进程列表是否正在拉取（下拉显示「加载中」，避免空白误导）
 
 export const LOG_FILTER_DEFAULTS = () => ({ level: 'D', pkg: '', tag: '', tagWhole: false, regex: false, text: '', autoscroll: true, wrap: false, byPkg: false })
 

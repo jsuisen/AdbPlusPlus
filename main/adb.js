@@ -142,8 +142,11 @@ const parseThreadStat = (txt) => {
   return { cpus, map }
 }
 
+// 启动期 adb server 可能还在冷启动；查询类命令必须有界，否则渲染层的刷新链永远等不到响应。
+const DEVICE_QUERY_TIMEOUT_MS = 10000
+
 export async function listDevices() {
-  const { out } = await run('adb.exe', ['devices', '-l'])
+  const { out } = await run('adb.exe', ['devices', '-l'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
   const devs = []
   for (const ln of out.split(/\r?\n/).slice(1)) {
     const m = ln.match(/^(\S+)\s+(device|offline|unauthorized)\s*(.*)$/)
@@ -158,8 +161,9 @@ export function registerAdbIpc() {
   // 进程列表：用于日志窗口「进程包名」下拉；NAME 即进程名（应用即包名），格式 包名(进程号)
   ipcMain.handle(ADB_PS, async (_e, { serial }) => {
     if (!serial) throw new Error('serial 必填')
-    const { out, code } = await run('adb.exe', ['-s', serial, 'shell', 'ps'])
-    if (code !== 0) return []
+    const { out, code } = await run('adb.exe', ['-s', serial, 'shell', 'ps'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
+    // 失败必须抛错：返回 [] 会让渲染层把「设备无响应」误当成「该设备没有应用进程」而清空下拉。
+    if (code !== 0) throw new Error('adb shell ps 失败（code=' + code + '）')
     const procs = []
     for (const ln of out.split(/\r?\n/)) {
       const f = ln.trim().split(/\s+/)

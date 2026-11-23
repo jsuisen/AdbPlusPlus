@@ -41,7 +41,7 @@ import ResultModal from './components/modals/ResultModal.vue'
 import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
@@ -266,10 +266,16 @@ const { openUpdateDialog } = useUpdate()
               <input type="checkbox" v-model="procFilterByPkg" />按包名过滤
             </label>
             <span class="proc-wrap">
-              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" @mousedown="() => refreshProcs()" title="点开即刷新当前设备进程列表">
+              <!-- 原生 select 的弹出层在 mousedown 瞬间就快照了 option 列表：若在 mousedown 里异步拉进程，
+                   结果回来时弹层已打开，DOM 更新不会回填当前弹层 —— 表现为「点开就是空白」。
+                   故去掉点开即刷新，改成独立 ↻ 按钮（在弹层外点击，数据到齐后再打开下拉）。
+                   列表由启动 / 切设备 / proc:changed 事件预拉，失败保留上一次成功列表。 -->
+              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" title="按包名/进程过滤日志；点右侧 ↻ 刷新进程列表">
                 <option value="">{{ procFilterByPkg ? '-包名-' : '-包名进程-' }}</option>
+                <option v-if="procsLoading[activeLogSerial]" value="" disabled>加载中…</option>
                 <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
               </select>
+              <button type="button" class="proc-refresh" title="刷新当前设备进程列表" @click="() => refreshProcs()">↻</button>
             </span>
             <span class="toolbar-gap"></span>
             <span class="kwfilter-wrap tag-wrap">

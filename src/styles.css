@@ -167,6 +167,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .level-select, .proc-wrap select, .kwfilter-wrap.tag-wrap input { font-size: 12px; padding: 2px 4px; }
 /* 进程包名下拉 */
 .proc-wrap { display: inline-flex; align-items: center; gap: 4px; }
+/* 进程列表刷新按钮：放在原生 select 弹层之外，避免弹层打开时异步改 option */
+.proc-refresh { width: 24px; padding: 2px 0; font-size: 15px; line-height: 1; }
 /* 「底部」按钮激活态 */
 .toolbar button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
