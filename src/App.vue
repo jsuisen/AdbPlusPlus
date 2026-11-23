@@ -40,6 +40,15 @@ import UpdateModal from './components/modals/UpdateModal.vue'
 import ResultModal from './components/modals/ResultModal.vue'
 import BusyIndicator from './components/BusyIndicator.vue'
 import FindWindow from './components/FindWindow.vue'
+// 日志窗口左侧竖条：AS Logcat 原版图标（?raw 内联，使 currentColor 跟随按钮 color，
+// 「底部」「换行」激活态无需改图标文件即可变色）。来源见 .workbuddy/tmp/261123_extract_logcat_icons.py
+import ClearIcon from './assets/icons/as-logcat/clear.svg?raw'
+import TopIcon from './assets/icons/as-logcat/top.svg?raw'
+import BottomIcon from './assets/icons/as-logcat/bottom.svg?raw'
+import WrapIcon from './assets/icons/as-logcat/wrap.svg?raw'
+import FormatIcon from './assets/icons/as-logcat/format.svg?raw'
+import ColorsIcon from './assets/icons/as-logcat/colors.svg?raw'
+import SearchIcon from './assets/icons/as-logcat/search.svg?raw'
 
 const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
@@ -332,15 +341,15 @@ const { openUpdateDialog } = useUpdate()
           <!-- 日志区主体：左侧竖向工具条（顶部/底部/清空）+ 日志窗口，仿 Android Studio Logcat -->
           <div class="log-body">
             <div class="log-side-tools">
-              <button @click="clearLogs" title="清空当前日志">清空</button>
-              <button @click="scrollToTop" title="跳转到日志顶部">顶部</button>
-              <button :class="{ active: autoscroll }" @click="toggleLatest" title="蓝=跟随中：新日志始终滚到底部；再点一次关闭跟随；在日志窗口中点击或滚轮上滚也会取消">底部</button>
-              <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" title="开启后日志自动换行；关闭则始终不换行且支持水平滚动">换行</button>
+              <button @click="clearLogs" title="清空当前日志" aria-label="清空当前日志"><span class="log-tool-ico" v-html="ClearIcon" /></button>
+              <button @click="scrollToTop" title="跳转到日志顶部" aria-label="跳转到日志顶部"><span class="log-tool-ico" v-html="TopIcon" /></button>
+              <button :class="{ active: autoscroll }" @click="toggleLatest" title="蓝=跟随中：新日志始终滚到底部；再点一次关闭跟随；在日志窗口中点击或滚轮上滚也会取消" aria-label="滚动到底部 / 跟随最新日志"><span class="log-tool-ico" v-html="BottomIcon" /></button>
+              <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" title="开启后日志自动换行；关闭则始终不换行且支持水平滚动" aria-label="自动换行"><span class="log-tool-ico" v-html="WrapIcon" /></button>
               <div class="log-side-sep"></div>
-              <button @click="openFmt" title="配置日志显示格式（日期/pid/包名/tag）">格式</button>
-              <button @click="openColorWin" title="按关键字给日志行上色：全局规则 + 当前会话规则，本会话优先">颜色</button>
+              <button @click="openFmt" title="配置日志显示格式（日期/pid/包名/tag）" aria-label="日志显示格式"><span class="log-tool-ico" v-html="FormatIcon" /></button>
+              <button @click="openColorWin" title="按关键字给日志行上色：全局规则 + 当前会话规则，本会话优先" aria-label="日志内容颜色"><span class="log-tool-ico" v-html="ColorsIcon" /></button>
               <div class="log-side-sep"></div>
-              <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）">搜索</button>
+              <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）" aria-label="搜索日志"><span class="log-tool-ico" v-html="SearchIcon" /></button>
             </div>
             <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @wheel="onLogWheel" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
             <div v-if="logCaret.visible" class="log-caret" :style="{ left: logCaret.x + 'px', top: logCaret.y + 'px' }"></div>

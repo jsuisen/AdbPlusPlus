@@ -174,10 +174,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 日志区主体：左侧竖向工具条 + 日志窗口，仿 Android Studio Logcat */
 .log-body { flex: 1; display: flex; min-height: 0; }
-.log-side-tools { flex: 0 0 auto; display: flex; flex-direction: column; align-items: stretch; gap: 4px; margin-right: 4px; padding-top: 46px; }
-/* 与「全部展开/收起」同款字号字重，左右内边距收紧到 4px */
-.log-side-tools button { font-size: 12px; padding: 2px 4px; font-weight: 400; white-space: nowrap; }
-/* 「底部」跟随中激活态，与工具栏同款蓝底 */
+.log-side-tools { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 4px; margin-right: 4px; padding-top: 46px; }
+/* AS 原版图标按钮：28×28 方块，图标固定 16×16。
+   图标里的 fill="currentColor" 让「底部/换行」激活时随按钮 color 一起变白，无需两套图。 */
+.log-side-tools button { width: 28px; height: 28px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 400; }
+.log-side-tools button:hover { background: #eef0f3; }
+.log-tool-ico { display: inline-flex; width: 16px; height: 16px; flex: 0 0 16px; }
+.log-tool-ico svg { display: block; width: 16px; height: 16px; }
+/* 「底部」跟随中激活态，与工具栏同款蓝底（写在 :hover 之后，激活时不被悬浮色覆盖） */
 .log-side-tools button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 /* 竖条分组分隔线：换行/格式 之间、颜色/搜索 之间 */
 .log-side-sep { flex: 0 0 auto; height: 1px; background: var(--border); margin: 2px 0; }
