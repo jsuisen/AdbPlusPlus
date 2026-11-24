@@ -1,5 +1,6 @@
 // 共享状态：设备信息与检测（主 Tab / 信息卡 / 四个轮询列表 / getprop / 组件调试·权限·文件·重启·Monkey 弹窗）
 import { ref, reactive, computed } from 'vue'
+import { t } from '@/i18n'
 import { selectedSerial } from './devices.js'
 
 export const activeMainTab = ref('log')
@@ -151,22 +152,22 @@ export const actCmdPreview = computed(() => {
     const parts = [base, 'start']
     if (actAction.value && actAction.value.trim()) parts.push('-a', actAction.value.trim())
     else if (actPkg.value && actActivity.value) parts.push('-n', `${actPkg.value}/${actActivity.value}`)
-    else return '（请填写 Action，或 包名 + Activity 类名）'
+    else return t('err.actionOrComponentParen')
     for (const e of actExtras.value) if (e && e.key) parts.push(EXTRA_PREVIEW_FLAG[e.type] || '--es', e.key, String(e.value))
     return parts.join(' ')
   }
   if (actModalType.value === 'startService') {
-    if (!actPkg.value || !actService.value) return '（请填写 包名 + Service 类名）'
+    if (!actPkg.value || !actService.value) return t('err.pkgAndServiceParen')
     const cmd = actServiceBackground.value ? 'startservice' : 'start-foreground-service'
     const parts = [`adb.exe -s ${ser} shell am ${cmd} -n ${actPkg.value}/${actService.value}`]
     for (const e of actExtras.value) if (e && e.key) parts.push(EXTRA_PREVIEW_FLAG[e.type] || '--es', e.key, String(e.value))
     return parts.join(' ')
   }
   if (actModalType.value === 'stopService') {
-    if (!actPkg.value || !actService.value) return '（请填写 包名 + Service 类名）'
+    if (!actPkg.value || !actService.value) return t('err.pkgAndServiceParen')
     return `adb.exe -s ${ser} shell am stopservice -n ${actPkg.value}/${actService.value}`
   }
-  if (!actAction.value) return '（请填写 Action）'
+  if (!actAction.value) return t('err.actionParen')
   const parts = [base, 'broadcast', '-a', actAction.value.trim()]
   let comp = actComponent.value.trim()
   if (comp && comp.startsWith('.') && actPkg.value.trim()) comp = actPkg.value.trim() + '/' + comp

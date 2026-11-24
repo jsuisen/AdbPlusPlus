@@ -39,7 +39,7 @@ export const fontPickerOpen = ref(false)
 
 // 选项：第一项为系统默认等宽，其余为系统字体；value 直接是可用的 CSS font-family 串
 export const fontOptions = computed(() => [
-  { label: '系统默认等宽', value: 'monospace' },
+  { labelKey: 'settings.systemMono', value: 'monospace' },
   ...fontNames.value.map((n) => ({ label: n, value: `"${n}", monospace` }))
 ])
 

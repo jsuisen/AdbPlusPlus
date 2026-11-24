@@ -30,8 +30,8 @@ const fhDraft = reactive({ tag: '', text: '' })
 // 注意：computed 必须在此 `.value` 取成普通数组。若把 ref 直接塞进普通对象，
 // 模板里的 sect.list 不会被自动解包，v-for 拿到的是 ref 对象而非数组。
 const fhSections = computed(() => [
-  { kind: 'tag', title: 'Tag 过滤历史', list: tagHistory.value },
-  { kind: 'text', title: '关键字过滤历史', list: textHistory.value }
+  { kind: 'tag', title: t('settings.tagFilterHistory'), list: tagHistory.value },
+  { kind: 'text', title: t('settings.textFilterHistory'), list: textHistory.value }
 ])
 function fhAdd(kind) {
   if (addFilterHistory(kind, fhDraft[kind])) fhDraft[kind] = ''
@@ -76,9 +76,9 @@ async function exportLangTemplate() {
   const p = await api.invoke('file:saveText', {
     content: xml,
     defaultPath: 'adbplusplus-lang-template.xml',
-    filters: [{ name: 'XML 语言模板', extensions: ['xml'] }]
+    filters: [{ name: t('common.xmlTemplate'), extensions: ['xml'] }]
   })
-  if (p) showResult('导出语言模板', '已导出：' + p, true)
+  if (p) showResult(t('settings.exportTemplate'), t('toast.exported') + p, true)
 }
 </script>
 
@@ -266,7 +266,7 @@ async function exportLangTemplate() {
               <input type="number" min="1" max="3" step="0.1" v-model.number="logFont.lineHeight" @change="onFontChange" />
               <span class="muted small">{{ t('settings.lineHeightHint') }}</span>
             </label>
-            <div class="font-preview" :style="logFontStyle">I/Hello 世界 2018-02-07 06:16:28.555 com.example.sample: sample log line</div>
+            <div class="font-preview" :style="logFontStyle">I/Hello World 2018-02-07 06:16:28.555 com.example.sample: sample log line</div>
             <p class="muted small">{{ t('settings.effectiveImmediately') }}</p>
           </div>
           <div v-if="settingsTab === 'win'" class="win-box">

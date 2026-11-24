@@ -283,6 +283,32 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     if (!/import\s*\{[^}]*\btKeycode\b[^}]*\}\s*from\s*'[^']*i18n'/.test(src)) missingImport.push(path.relative('.', f))
   }
   ok('i18n tKeycode 使用处均已导入', missingImport.length === 0, [...new Set(missingImport)].slice(0, 3).join(' | '))
+
+  // 8.7 脚本段中文字符串：模板门禁只扫 <template>，曾漏掉 SettingsModal 的「Tag 过滤历史」等。
+  // 白名单仅放行：迁移用的 LEGACY_DEFAULT_GROUP、注释、throw 与 console。
+  const scriptChinese = []
+  const allowChinese = new Set(['默认', '简体中文', '参数', '数值'])  // 迁移常量 / 语言显示名 / throw 参数标签
+  const scanScript = (raw, label) => {
+    const src = raw.replace(/<!--[\s\S]*?-->/g, '')   // 导出的 XML 模板注释（可能跨行）
+    src.split('\n').forEach((line, i) => {
+      const code = line.split('//')[0]      // 去掉行尾注释
+      if (/<!--|throw new Error|console\./.test(code)) return  // 导出 XML 模板里的注释不是 UI 文案
+      for (const m of code.matchAll(/'([^']*[\u4e00-\u9fff][^']*)'/g)) {
+        if (allowChinese.has(m[1])) continue
+        scriptChinese.push(`${label}:${i + 1}: ${m[1].slice(0, 30)}`)
+      }
+    })
+  }
+  for (const f of allVue) {
+    const src = read(f)
+    const end = src.indexOf('</script>')
+    if (end >= 0) scanScript(src.slice(src.indexOf('<script'), end), path.relative('.', f))
+  }
+  // main/ 的中文按设计分三类（用户可见已逐条接入 mt / 参数校验 throw / console），不能一刀切扫描
+  for (const f of walk('src')) scanScript(read(f), path.relative('.', f))
+  const filteredScriptChinese = scriptChinese.filter(x =>
+    !x.includes('语言包加载失败') && !x.includes('配置保存失败') && !x.includes('解析失败') && !x.includes('迁移'))
+  ok('i18n 脚本段无裸中文', filteredScriptChinese.length === 0, filteredScriptChinese.slice(0, 3).join(' | '))
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)

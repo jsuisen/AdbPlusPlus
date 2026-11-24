@@ -1,5 +1,6 @@
 // 共享状态：logcat 域（日志缓冲与分桶 / 过滤 computed / 快筛 / 查找窗口 / 注释 / 自动保存 / 日志格式）
 import { ref, reactive, computed } from 'vue'
+import { t } from '@/i18n'
 import { activeLogSerial } from './devices.js'
 import { cfg } from './core.js'
 import { escapeRegExp, sortPkgs } from '../shared.js'
@@ -270,7 +271,7 @@ export const findPattern = computed(() => {
       : (findDraft.wholeWord ? '\\b' + escapeRegExp(t) + '\\b' : escapeRegExp(t))
     return { re: new RegExp(body, flags), err: '' }
   } catch (e) {
-    return { re: null, err: '正则表达式无效：' + e.message }
+    return { re: null, err: t('err.invalidRegex') + e.message }
   }
 })
 

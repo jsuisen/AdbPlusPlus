@@ -3,6 +3,7 @@
 // 现所有结果性文字一律走 showResult -> ResultModal（文本可选中 + 一键复制）；
 // 状态栏 lastMsg 只保留「进行中 / 瞬时状态」提示（如录屏中、连续截图中）。
 import { ref } from 'vue'
+import { t } from '@/i18n'
 
 // ---- 结果弹窗 ----
 export const resultOpen = ref(false)
@@ -29,7 +30,7 @@ export function showResult(title, text, ok = true, opts = {}) {
     if (now - (lastShown.get(key) || 0) < (opts.cooldownMs || 15000)) return
     lastShown.set(key, now)
   }
-  resultTitle.value = String(title || '操作结果')
+  resultTitle.value = String(title || t('result.title'))
   resultText.value = body
   resultOk.value = ok !== false
   resultOpen.value = true
@@ -46,7 +47,7 @@ let busyCount = 0
 
 export function beginBusy(text) {
   busyCount += 1
-  busyText.value = String(text || '处理中…')
+  busyText.value = String(text || t('busy.processing'))
   busy.value = true
 }
 

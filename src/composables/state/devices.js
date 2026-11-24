@@ -126,9 +126,9 @@ export async function devInvoke(label, channel, payload) {
   try {
     const r = await api.invoke(channel, { serial: selectedSerial.value, ...payload })
     const ok = r.code === 0
-    const text = (ok ? '完成：' + label : '失败：' + label + ' ' + (r.err || r.code)) + '\n' + cmdDetail(r)
+    const text = t(ok ? 'result.done' : 'result.failed', { label, err: r.err || r.code }) + '\n' + cmdDetail(r)
     showResult(label, text, ok)
   } catch (e) {
-    showResult(label, label + '异常：' + e.message, false)
+    showResult(label, t('result.error', { label, err: e.message }), false)
   }
 }

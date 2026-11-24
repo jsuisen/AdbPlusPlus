@@ -9,15 +9,15 @@ import { t } from '@/i18n'
 const { api, closeResult, resultOk, resultOpen, resultText, resultTitle } = State
 
 async function copyResult() {
-  const text = (resultTitle.value || '操作结果') + '\n' + (resultText.value || '')
+  const text = (resultTitle.value || t('result.title')) + '\n' + (resultText.value || '')
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(text)
     else await api.invoke('clipboard:write', { text })
-    toast('已复制结果文本')
+    toast(t('toast.resultCopied'))
   } catch {
     // 渲染进程 clipboard API 不可用时回落到主进程通道（主进程 handler 自行吞异常）
-    try { await api.invoke('clipboard:write', { text }); toast('已复制结果文本') }
-    catch { toast('复制失败，请手动选中文本复制') }
+    try { await api.invoke('clipboard:write', { text }); toast(t('toast.resultCopied')) }
+    catch { toast(t('toast.copyResultFailed')) }
   }
 }
 </script>

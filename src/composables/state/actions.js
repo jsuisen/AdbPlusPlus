@@ -1,6 +1,6 @@
 // 共享状态：快捷操作（快捷命令 / 模拟按键 / 输入文本·点击·滑动 按钮组与各管理弹窗）
 import { ref, reactive, computed } from 'vue'
-import { tKeycode } from '@/i18n'
+import { t, tKeycode } from '@/i18n'
 
 // 分组哨兵：这些值参与逻辑比较，禁止改成中文文案（否则切换语言后筛选静默失效）。
 export const ALL_GROUPS = '__all__'
@@ -402,7 +402,7 @@ export const INPUT_TYPES = {
 export const INPUT_VALUE_FIELDS = {
   text:  [ { prop: 'text', labelKey: 'input.valueText', type: 'text' } ],
   tap:   [ { prop: 'x', label: 'X', type: 'num' }, { prop: 'y', label: 'Y', type: 'num' } ],
-  swipe: [ { prop: 'x1', label: 'X1', type: 'num' }, { prop: 'y1', label: 'Y1', type: 'num' }, { prop: 'x2', label: 'X2', type: 'num' }, { prop: 'y2', label: 'Y2', type: 'num' }, { prop: 'duration', label: '时长ms', type: 'num', optional: true } ]
+  swipe: [ { prop: 'x1', label: 'X1', type: 'num' }, { prop: 'y1', label: 'Y1', type: 'num' }, { prop: 'x2', label: 'X2', type: 'num' }, { prop: 'y2', label: 'Y2', type: 'num' }, { prop: 'duration', labelKey: 'input.duration', type: 'num', optional: true } ]
 }
 
 export const textButtons = ref([])
