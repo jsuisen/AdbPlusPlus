@@ -265,6 +265,24 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     for (const m of src.matchAll(/\bdevInvoke\([^,]+,\s*(?:t|mt)\s*\(/g)) textInIpc.push(path.relative('.', f))
   }
   ok('i18n 文案未进入 IPC 参数', textInIpc.length === 0, [...new Set(textInIpc)].slice(0, 3).join(' | '))
+
+  // 8.6 i18n 专有 API 使用处必须有 import（tsc checkJs 因 @ alias 无法解析会漏报，补显式断言）
+  const missingImport = []
+  const allVue = []
+  ;(function walkVue(d) {
+    for (const f of fs.readdirSync(d)) {
+      const p = path.join(d, f)
+      if (fs.statSync(p).isDirectory()) walkVue(p)
+      else if (f.endsWith('.vue')) allVue.push(p)
+    }
+  })('src')
+  for (const f of [...i18nFiles, ...allVue]) {
+    const src = read(f)
+    const usage = src.replace(/export\s+function\s+tKeycode\s*\(/, '')   // 排除定义处本身
+    if (!/\btKeycode\s*\(/.test(usage)) continue
+    if (!/import\s*\{[^}]*\btKeycode\b[^}]*\}\s*from\s*'[^']*i18n'/.test(src)) missingImport.push(path.relative('.', f))
+  }
+  ok('i18n tKeycode 使用处均已导入', missingImport.length === 0, [...new Set(missingImport)].slice(0, 3).join(' | '))
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)

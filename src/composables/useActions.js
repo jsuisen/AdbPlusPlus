@@ -1,6 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（actions）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { t } from '@/i18n'
+import { t, tKeycode } from '@/i18n'
 import {INPUT_TYPES, INPUT_VALUE_FIELDS, NO_GROUP, api, appPkg, cfg, cmdModal, cmdModalOpen, cmdOutput, fileLocal, fileModalMode, fileModalOpen, fileRemote, filteredKeycodes, inputButtons, inputModalOpen, inputModalType, installModalOpen, installOpts, keyButtons, monkeyCount, monkeyModalOpen, monkeyPkg, monkeySeed, monkeyThrottle, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, newInputGroup, newInputName, newInputVal, newKeyGroup, newKeyName, newKeyValue, permModalOpen, permMode, permName, permPkg, devInvoke, quickCommands, rebootModalOpen, rebootMode, selectedSerial, swipeButtons, tapButtons, textButtons, uninstallKeep, uninstallModalOpen, beginBusy, cmdDetail, endBusy, showResult} from './state'
 import { saveCfg } from './useConfig'
 import { toast } from './useUi'

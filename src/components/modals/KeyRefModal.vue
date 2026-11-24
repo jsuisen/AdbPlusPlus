@@ -3,7 +3,7 @@
 import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import { copyKeycodeTable } from '@/composables/useActions'
-import { t } from '@/i18n'
+import { t, tKeycode } from '@/i18n'
 
 const { keyRefOpen, keyRefSearch, filteredKeycodes } = State
 </script>
