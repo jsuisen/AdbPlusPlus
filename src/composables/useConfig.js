@@ -1,7 +1,11 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import { t } from '@/i18n'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
+
+// 旧配置里的中文默认分组名。单独常量，避免门禁把迁移用的必要比较当成中文哨兵。
+const LEGACY_DEFAULT_GROUP = '默认'
 
 function setTab(name) { settingsTab.value = name }
 
@@ -223,6 +227,11 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   textButtons.value = c.textButtons || []
   tapButtons.value = c.tapButtons || []
   swipeButtons.value = c.swipeButtons || []
+  // i18n 迁移：旧版本把「默认」当分组名写进配置，切语言后会同时出现「默认 / Default」两个幽灵组。
+  // 仅精确匹配该字面值，其它用户分组一律不动；显示时由 NO_GROUP 回退到 t('common.defaultGroup')。
+  for (const list of [quickCommands.value, keyButtons.value, textButtons.value, tapButtons.value, swipeButtons.value]) {
+    for (const item of list) if (item && item.group === LEGACY_DEFAULT_GROUP) item.group = NO_GROUP
+  }
   if (c.logColors) Object.assign(logColors, c.logColors)
   if (c.logColorBold) Object.assign(logColorBold, c.logColorBold)
   if (c.logBgColors) Object.assign(logBgColors, c.logBgColors)
@@ -265,33 +274,34 @@ async function exportSettings() {
   const p = await api.invoke('file:saveText', {
     content: JSON.stringify(snapshot, null, 2),
     defaultPath: 'adbplusplus-settings.json',
-    filters: [{ name: 'JSON 配置', extensions: ['json'] }]
+    filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
   })
-  if (p) showResult('导出设置', '已导出设置：' + p, true)
+  if (p) showResult(t('settings.exportSettings'), t('toast.settingsExported') + p, true)
 }
 
 async function importSettings() {
-  const p = await api.invoke('file:openFile', { filters: [{ name: 'JSON 配置', extensions: ['json'] }] })
+  const p = await api.invoke('file:openFile', { filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }] })
   if (!p) return
   let raw
   try {
     raw = await api.invoke('file:readText', { path: p })
-  } catch (e) { showResult('导入设置', '读取文件失败：' + e.message + '\n文件：' + p, false); return }
+  } catch (e) { showResult(t('settings.importSettings'), t('toast.readFileFailed') + e.message + t('common.fileLine') + p, false); return }
   let data
   try {
     data = JSON.parse(raw)
-  } catch (e) { showResult('导入设置', '文件不是合法 JSON：' + e.message + '\n文件：' + p, false); return }
+  } catch (e) { showResult(t('settings.importSettings'), t('toast.invalidJson') + e.message + t('common.fileLine') + p, false); return }
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    showResult('导入设置', '配置文件格式不正确（应为 JSON 对象）\n文件：' + p, false); return
+    showResult(t('settings.importSettings'), t('toast.invalidConfig') + t('common.fileLine') + p, false); return
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
   const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
-    showResult('导入设置', '该文件不含任何 AdbPlusPlus 配置项，已取消导入\n文件：' + p, false); return
+    showResult(t('settings.importSettings'), t('toast.noConfigItems') + t('common.fileLine') + p, false); return
   }
   // 只保留已知键：旧实现用 {...data} 浅合并，任意 JSON 都能往 cfg 里塞未知键，
   // 再经 saveCfg 落盘、被 netcap 读取，形成「外部配置 -> 设备端 root 命令」的注入链。
   // 配置存放路径（configPath）与当前设备选择（lastSerial/targetPkg）属机器/运行态，导入时不覆盖。
+  // lang / keycodeLangMode 属本机语言偏好，同样不进 known 白名单 —— 导入他人配置不应改掉我的界面语言。
   const safe = {}
   for (const k of known) {
     if (k === 'configPath' || k === 'lastSerial' || k === 'targetPkg') continue
@@ -299,7 +309,7 @@ async function importSettings() {
   }
   applyConfig(safe, { applyDeviceState: false })
   saveCfg()
-  showResult('导入设置', '已导入设置：' + p, true)
+  showResult(t('settings.importSettings'), t('toast.settingsImported') + p, true)
 }
 
 async function browseOutDir() {
@@ -313,7 +323,7 @@ async function browseOutDir() {
 async function browseConfigPath() {
   const p = await api.invoke('file:pickSave', {
     defaultPath: cfg.value.configPath || (cfg.value.outDir ? cfg.value.outDir + '/adbtool-config.json' : 'adbtool-config.json'),
-    filters: [{ name: 'JSON 配置', extensions: ['json'] }]
+    filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
   })
   if (!p) return
   cfg.value.configPath = p

@@ -8,6 +8,7 @@ import { REPO_URL } from '@shared/version.js'
 import { useUpdate } from '@/composables/useUpdate'
 // 支付宝图片：放工程 resources/ 下，经 Vite 打包进 dist/assets（asar 内可访问）
 import alipayImg from '../../../resources/alipay.jpg'
+import { t } from '@/i18n'
 
 const { aboutOpen } = State
 const { manualCheck } = useUpdate()
@@ -27,8 +28,8 @@ onMounted(async () => {
         <button class="modal-x" @click="aboutOpen = false">×</button>
       </div>
       <div class="modal-body">
-        <p>ADB++，工程级ADB桌面工具</p>
-        <p>版本: {{ meta ? meta.version : '…' }}</p>
+        <p>{{ t('about.desc') }}</p>
+        <p>{{ t('about.version', { v: meta ? meta.version : '…' }) }}</p>
         <p>Electron: {{ meta ? meta.electron : '…' }}</p>
         <p>Chrome: {{ meta ? meta.chrome : '…' }}</p>
         <p>Node.js: {{ meta ? meta.node : '…' }}</p>
@@ -36,7 +37,7 @@ onMounted(async () => {
         <p class="muted">✉️saysawgames@qq.com</p>
         <p class="muted">🏠{{ REPO_URL }}</p>
       </div>
-      <div class="modal-foot"><button @click="manualCheck">版本检测</button><button class="primary" @click="aboutOpen = false">关闭</button></div>
+      <div class="modal-foot"><button @click="manualCheck">{{ t('about.checkUpdate') }}</button><button class="primary" @click="aboutOpen = false">{{ t('common.close') }}</button></div>
     </div>
   </div>
 </template>

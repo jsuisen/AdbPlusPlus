@@ -14,6 +14,7 @@ import { registerFileIpc } from './file.js'
 import { registerAppLogIpc, startAppLog } from './applog.js'
 import { registerFontsIpc } from './fonts.js'
 import { registerDeviceTrackerIpc, stopDeviceTracker } from './devices.js'
+import { registerI18nIpc } from './langpack-ipc.js'
 import { getResourcesDir } from './tools.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -51,6 +52,7 @@ function createWindow() {
   registerNetcapIpc(win)   // 网络抓包：设备端 tcpdump 常驻 + 停止刷盘 + 按需 pull（需 win 推送事件）
   registerApkIpc()
   registerConfigIpc()
+  registerI18nIpc()
   registerFileIpc()
   registerFontsIpc()   // 系统已安装字体列表（设置面板「日志字体」下拉用，零依赖读注册表）
   registerAppLogIpc()   // 程序日志运行时启停（设置页「程序日志路径」开关 / 目录）

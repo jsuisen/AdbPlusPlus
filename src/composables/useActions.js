@@ -1,6 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（actions）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {INPUT_TYPES, INPUT_VALUE_FIELDS, api, appPkg, cfg, cmdModal, cmdModalOpen, cmdOutput, fileLocal, fileModalMode, fileModalOpen, fileRemote, filteredKeycodes, inputButtons, inputModalOpen, inputModalType, installModalOpen, installOpts, keyButtons, monkeyCount, monkeyModalOpen, monkeyPkg, monkeySeed, monkeyThrottle, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, newInputGroup, newInputName, newInputVal, newKeyGroup, newKeyName, newKeyValue, permModalOpen, permMode, permName, permPkg, devInvoke, quickCommands, rebootModalOpen, rebootMode, selectedSerial, swipeButtons, tapButtons, textButtons, uninstallKeep, uninstallModalOpen, beginBusy, cmdDetail, endBusy, showResult} from './state'
+import { t } from '@/i18n'
+import {INPUT_TYPES, INPUT_VALUE_FIELDS, NO_GROUP, api, appPkg, cfg, cmdModal, cmdModalOpen, cmdOutput, fileLocal, fileModalMode, fileModalOpen, fileRemote, filteredKeycodes, inputButtons, inputModalOpen, inputModalType, installModalOpen, installOpts, keyButtons, monkeyCount, monkeyModalOpen, monkeyPkg, monkeySeed, monkeyThrottle, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, newInputGroup, newInputName, newInputVal, newKeyGroup, newKeyName, newKeyValue, permModalOpen, permMode, permName, permPkg, devInvoke, quickCommands, rebootModalOpen, rebootMode, selectedSerial, swipeButtons, tapButtons, textButtons, uninstallKeep, uninstallModalOpen, beginBusy, cmdDetail, endBusy, showResult} from './state'
 import { saveCfg } from './useConfig'
 import { toast } from './useUi'
 
@@ -9,7 +10,7 @@ function addCmd() {
   const name = newCmdName.value.trim()
   const args = newCmdArgs.value.trim().split(/\s+/).filter(Boolean)
   if (!name || !args.length) return
-  const group = newCmdGroup.value.trim() || '默认'
+  const group = newCmdGroup.value.trim() || NO_GROUP
   quickCommands.value.push({ name, args, group, ignoreResponse: newCmdIgnore.value })
   newCmdName.value = ''; newCmdArgs.value = ''; newCmdGroup.value = ''; newCmdIgnore.value = false
   saveCfg()
@@ -26,12 +27,12 @@ async function runCmd(c) {
     const r = await api.invoke('adb:run', [...c.args])
     const body = `[exit ${r.code}]\n${r.out}${r.err}`
     const full = `${cmd}\n\n${body}`
-    if (c.ignoreResponse) toast(r.code === 0 ? '执行成功' : '执行失败：' + (r.err || r.code))
+    if (c.ignoreResponse) toast(r.code === 0 ? t('toast.execSuccess') : t('toast.execFailed') + (r.err || r.code))
     else { cmdOutput.value = full; openCmdModal(cmd, body, full) }
   } catch (e) {
-    const body = `执行失败：${e.message}`
+    const body = `${t('toast.execFailed')}${e.message}`
     const full = `${cmd}\n\n${body}`
-    if (c.ignoreResponse) toast('执行失败：' + e.message)
+    if (c.ignoreResponse) toast(t('toast.execFailed') + e.message)
     else { cmdOutput.value = full; openCmdModal(cmd, body, full) }
   }
 }
@@ -65,8 +66,8 @@ function openCmdModal(cmd, body, full) {
 async function copyCmdOutput() {
   try {
     await navigator.clipboard.writeText(cmdModal.full)
-    toast('已复制输出')
-  } catch { toast('复制失败') }
+    toast(t('toast.copiedOutput'))
+  } catch { toast(t('toast.copyFailed')) }
 }
 
 async function saveCmdOutput() {
@@ -75,14 +76,14 @@ async function saveCmdOutput() {
     defaultPath: (cfg.value.outDir || '') + '/cmd_output.log',
     filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
   })
-  if (path) toast('已保存：' + path)
+  if (path) toast(t('toast.saved') + path)
 }
 
 function addKey() {
   const name = newKeyName.value.trim()
   const key = newKeyValue.value.trim()
   if (!name || !key) return
-  const group = newKeyGroup.value.trim() || '默认'
+  const group = newKeyGroup.value.trim() || NO_GROUP
   keyButtons.value.push({ name, key, group })
   newKeyName.value = ''; newKeyValue.value = ''; newKeyGroup.value = ''
   saveCfg()
@@ -94,19 +95,19 @@ function onKeyColor(i, val) { if (keyButtons.value[i]) { keyButtons.value[i].col
 
 async function runKey(k) {
   // devInvoke 已带 serial；未选设备时给出提示并中止
-  if (!selectedSerial.value) { showResult('模拟按键', '未选择设备，请先在侧边栏选择设备', false); return }
-  await devInvoke('模拟按键', 'adb:inputKey', { key: k.key })
+  if (!selectedSerial.value) { showResult(t('action.inputKey'), t('err.noDevice'), false); return }
+  await devInvoke(t('action.inputKey'), 'adb:inputKey', { key: k.key })
 }
 
 async function copyKeycodeTable() {
-  const rows = [['值', '名称', '说明']]
-  filteredKeycodes.value.forEach(r => rows.push([r.value, r.name, r.desc || '']))
+  const rows = [[t('keyref.value'), t('common.name'), t('keyref.desc')]]
+  filteredKeycodes.value.forEach(r => rows.push([r.value, r.name, tKeycode(r.name)]))
   const text = rows.map(r => r.join('\t')).join('\n')
   try {
     await navigator.clipboard.writeText(text)
-    toast('已复制 ' + (rows.length - 1) + ' 条键值')
+    toast(t('toast.copiedPrefix') + (rows.length - 1) + t('toast.copiedSuffix'))
   } catch {
-    toast('复制失败，请手动选中表格内容复制')
+    toast(t('toast.copyTableFailed'))
   }
 }
 
@@ -127,7 +128,7 @@ function addInput() {
     }
     val[f.prop] = f.type === 'num' ? Number(raw) : raw
   }
-  const group = newInputGroup.value.trim() || '默认'
+  const group = newInputGroup.value.trim() || NO_GROUP
   inputButtonsOf(t).push({ name, group, ...val })
   newInputName.value = ''; newInputGroup.value = ''
   for (const f of INPUT_VALUE_FIELDS[t]) newInputVal[f.prop] = ''
@@ -140,15 +141,15 @@ function onInputColor(i, val) { if (inputButtons.value[i]) { inputButtons.value[
 
 async function runInput(k) {
   const t = inputModalType.value
-  if (!selectedSerial.value) { showResult(INPUT_TYPES[t].title, '未选择设备，请先在侧边栏选择设备', false); return }
-  await devInvoke(INPUT_TYPES[t].title, INPUT_TYPES[t].channel, INPUT_TYPES[t].build(k))
+  if (!selectedSerial.value) { showResult(t(INPUT_TYPES[t].titleKey), t('err.noDevice'), false); return }
+  await devInvoke(t(INPUT_TYPES[t].titleKey), INPUT_TYPES[t].channel, INPUT_TYPES[t].build(k))
 }
 
 function closePermModal() { permModalOpen.value = false }
 
 async function runPerm() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
-  await devInvoke(permMode.value === 'grant' ? '授予权限' : '撤销权限', permMode.value === 'grant' ? 'adb:grant' : 'adb:revoke', { pkg: permPkg.value, perm: permName.value })
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
+  await devInvoke(permMode.value === 'grant' ? t('perm.grant') : t('perm.revoke'), permMode.value === 'grant' ? 'adb:grant' : 'adb:revoke', { pkg: permPkg.value, perm: permName.value })
   closePermModal()
 }
 
@@ -160,39 +161,39 @@ async function choosePushFile() {
 }
 
 async function runFile() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   try {
     let title, ok, text
     if (fileModalMode.value === 'push') {
-      if (!fileLocal.value || !fileRemote.value.trim()) { toast('请选择本地文件并填写设备路径'); return }
+      if (!fileLocal.value || !fileRemote.value.trim()) { toast(t('err.selectLocalAndPath')); return }
       const r = await api.invoke('adb:push', { serial: selectedSerial.value, local: fileLocal.value, remote: fileRemote.value.trim() })
-      ok = r.code === 0; title = '推送文件'
-      text = (ok ? '推送完成：' + fileRemote.value.trim() : '推送失败：' + (r.err || r.code)) + '\n' + cmdDetail(r)
+      ok = r.code === 0; title = t('file.push')
+      text = (ok ? t('toast.pushDone') + fileRemote.value.trim() : t('toast.pushFailed') + (r.err || r.code)) + '\n' + cmdDetail(r)
     } else {
-      if (!fileRemote.value.trim()) { toast('请填写设备路径'); return }
+      if (!fileRemote.value.trim()) { toast(t('err.inputDevicePath')); return }
       const local = await api.invoke('file:pickSave', { defaultPath: (cfg.value.outDir || '') + '/pull.bin', filters: [{ name: 'All', extensions: ['*'] }] })
       if (!local) return
       const r = await api.invoke('adb:pull', { serial: selectedSerial.value, remote: fileRemote.value.trim(), local })
-      ok = r.code === 0; title = '拉取文件'
-      text = (ok ? '拉取完成：' + local : '拉取失败：' + (r.err || r.code)) + '\n' + cmdDetail(r)
+      ok = r.code === 0; title = t('file.pull')
+      text = (ok ? t('toast.pullDone') + local : t('toast.pullFailed') + (r.err || r.code)) + '\n' + cmdDetail(r)
     }
     fileModalOpen.value = false
     showResult(title, text, ok)
-  } catch (e) { showResult('文件传输', '文件传输异常：' + e.message, false) }
+  } catch (e) { showResult(t('modal.fileTransfer'), t('toast.fileTransferError') + e.message, false) }
 }
 
 function closeRebootModal() { rebootModalOpen.value = false }
 
 async function runReboot() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
-  await devInvoke('重启设备', 'adb:reboot', { mode: rebootMode.value })
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
+  await devInvoke(t('action.reboot'), 'adb:reboot', { mode: rebootMode.value })
   closeRebootModal()
 }
 
 function closeMonkeyModal() { monkeyModalOpen.value = false }
 
 async function runMonkey() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   await devInvoke('Monkey', 'adb:monkey', { pkg: monkeyPkg.value, seed: monkeySeed.value, throttle: monkeyThrottle.value, count: monkeyCount.value })
   closeMonkeyModal()
 }
@@ -200,7 +201,7 @@ async function runMonkey() {
 function openInstallModal() { installModalOpen.value = true }
 
 async function confirmInstall() {
-  if (!selectedSerial.value) { showResult('安装 APK', '未选择设备，请先在侧边栏选择设备', false); return }
+  if (!selectedSerial.value) { showResult(t('install.title'), t('err.noDevice'), false); return }
   const apkPath = await api.invoke('file:openFile', { filters: [{ name: 'APK', extensions: ['apk'] }] })
   if (!apkPath) return
   const opts = []
@@ -212,14 +213,14 @@ async function confirmInstall() {
   // 先关配置弹窗、再起后台安装：安装期间不存在 modal-mask，其余界面元素始终可点击/滚动。
   // 进度只由 BusyIndicator 的 pointer-events:none 小浮层呈现。
   installModalOpen.value = false
-  beginBusy('正在安装 APK…')
+  beginBusy(t('busy.installing'))
   try {
     const r = await api.invoke('adb:run', args)
     const ok = r.code === 0
-    const text = (ok ? '安装完成：' + apkPath : '安装失败：' + (r.err || r.code)) + '\n' + cmdDetail(r, cmd)
-    showResult('安装 APK', text, ok)
+    const text = (ok ? t('toast.installDone') + apkPath : t('toast.installFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, cmd)
+    showResult(t('install.title'), text, ok)
   } catch (e) {
-    showResult('安装 APK', '安装异常：' + e.message + '\n$ ' + cmd, false)
+    showResult(t('install.title'), t('toast.installError') + e.message + '\n$ ' + cmd, false)
   } finally {
     endBusy()
   }
@@ -228,17 +229,17 @@ async function confirmInstall() {
 function openUninstallModal() { uninstallModalOpen.value = true }
 
 async function confirmUninstall() {
-  if (!selectedSerial.value || !appPkg.value) { toast('请先填写应用包名'); return }
+  if (!selectedSerial.value || !appPkg.value) { toast(t('err.inputPkg')); return }
   const args = ['-s', selectedSerial.value, 'shell', 'pm', 'uninstall']
   if (uninstallKeep.value) args.push('-k')
   args.push(appPkg.value)
   try {
     const r = await api.invoke('adb:run', args)
     const ok = r.code === 0
-    const text = (ok ? '卸载完成（' + (uninstallKeep.value ? '保留数据' : '清除数据') + '）：' + appPkg.value : '卸载失败：' + (r.err || r.code)) + '\n' + cmdDetail(r, 'adb ' + args.join(' '))
+    const text = (ok ? t('toast.uninstallDonePrefix') + (uninstallKeep.value ? t('uninstall.keep') : t('uninstall.clear')) + '）：' + appPkg.value : t('toast.uninstallFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, 'adb ' + args.join(' '))
     uninstallModalOpen.value = false
-    showResult('卸载应用', text, ok)
-  } catch (e) { showResult('卸载应用', '卸载异常：' + e.message, false) }
+    showResult(t('uninstall.title'), text, ok)
+  } catch (e) { showResult(t('uninstall.title'), t('toast.uninstallError') + e.message, false) }
 }
 
 export function useActions() {

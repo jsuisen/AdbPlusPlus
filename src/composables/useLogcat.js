@@ -1,5 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, wrapLines, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
@@ -91,7 +92,7 @@ function collectTagStats() {
 }
 
 function openQuickFilter() {
-  if (!activeLogSerial.value) { toast('请先选择设备并开始采集日志'); return }
+  if (!activeLogSerial.value) { toast(t('err.selectDeviceAndStart')); return }
   qfTags.value = collectTagStats()
   syncCheckFromRegex()
   qfOpen.value = true
@@ -678,14 +679,14 @@ function countFind() {
   pushFindHistory()
   const total = findMatches.value.length
   const lines = findHitsByLine.value.size
-  findBox.value = total ? `共 ${total} 次匹配（分布在 ${lines} 行）` : '未找到匹配'
+  findBox.value = total ? t('find.countSummary', { total, lines }) : t('find.noMatch')
 }
 
 function stepFind(rawDir) {
-  if (!findDraft.target) { findBox.value = '请输入查找目标'; return }
+  if (!findDraft.target) { findBox.value = t('err.findTarget'); return }
   const ms = findMatches.value
   const total = ms.length
-  if (!total) { findIndex.value = -1; findBox.value = '未找到匹配'; return }
+  if (!total) { findIndex.value = -1; findBox.value = t('find.noMatch'); return }
   pushFindHistory()
   const dir = findDraft.backward ? -rawDir : rawDir
   let i = findIndex.value < 0 ? (dir > 0 ? 0 : total - 1) : findIndex.value + dir
@@ -711,10 +712,10 @@ function stepFind(rawDir) {
     suppressScrollCancel = true
     el.scrollIntoView({ block: 'center' })
     nextTick(() => { suppressScrollCancel = false })
-    findBox.value = `第 ${i + 1}/${total} 次匹配`
+    findBox.value = t('find.position', { i: i + 1, total })
   } else {
     // 命中行都不在当前视图中（被过滤 / 超出显示上限）：给出提示，避免「点了没反应」
-    findBox.value = `第 ${i + 1}/${total} 次匹配（该行不在当前视图中：可能被过滤或超出显示上限）`
+    findBox.value = t('find.positionHidden', { i: i + 1, total })
   }
 }
 
@@ -874,14 +875,14 @@ async function exportLogs() {
   const path = await api.invoke('file:saveText', {
     content, defaultPath, filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
   })
-  if (path) showResult('导出日志', '已导出：' + path, true)
+  if (path) showResult(t('log.exportTitle'), t('toast.exported') + path, true)
 }
 
 // 「浏览」按钮：立即用系统文件管理器打开自动保存日志的目录（outDir）
 async function browseLogDir() {
   const dir = cfg.value.outDir
-  if (!dir) { toast('尚未设置自动保存目录（设置-日志自动保存-outDir）'); return }
-  try { await api.invoke('file:openDir', { path: dir }) } catch (e) { toast('打开目录失败：' + e.message) }
+  if (!dir) { toast(t('err.noOutDir')); return }
+  try { await api.invoke('file:openDir', { path: dir }) } catch (e) { toast(t('toast.openDirFailed') + e.message) }
 }
 
 let autoLogTimer = null

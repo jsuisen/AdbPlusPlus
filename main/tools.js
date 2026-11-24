@@ -4,6 +4,7 @@ import { app } from 'electron'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import fs from 'node:fs'
+import { mt } from './i18n.js'
 
 export function getResourcesDir() {
   // 打包后：process.resourcesPath/resources
@@ -42,7 +43,7 @@ export function run(tool, args, opts = {}) {
     }
     if (Number.isFinite(timeoutMs) && timeoutMs > 0) {
       timer = setTimeout(() => {
-        err += `\n[超时 ${timeoutMs}ms，已终止 ${tool}]`
+        err += mt('err.toolTimeout', { ms: timeoutMs, tool })
         try { p.kill() } catch {}
       }, timeoutMs)
     }

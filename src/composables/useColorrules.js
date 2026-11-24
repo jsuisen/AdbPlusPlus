@@ -1,5 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（colorrules）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 import {activeLogSerial, colorDraft, colorDraftErr, colorModalEditId, colorModalOpen, colorModalScope, colorSessionEnabled, colorSessionMap, colorWinOpen, logBgColors, logBgOn, logColorBold, logColorRules, logColors} from './state'
 import { normalizeHex, saveCfg } from './useConfig'
 import { toast } from './useUi'
@@ -78,12 +79,12 @@ function deleteColorRuleItem(item) {
 
 function saveColorRule() {
   const kw = colorDraft.keyword.trim()
-  if (!kw) { colorDraftErr.value = '关键字不能为空'; return }
-  if (!colorDraft.byTag && !colorDraft.byMsg) { colorDraftErr.value = '请至少勾选「匹配 Tag」或「匹配日志内容」之一'; return }
+  if (!kw) { colorDraftErr.value = t('err.keywordEmpty'); return }
+  if (!colorDraft.byTag && !colorDraft.byMsg) { colorDraftErr.value = t('err.colorMatchRequired'); return }
   const rec = { keyword: kw, byTag: !!colorDraft.byTag, byMsg: !!colorDraft.byMsg, color: normalizeHex(colorDraft.color) || '#FF0000', bold: !!colorDraft.bold, enabled: colorDraft.enabled !== false, bgColor: normalizeHex(colorDraft.bgColor) || '#FFFFFF', bgOn: !!colorDraft.bgOn }
   if (colorModalScope.value === 'session') {
     const s = activeLogSerial.value
-    if (!s) { colorDraftErr.value = '请先选择设备'; return }
+    if (!s) { colorDraftErr.value = t('err.selectDevice'); return }
     const list = colorSessionMap[s] || (colorSessionMap[s] = [])
     if (colorModalEditId.value != null && list[colorModalEditId.value]) Object.assign(list[colorModalEditId.value], rec)
     else list.push(rec)
@@ -96,7 +97,7 @@ function saveColorRule() {
 }
 
 function openColorWin() {
-  if (!activeLogSerial.value) { toast('请先选择设备并开始采集日志'); return }
+  if (!activeLogSerial.value) { toast(t('err.selectDeviceAndStart')); return }
   colorWinOpen.value = true
 }
 

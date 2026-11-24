@@ -1,6 +1,7 @@
 // 版本升级检测（渲染层逻辑）：订阅主进程推送、手动触发、打开/关闭升级对话框、本日忽略。
 // 遵循工程约定：渲染进程只经 window.api 与主进程通信；状态集中在 state/*。
 import { api, cfg, updateInfo, updateOpen } from './state'
+import { t } from '@/i18n'
 import { toast } from './useUi'
 import { REPO_URL, todayStr } from '@shared/version.js'
 
@@ -40,15 +41,15 @@ function dismissToday() {
 async function manualCheck() {
   try {
     const res = await api.invoke('app:checkUpdate')
-    if (res && res.error) { toast('版本检测失败：' + res.error); return }
+    if (res && res.error) { toast(t('toast.updateCheckFailed') + res.error); return }
     if (res && res.hasUpdate) {
       updateInfo.value = res
       openUpdateDialog(res)
     } else {
-      toast('已是最新版本 v' + (res ? res.current : ''))
+      toast(t('toast.upToDate') + (res ? res.current : ''))
     }
   } catch (e) {
-    toast('版本检测失败：' + e.message)
+    toast(t('toast.updateCheckFailed') + e.message)
   }
 }
 
@@ -56,9 +57,9 @@ async function manualCheck() {
 async function copyRepoUrl() {
   try {
     await api.invoke('clipboard:write', { text: REPO_URL })
-    toast('已复制开源工程地址，请在浏览器打开')
+    toast(t('toast.repoCopied'))
   } catch {
-    toast('复制失败')
+    toast(t('toast.copyFailed'))
   }
 }
 

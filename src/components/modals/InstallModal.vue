@@ -3,6 +3,7 @@
 import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import { confirmInstall } from '@/composables/useActions'
+import { t } from '@/i18n'
 
 const { installModalOpen, installOpts } = State
 </script>
@@ -10,18 +11,18 @@ const { installModalOpen, installOpts } = State
 <template>
   <div v-if="installModalOpen" class="modal-mask" @click.self="maskClose(() => installModalOpen = false)">
     <div class="modal">
-      <div class="modal-head">安装 APK<button class="modal-x" @click="installModalOpen = false">×</button></div>
+      <div class="modal-head">{{ t('install.title') }}<button class="modal-x" @click="installModalOpen = false">×</button></div>
       <div class="modal-body">
         <div class="chk-row">
-          <label class="chk"><input type="checkbox" v-model="installOpts.d" /> 允许降级(-d)</label>
-          <label class="chk"><input type="checkbox" v-model="installOpts.g" /> 授予全部权限(-g)</label>
-          <label class="chk"><input type="checkbox" v-model="installOpts.t" /> 允许测试包(-t)</label>
+          <label class="chk"><input type="checkbox" v-model="installOpts.d" /> {{ t('install.downgrade') }}</label>
+          <label class="chk"><input type="checkbox" v-model="installOpts.g" /> {{ t('install.grantAll') }}</label>
+          <label class="chk"><input type="checkbox" v-model="installOpts.t" /> {{ t('install.testPkg') }}</label>
         </div>
-        <div class="muted">默认 -r（覆盖安装、保留数据）。确认后会弹出选择 APK 文件。</div>
+        <div class="muted">{{ t('install.hint') }}</div>
       </div>
       <div class="modal-foot">
-        <button class="ghost" @click="installModalOpen = false">取消</button>
-        <button class="primary" @click="confirmInstall">选择 APK 并安装</button>
+        <button class="ghost" @click="installModalOpen = false">{{ t('common.cancel') }}</button>
+        <button class="primary" @click="confirmInstall">{{ t('install.pickAndInstall') }}</button>
       </div>
     </div>
   </div>

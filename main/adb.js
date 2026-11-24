@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ipcMain } from 'electron'
 import { run } from './tools.js'
+import { mt } from './i18n.js'
 import { assertIdent, assertNum, shellLiteral, safeServiceTokens } from './adb-safety.js'
 
 // 资源占用采集脚本（静态文件，运行时读取后整体作为 `adb shell` 的脚本参数下发；不含任何来自渲染进程的用户输入，无命令注入风险）
@@ -167,7 +168,7 @@ export function registerAdbIpc() {
     const { out, err, code } = await run('adb.exe', ['-s', serial, 'shell', 'ps'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
     if (code !== 0) {
       const detail = String(err || out || '').trim().slice(-300)
-      return { error: `adb shell ps 失败（code=${code}）${detail ? '：' + detail : ''}` }
+      return { error: mt('err.psFailed', { code, detail: detail ? '：' + detail : '' }) }
     }
     const procs = []
     for (const ln of out.split(/\r?\n/)) {
@@ -405,7 +406,7 @@ export function registerAdbIpc() {
     out.memAvailable = memField(mem, 'MemAvailable') || memField(mem, 'MemFree')
     const cpu = await one(['shell', 'cat', '/proc/cpuinfo'])
     const cores = (cpu.match(/processor\s*:/g) || []).length
-    out.cpu = cores ? cores + ' 核' : '—'
+    out.cpu = cores ? cores + ' ' + mt('common.cores') : '—'
     const df = await one(['shell', 'df'])
     const dataLine = df.split(/\r?\n/).find((l) => /\/data(\s|$)/.test(l)) || df.split(/\r?\n/).find((l) => /\/storage/.test(l)) || ''
     out.storage = dfParse(dataLine)

@@ -3,6 +3,7 @@
 import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import { choosePushFile, runFile } from '@/composables/useActions'
+import { t } from '@/i18n'
 
 const { fileModalOpen, fileModalMode, fileLocal, fileRemote } = State
 </script>
@@ -10,25 +11,25 @@ const { fileModalOpen, fileModalMode, fileLocal, fileRemote } = State
 <template>
   <div v-if="fileModalOpen" class="modal-mask" @click.self="maskClose(() => fileModalOpen = false)">
     <div class="modal">
-      <div class="modal-head">{{ fileModalMode === 'push' ? '推送文件（电脑→设备）' : '拉取文件（设备→电脑）' }}<button class="modal-x" @click="fileModalOpen = false">×</button></div>
+      <div class="modal-head">{{ fileModalMode === 'push' ? t('file.pushTitle') : t('file.pullTitle') }}<button class="modal-x" @click="fileModalOpen = false">×</button></div>
       <div class="modal-body">
         <template v-if="fileModalMode === 'push'">
-          <label>本地文件
+          <label>{{ t('file.local') }}
             <div class="row">
-              <input :value="fileLocal" readonly placeholder="点击选择" style="flex:1" />
-              <button @click="choosePushFile">选择</button>
+              <input :value="fileLocal" readonly :placeholder="t('common.clickToChoose')" style="flex:1" />
+              <button @click="choosePushFile">{{ t('common.choose') }}</button>
             </div>
           </label>
-          <label>设备路径<input v-model="fileRemote" placeholder="/sdcard/xxx" style="width:100%" /></label>
+          <label>{{ t('file.devicePath') }}<input v-model="fileRemote" placeholder="/sdcard/xxx" style="width:100%" /></label>
         </template>
         <template v-else>
-          <label>设备路径<input v-model="fileRemote" placeholder="/sdcard/xxx" style="width:100%" /></label>
-          <div class="muted">拉取保存位置将在确认时弹出选择框。</div>
+          <label>{{ t('file.devicePath') }}<input v-model="fileRemote" placeholder="/sdcard/xxx" style="width:100%" /></label>
+          <div class="muted">{{ t('file.pullHint') }}</div>
         </template>
       </div>
       <div class="modal-foot">
-        <button class="ghost" @click="fileModalOpen = false">取消</button>
-        <button class="primary" @click="runFile">{{ fileModalMode === 'push' ? '推送' : '拉取' }}</button>
+        <button class="ghost" @click="fileModalOpen = false">{{ t('common.cancel') }}</button>
+        <button class="primary" @click="runFile">{{ fileModalMode === 'push' ? t('file.push') : t('file.pull') }}</button>
       </div>
     </div>
   </div>

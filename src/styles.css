@@ -286,6 +286,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .outdir-btn { flex: 0 0 auto; height: 28px; padding: 0 14px; border: 1px solid var(--primary); border-radius: 5px; background: var(--primary); color: #fff; font-size: 13px; }
 .outdir-btn:hover { background: var(--primary-d); border-color: var(--primary-d); }
 
+/* 语言包设置（i18n） */
+.lang-select { flex: 1 1 auto; min-width: 180px; max-width: 420px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: #fff; color: var(--text); font-size: 13px; }
+.lang-warnings { margin-top: 14px; padding: 10px 12px; border: 1px solid #f0c0c0; border-radius: 5px; background: #fff6f6; color: #a02020; font-size: 12px; line-height: 1.7; max-height: 220px; overflow: auto; }
+.lang-warning { word-break: break-all; }
+
 /* 状态栏 */
 /* overflow:hidden 兜底：statusbar 有明确 height:24px（flex 的 min-height:auto 最小尺寸失效，
    不会被内容撑高），内部超高元素会向下溢出并计入文档 scrollable overflow，

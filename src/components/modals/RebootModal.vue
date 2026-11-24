@@ -3,6 +3,7 @@
 import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import { closeRebootModal, runReboot } from '@/composables/useActions'
+import { t } from '@/i18n'
 
 const { rebootModalOpen, rebootMode } = State
 </script>
@@ -10,19 +11,19 @@ const { rebootModalOpen, rebootMode } = State
 <template>
   <div v-if="rebootModalOpen" class="modal-mask" @click.self="maskClose(closeRebootModal)">
     <div class="modal">
-      <div class="modal-head">重启设备<button class="modal-x" @click="closeRebootModal">×</button></div>
+      <div class="modal-head">{{ t('action.reboot') }}<button class="modal-x" @click="closeRebootModal">×</button></div>
       <div class="modal-body">
-        <label>模式
+        <label>{{ t('reboot.mode') }}
           <select v-model="rebootMode" style="width:100%">
-            <option value="">正常重启</option>
-            <option value="bootloader">bootloader（引导模式）</option>
-            <option value="recovery">recovery（恢复模式）</option>
+            <option value="">{{ t('reboot.normal') }}</option>
+            <option value="bootloader">{{ t('reboot.bootloader') }}</option>
+            <option value="recovery">{{ t('reboot.recovery') }}</option>
           </select>
         </label>
       </div>
       <div class="modal-foot">
-        <button class="ghost" @click="closeRebootModal">取消</button>
-        <button class="danger" @click="runReboot">重启</button>
+        <button class="ghost" @click="closeRebootModal">{{ t('common.cancel') }}</button>
+        <button class="danger" @click="runReboot">{{ t('reboot.go') }}</button>
       </div>
     </div>
   </div>

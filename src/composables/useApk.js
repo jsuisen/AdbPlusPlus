@@ -1,21 +1,22 @@
 // 由 split_app2.cjs 自动拆分生成（apk）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 import {api, apkInfo, apkModalView, apkMsg, beginBusy, cfg, cmdDetail, endBusy, pkgs, selectedSerial, showResult} from './state'
 import { sortPkgs } from './shared'
 
 // 与侧边栏「安装APK」(InstallModal -> confirmInstall) 保持同一套「非阻断进度 + 结果弹窗」语义
 async function installApk() {
-  if (!selectedSerial.value) { showResult('安装 APK', '未选择设备，请先在侧边栏选择设备', false); return }
+  if (!selectedSerial.value) { showResult(t('install.title'), t('err.noDevice'), false); return }
   const apkPath = await api.invoke('file:openFile', { filters: [{ name: 'APK', extensions: ['apk'] }] })
   if (!apkPath) return
   const cmd = 'adb -s ' + selectedSerial.value + ' install -r ' + apkPath
-  beginBusy('正在安装 APK…')
+  beginBusy(t('busy.installing'))
   try {
     const r = await api.invoke('adb:install', { serial: selectedSerial.value, apkPath })
     const ok = r.code === 0
-    showResult('安装 APK', (ok ? '安装完成：' + apkPath : '安装失败：' + (r.err || r.code)) + '\n' + cmdDetail(r, cmd), ok)
+    showResult(t('install.title'), (ok ? t('toast.installDone') + apkPath : t('toast.installFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, cmd), ok)
   } catch (e) {
-    showResult('安装 APK', '安装异常：' + e.message + '\n$ ' + cmd, false)
+    showResult(t('install.title'), t('toast.installError') + e.message + '\n$ ' + cmd, false)
   } finally {
     endBusy()
   }
@@ -25,10 +26,10 @@ async function openParse(apkPath) {
   try {
     const info = await api.invoke('apk:parse', { apkPath })
     apkInfo.value = JSON.stringify(info, null, 2)
-    apkMsg.value = '已解析：' + apkPath
+    apkMsg.value = t('toast.parsed') + apkPath
   } catch (e) {
     apkInfo.value = ''
-    apkMsg.value = '解析失败：' + e.message
+    apkMsg.value = t('toast.parseFailed') + e.message
   }
   apkModalView.value = 'info'
 }
@@ -39,7 +40,7 @@ async function parseLocal() {
 }
 
 async function parseInstalled() {
-  if (!selectedSerial.value) { showResult('解析已装 APK', '未选择设备，请先在侧边栏选择设备', false); return }
+  if (!selectedSerial.value) { showResult(t('action.parseInstalled'), t('err.noDevice'), false); return }
   // 已装应用列表同样按 sortPkgs 排序（android./com.android. 系统类沉底，其余升序），与进程包名下拉框一致
   pkgs.value = sortPkgs(await api.invoke('apk:list', { serial: selectedSerial.value }))
   apkModalView.value = 'list'
@@ -51,10 +52,10 @@ async function parseInstalledPick(p) {
     await api.invoke('apk:pull', { serial: selectedSerial.value, pkgPath: p.path, outPath })
     const info = await api.invoke('apk:parse', { apkPath: outPath })
     apkInfo.value = JSON.stringify(info, null, 2)
-    apkMsg.value = '已解析：' + outPath
+    apkMsg.value = t('toast.parsed') + outPath
   } catch (e) {
     apkInfo.value = ''
-    apkMsg.value = '解析失败：' + e.message
+    apkMsg.value = t('toast.parseFailed') + e.message
   }
   apkModalView.value = 'info'
 }

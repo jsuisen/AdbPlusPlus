@@ -1,7 +1,8 @@
 // 由 split_app2.cjs 自动拆分生成（app）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import {activeLogSerial, api, alwaysOnTop, capturing, logErrMap, maximized, procsMap, refreshing, runningMap} from './state'
-import { APP_UPDATE_AVAILABLE } from '@shared/ipc-channels.js'
+import { APP_UPDATE_AVAILABLE, I18N_CATALOG, I18N_LOAD } from '@shared/ipc-channels.js'
+import { setLocale, setKeycodeMode, t } from '@/i18n'
 import { onUpdateAvailable } from './useUpdate'
 import { applyConfig, loadSystemFonts, onDocMouseDown, saveCfg } from './useConfig'
 import { onNetcapError, onNetcapStarted, onNetcapStopped } from './useMedia'
@@ -10,10 +11,29 @@ import { refreshDevices } from './useDevices'
 
 let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offUpdate
 let startupProcTimer = null
+
+// 语言包加载：先取目录信息（首次触发主进程懒扫盘），再按 id 取合并词条。
+// force=true 用于「重新加载语言包」与切换语言 —— 外部文件改动立即生效。
+export async function loadI18n(id, force = false) {
+  try {
+    await api.invoke(I18N_CATALOG)
+    const data = await api.invoke(I18N_LOAD, { id: id || 'zh-CN', force })
+    setLocale(data)
+    document.title = t('app.title')
+    document.documentElement.lang = data.id || 'zh-CN'
+    return data
+  } catch (e) {
+    console.warn('[i18n] 语言包加载失败，沿用内置中文', e)
+    return null
+  }
+}
+
 export function useApp() {
 onMounted(async () => {
   const c = await api.invoke('config:get')
   applyConfig(c)
+  await loadI18n(c.lang || 'zh-CN')
+  setKeycodeMode(c.keycodeLangMode || 'follow')
   document.addEventListener('mousedown', onDocMouseDown)
   document.addEventListener('keydown', onGlobalKey)   // Ctrl+F 打开查找窗口 / Esc 关闭
   document.addEventListener('focusin', onFindWinFocusChange)   // 查找窗口「失去焦点后」透明：重新获得焦点即恢复不透明

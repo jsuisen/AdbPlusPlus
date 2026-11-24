@@ -4,6 +4,7 @@ import { CONFIG_GET, CONFIG_SAVE } from '../shared/ipc-channels.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { initMainI18n, setMainLocale } from './i18n.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -42,6 +43,8 @@ export function defaultOutDir() {
 }
 
 const DEFAULT = {
+  lang: '',            // 界面语言 id：空 = 首次启动按系统语言探测；外部语言包 id 亦可直接写这里
+  keycodeLangMode: 'follow', // KEYCODE 描述语言：'follow' 跟随界面 / 'en' 始终英文（本机偏好，不随设置导入导出）
   quickCommands: [],   // [{ name, args: string[] }]
   levelFilter: '',     // V/D/I/W/E/F 或空
   tagFilter: '',
@@ -88,6 +91,8 @@ export function loadConfig() {
   if (!merged.appLogDir) merged.appLogDir = defaultOutDir()
   // screenshotDir 为空时落到 exe 所在目录（截图到路径 / 连续截图的默认落点）
   if (!merged.screenshotDir) merged.screenshotDir = defaultOutDir()
+  // 只登记语言包所在目录与首选语言，不扫盘不解析（首次 i18n IPC 才懒加载）。
+  initMainI18n(configDir(), merged.lang || '')
   return merged
 }
 
@@ -122,6 +127,7 @@ export function saveConfig(cfg) {
     fs.writeFileSync(pointerPath, JSON.stringify({ configPath: target }, null, 2))
   }
   activeCfgPath = target
+  setMainLocale(clean.lang || '')
   return clean
 }
 

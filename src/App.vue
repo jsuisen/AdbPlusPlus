@@ -1,5 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from './i18n'
+import { ALL_GROUPS } from './composables/state'
 import * as State from './composables/state'
 import { useDevices } from './composables/useDevices'
 import { useConfig } from './composables/useConfig'
@@ -167,33 +169,33 @@ const { openUpdateDialog } = useUpdate()
       <div class="menu-left">
         <!-- 侧栏折叠：双态图标。collapsedSidebar=true 表示已收起 → 显示「展开」图标；否则显示「收起」图标 -->
         <button class="sidebar-toggle" @click="collapsedSidebar = !collapsedSidebar"
-                :title="collapsedSidebar ? '展开侧边栏' : '收起侧边栏'"
-                :aria-label="collapsedSidebar ? '展开侧边栏' : '收起侧边栏'">
+                :title="collapsedSidebar ? t('menu.expandSidebar') : t('menu.collapseSidebar')"
+                :aria-label="collapsedSidebar ? t('menu.expandSidebar') : t('menu.collapseSidebar')">
           <span class="menu-ico" v-html="collapsedSidebar ? SidebarOpenIcon : SidebarCloseIcon" />
         </button>
-        <button @click="openConnectModal">连接设备</button>
-        <button @click="loadDeviceFromFile">加载设备</button>
-        <button @click="refreshDevices">刷新设备</button>
-        <button @click="parseLocal">解析本地APK</button>
-        <button @click="settingsOpen = true">设置</button>
-        <button @click="aboutOpen = true">关于</button>
+        <button @click="openConnectModal">{{ t('menu.connectDevice') }}</button>
+        <button @click="loadDeviceFromFile">{{ t('menu.loadDevice') }}</button>
+        <button @click="refreshDevices">{{ t('menu.refreshDevices') }}</button>
+        <button @click="parseLocal">{{ t('menu.parseLocalApk') }}</button>
+        <button @click="settingsOpen = true">{{ t('menu.settings') }}</button>
+        <button @click="aboutOpen = true">{{ t('menu.about') }}</button>
       </div>
       <div class="win-ctl">
         <!-- 设备时钟：紧邻最小化左侧。启动后默认不记时，点击一次才激活并开始同步设备时间（MM-dd HH:mm:ss） -->
         <div class="dev-clock" :class="{ off: !deviceClockOk, idle: !deviceClockActive }" @click="refreshDeviceClock"
-             :title="!deviceClockActive ? '点击时钟开始同步设备时间' : (deviceClockOk ? '设备 ' + deviceClockSerial + ' 的时间（每 10 秒校准，点击立即校准）' : '未连接设备，时间未同步（点击重试）')">
+             :title="!deviceClockActive ? t('sidebar.clockStart') : (deviceClockOk ? t('sidebar.clockSynced', { s: deviceClockSerial }) : t('sidebar.clockNoDevice'))">
           <span class="dev-clock-dot"></span>
           <span class="dev-clock-text">{{ deviceClockText }}</span>
         </div>
-        <button class="win-top" :class="{ active: alwaysOnTop }" @click="winTop" :title="alwaysOnTop ? '取消置顶' : '窗口置顶'" :aria-pressed="alwaysOnTop">
+        <button class="win-top" :class="{ active: alwaysOnTop }" @click="winTop" :title="alwaysOnTop ? t('win.unpin') : t('win.pin')" :aria-pressed="alwaysOnTop">
           <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5.4 2.2h5.2l-.8 4 2 2.1v1.1H4.2V8.3l2-2.1-.8-4Z" />
             <path d="M8 9.4v4.4" />
           </svg>
         </button>
-        <button @click="winMin" title="最小化">–</button>
-        <button @click="winMax" :title="maximized ? '还原' : '最大化'">{{ maximized ? '❐' : '▢' }}</button>
-        <button class="win-close" @click="winClose" title="关闭">✕</button>
+        <button @click="winMin" :title="t('win.minimize')">–</button>
+        <button @click="winMax" :title="maximized ? t('win.restore') : t('win.maximize')">{{ maximized ? '❐' : '▢' }}</button>
+        <button class="win-close" @click="winClose" :title="t('common.close')">✕</button>
       </div>
     </div>
 
@@ -204,33 +206,33 @@ const { openUpdateDialog } = useUpdate()
           <div class="dev-mgmt">
             <div class="dev-head">
               <div class="dev-head-btns">
-                <button @click="expandAll">全部展开</button>
-                <button @click="collapseAll">全部收起</button>
+                <button @click="expandAll">{{ t('sidebar.expandAll') }}</button>
+                <button @click="collapseAll">{{ t('sidebar.collapseAll') }}</button>
               </div>
-              <span>设备管理</span>
+              <span>{{ t('sidebar.deviceMgmt') }}</span>
             </div>
             <div class="dev-list">
-              <div v-if="!devices.length" class="dev-empty muted">（无设备）</div>
+              <div v-if="!devices.length" class="dev-empty muted">{{ t('sidebar.noDevices') }}</div>
               <div v-for="d in devices" :key="d.serial" class="dev-item" :class="{ active: d.serial === selectedSerial }" @click="selectDevice(d.serial)" @contextmenu.prevent="openDeviceMenu(d, $event)">
                 <div class="dev-meta">
                   <span class="dev-serial">{{ displayName(d.serial) }}</span>
                   <span v-if="deviceAlias[d.serial]" class="dev-status" :class="{ off: d.status !== 'device' }" :title="d.status">{{ d.serial }}</span>
                 </div>
                 <div class="dev-acts" @click.stop>
-                  <button class="dev-disc" title="断开设备" @click="disconnectDevice(d.serial)">关闭</button>
-                  <button class="dev-reconn" title="断开后重新连接该设备（仅网络设备）" @click="reconnectDevice(d.serial)">重连</button>
+                  <button class="dev-disc" :title="t('sidebar.disconnect')" @click="disconnectDevice(d.serial)">{{ t('common.close') }}</button>
+                  <button class="dev-reconn" :title="t('sidebar.reconnectHint')" @click="reconnectDevice(d.serial)">{{ t('sidebar.reconnect') }}</button>
                 </div>
               </div>
             </div>
             <div v-for="g in devGroups" :key="g.key" class="sgroup">
               <div class="sg-head" @click="toggleGroup(g.key)">
-                <span class="caret">{{ groupOpen[g.key] ? '▾' : '▸' }}</span>{{ g.title }}
+                <span class="caret">{{ groupOpen[g.key] ? '▾' : '▸' }}</span>{{ t(g.titleKey) }}
               </div>
               <div v-show="groupOpen[g.key]" class="sg-body">
                 <template v-for="(it, i) in g.items" :key="it.act || it.kind || i">
                   <!-- 应用包名输入框（仅 应用操作 分组内含） -->
-                  <label v-if="it.kind === 'pkg'" class="pkg-row">应用包名
-                    <input v-model="appPkg" placeholder="如 com.example.app" @change="saveCfg" />
+                  <label v-if="it.kind === 'pkg'" class="pkg-row">{{ t('sidebar.appPackage') }}
+                    <input v-model="appPkg" :placeholder="t('sidebar.pkgPlaceholder')" @change="saveCfg" />
                   </label>
                   <button v-else :class="['sbtn', {
                     primary: (it.act === 'recordStart' && !recording) || (it.act === 'screenshotTimer' && !screenshotting),
@@ -239,7 +241,7 @@ const { openUpdateDialog } = useUpdate()
                     :data-icon="it.icon || ''"
                     :disabled="(!selectedSerial && !it.server) || (it.needProc && !selectedProc) || (it.needPkg && !appPkg)"
                     @click="runAction(it)">
-                    {{ (it.act === 'recordStart' && recording) ? '停止录屏' : (it.act === 'screenshotTimer' && screenshotting) ? '停止截图' : (it.act === 'captureToggle' && capturing[selectedSerial]) ? '停止抓包' : it.label }}
+                    {{ (it.act === 'recordStart' && recording) ? t('action.stopRecord') : (it.act === 'screenshotTimer' && screenshotting) ? t('action.stopScreenshot') : (it.act === 'captureToggle' && capturing[selectedSerial]) ? t('action.stopCapture') : (it.labelKey ? t(it.labelKey) : it.label) }}
                   </button>
                 </template>
               </div>
@@ -251,12 +253,12 @@ const { openUpdateDialog } = useUpdate()
       <!-- 功能区：日志窗口（按设备分 tab） -->
       <main class="main">
         <div class="areatabs">
-          <button :class="{ active: activeMainTab === 'log' }" @click="activeMainTab = 'log'">日志</button>
-          <button :class="{ active: activeMainTab === 'info' }" @click="activeMainTab = 'info'">设备信息</button>
-          <button :class="{ active: activeMainTab === 'activity' }" @click="activeMainTab = 'activity'">前台Activity</button>
-          <button :class="{ active: activeMainTab === 'service' }" @click="activeMainTab = 'service'">运行中的Service</button>
-          <button :class="{ active: activeMainTab === 'process' }" @click="activeMainTab = 'process'">进程</button>
-          <button :class="{ active: activeMainTab === 'thread' }" @click="activeMainTab = 'thread'">线程</button>
+          <button :class="{ active: activeMainTab === 'log' }" @click="activeMainTab = 'log'">{{ t('tab.log') }}</button>
+          <button :class="{ active: activeMainTab === 'info' }" @click="activeMainTab = 'info'">{{ t('tab.info') }}</button>
+          <button :class="{ active: activeMainTab === 'activity' }" @click="activeMainTab = 'activity'">{{ t('tab.activity') }}</button>
+          <button :class="{ active: activeMainTab === 'service' }" @click="activeMainTab = 'service'">{{ t('tab.service') }}</button>
+          <button :class="{ active: activeMainTab === 'process' }" @click="activeMainTab = 'process'">{{ t('tab.process') }}</button>
+          <button :class="{ active: activeMainTab === 'thread' }" @click="activeMainTab = 'thread'">{{ t('tab.thread') }}</button>
           <button :class="{ active: activeMainTab === 'getprop' }" @click="activeMainTab = 'getprop'">getprop</button>
         </div>
         <div v-if="activeMainTab === 'log'" class="logarea">
@@ -267,10 +269,10 @@ const { openUpdateDialog } = useUpdate()
               <span class="tab-name">{{ d.serial }}</span>
               <span v-if="runningMap[d.serial]" class="tab-dot"></span>
             </button>
-            <span v-if="!devices.length" class="muted">无设备</span>
+            <span v-if="!devices.length" class="muted">{{ t('log.noDevice') }}</span>
           </div>
           <div class="toolbar">
-            <button :class="currentRunning ? 'danger' : 'primary'" @click="toggleLogcat">{{ currentRunning ? '停止' : '开始' }}</button>
+            <button :class="currentRunning ? 'danger' : 'primary'" @click="toggleLogcat">{{ currentRunning ? t('common.stop') : t('common.start') }}</button>
             <span class="toolbar-gap"></span>
             <select v-model="levelFilter" class="level-select">
               <option value="V">Verbose</option><option value="D">Debug</option>
@@ -278,92 +280,92 @@ const { openUpdateDialog } = useUpdate()
               <option value="E">Error</option><option value="F">Assert</option>
             </select>
             <span class="toolbar-gap"></span>
-            <label class="proc-chk" title="勾选后下拉按包名（去重）过滤，可一次抓取某 APK 的全部进程；不勾选则按完整进程名过滤单个进程">
-              <input type="checkbox" v-model="procFilterByPkg" />按包名过滤
+            <label class="proc-chk" :title="t('log.pkgFilterHint')">
+              <input type="checkbox" v-model="procFilterByPkg" />{{ t('log.filterByPkg') }}
             </label>
             <span class="proc-wrap">
               <!-- 原生 select 的弹出层在 mousedown 瞬间就快照了 option 列表：若在 mousedown 里异步拉进程，
                    结果回来时弹层已打开，DOM 更新不会回填当前弹层 —— 表现为「点开就是空白」。
                    故去掉点开即刷新，改成独立 ↻ 按钮（在弹层外点击，数据到齐后再打开下拉）。
                    列表由启动 / 切设备 / proc:changed 事件预拉，失败保留上一次成功列表。 -->
-              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" title="按包名/进程过滤日志；点右侧 ↻ 刷新进程列表">
-                <option value="">{{ procFilterByPkg ? '-包名-' : '-包名进程-' }}</option>
-                <option v-if="procsLoading[activeLogSerial]" value="" disabled>加载中…</option>
+              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" :title="t('log.procSelectHint')">
+                <option value="">{{ procFilterByPkg ? t('log.pkgOnly') : t('log.pkgProc') }}</option>
+                <option v-if="procsLoading[activeLogSerial]" value="" disabled>{{ t('common.loading') }}</option>
                 <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
               </select>
-              <button type="button" class="proc-refresh" title="刷新当前设备进程列表" @click="() => refreshProcs()">↻</button>
+              <button type="button" class="proc-refresh" :title="t('log.refreshProcs')" @click="() => refreshProcs()">↻</button>
             </span>
             <span class="toolbar-gap"></span>
             <span class="kwfilter-wrap tag-wrap">
               <span class="filter-history">
-                <button class="fh-btn" type="button" title="Tag 过滤历史：点选已保存的过滤词填入"
+                <button class="fh-btn" type="button" :title="t('log.tagHistoryHint')"
                         @click="toggleFilterHistoryMenu('tag')">
                   <svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor" /></svg>
                 </button>
                 <div v-if="filterHistoryOpen === 'tag'" class="fh-menu">
-                  <div class="fh-menu-head">Tag 历史<span class="fh-menu-tip">点选填入</span></div>
-                  <div v-if="!tagHistory.length" class="fh-empty">暂无历史</div>
+                  <div class="fh-menu-head">{{ t('log.tagHistory') }}<span class="fh-menu-tip">{{ t('log.clickToFill') }}</span></div>
+                  <div v-if="!tagHistory.length" class="fh-empty">{{ t('log.noHistory') }}</div>
                   <div v-for="h in tagHistory" :key="h.text" class="fh-item" :class="{ locked: h.locked }"
-                       :title="h.locked ? '已锁定：点选填入' : '点选填入'" @click="pickFilterHistory('tag', h)">
-                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">锁</span>
+                       :title="h.locked ? t('log.lockedHint') : t('log.clickToFill')" @click="pickFilterHistory('tag', h)">
+                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">{{ t('log.lockTag') }}</span>
                     <button class="fh-x" type="button" :disabled="h.locked"
-                            :title="h.locked ? '锁定的记录不可删除，请先到设置里解锁' : '删除这条历史'"
+                            :title="h.locked ? t('log.lockedNoDelete') : t('log.deleteHistory')"
                             @click.stop="removeFilterHistory('tag', h.text)">×</button>
                   </div>
                 </div>
               </span>
-              <input v-model="tagFilter" placeholder="Tag过滤" @keydown.enter="commitFilterHistory('tag')" @change="commitFilterHistory('tag')" />
-              <button v-if="tagFilter" class="kw-clear" type="button" @click="clearTagFilter" title="清空 Tag 过滤">×</button>
+              <input v-model="tagFilter" :placeholder="t('log.tagFilterPlaceholder')" @keydown.enter="commitFilterHistory('tag')" @change="commitFilterHistory('tag')" />
+              <button v-if="tagFilter" class="kw-clear" type="button" @click="clearTagFilter" :title="t('log.clearTagFilter')">×</button>
             </span>
-            <label title="勾选后 Tag 过滤只匹配完全相等的 Tag（忽略大小写），不再匹配包含"><input type="checkbox" v-model="tagWholeWord" />全词匹配</label>
+            <label :title="t('log.wholeWordHint')"><input type="checkbox" v-model="tagWholeWord" />{{ t('log.wholeWord') }}</label>
             <span class="toolbar-gap"></span>
             <label><input type="checkbox" v-model="regexFilter" />Regex</label>
             <span class="kwfilter-wrap">
               <span class="filter-history">
-                <button class="fh-btn" type="button" title="关键字过滤历史：点选已保存的过滤词填入"
+                <button class="fh-btn" type="button" :title="t('log.textHistoryHint')"
                         @click="toggleFilterHistoryMenu('text')">
                   <svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M0 0h10L5 6z" fill="currentColor" /></svg>
                 </button>
                 <div v-if="filterHistoryOpen === 'text'" class="fh-menu">
-                  <div class="fh-menu-head">关键字历史<span class="fh-menu-tip">点选填入</span></div>
-                  <div v-if="!textHistory.length" class="fh-empty">暂无历史</div>
+                  <div class="fh-menu-head">{{ t('log.textHistory') }}<span class="fh-menu-tip">{{ t('log.clickToFill') }}</span></div>
+                  <div v-if="!textHistory.length" class="fh-empty">{{ t('log.noHistory') }}</div>
                   <div v-for="h in textHistory" :key="h.text" class="fh-item" :class="{ locked: h.locked }"
-                       :title="h.locked ? '已锁定：点选填入' : '点选填入'" @click="pickFilterHistory('text', h)">
-                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">锁</span>
+                       :title="h.locked ? t('log.lockedHint') : t('log.clickToFill')" @click="pickFilterHistory('text', h)">
+                    <span class="fh-item-text">{{ h.text }}</span><span v-if="h.locked" class="fh-lock-tag">{{ t('log.lockTag') }}</span>
                     <button class="fh-x" type="button" :disabled="h.locked"
-                            :title="h.locked ? '锁定的记录不可删除，请先到设置里解锁' : '删除这条历史'"
+                            :title="h.locked ? t('log.lockedNoDelete') : t('log.deleteHistory')"
                             @click.stop="removeFilterHistory('text', h.text)">×</button>
                   </div>
                 </div>
               </span>
-              <input v-model="textFilter" placeholder="关键字过滤" @keydown.enter="commitFilterHistory('text')" @change="commitFilterHistory('text')" />
-              <button v-if="textFilter" class="kw-clear" type="button" @click="clearKeywordFilter" title="清空关键字过滤">×</button>
+              <input v-model="textFilter" :placeholder="t('log.textFilterPlaceholder')" @keydown.enter="commitFilterHistory('text')" @change="commitFilterHistory('text')" />
+              <button v-if="textFilter" class="kw-clear" type="button" @click="clearKeywordFilter" :title="t('log.clearTextFilter')">×</button>
             </span>
-            <button @click="openQuickFilter" title="按 Tag 快速筛选：勾选要显示的 Tag，自动生成正则过滤">快筛</button>
+            <button @click="openQuickFilter" :title="t('log.quickFilterHint')">{{ t('log.quickFilter') }}</button>
             <span class="toolbar-gap"></span>
-            <button @click="exportLogs">导出</button>
-            <button @click="browseLogDir" title="立即打开自动保存日志的目录（outDir）">浏览</button>
+            <button @click="exportLogs">{{ t('common.export') }}</button>
+            <button @click="browseLogDir" :title="t('log.browseHint')">{{ t('common.browse') }}</button>
             <span v-if="currentLogErr" class="muted" style="color:var(--danger)">{{ currentLogErr }}</span>
           </div>
           <!-- 日志区主体：左侧竖向工具条（顶部/底部/清空）+ 日志窗口，仿 Android Studio Logcat -->
           <div class="log-body">
             <div class="log-side-tools">
-              <button @click="clearLogs" title="清空当前日志" aria-label="清空当前日志"><span class="log-tool-ico" v-html="ClearIcon" /></button>
-              <button @click="scrollToTop" title="跳转到日志顶部" aria-label="跳转到日志顶部"><span class="log-tool-ico" v-html="TopIcon" /></button>
-              <button :class="{ active: autoscroll }" @click="toggleLatest" title="蓝=跟随中：新日志始终滚到底部；再点一次关闭跟随；在日志窗口中点击或滚轮上滚也会取消" aria-label="滚动到底部 / 跟随最新日志"><span class="log-tool-ico" v-html="BottomIcon" /></button>
-              <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" title="开启后日志自动换行；关闭则始终不换行且支持水平滚动" aria-label="自动换行"><span class="log-tool-ico" v-html="WrapIcon" /></button>
+              <button @click="clearLogs" :title="t('log.clear')" :aria-label="t('log.clear')"><span class="log-tool-ico" v-html="ClearIcon" /></button>
+              <button @click="scrollToTop" :title="t('log.scrollTop')" :aria-label="t('log.scrollTop')"><span class="log-tool-ico" v-html="TopIcon" /></button>
+              <button :class="{ active: autoscroll }" @click="toggleLatest" :title="t('log.followHint')" :aria-label="t('log.follow')"><span class="log-tool-ico" v-html="BottomIcon" /></button>
+              <button :class="{ active: wrapLines }" @click="wrapLines = !wrapLines" :title="t('log.wrapHint')" :aria-label="t('log.wrap')"><span class="log-tool-ico" v-html="WrapIcon" /></button>
               <div class="log-side-sep"></div>
-              <button @click="openFmt" title="配置日志显示格式（日期/pid/包名/tag）" aria-label="日志显示格式"><span class="log-tool-ico" v-html="FormatIcon" /></button>
-              <button @click="openColorWin" title="按关键字给日志行上色：全局规则 + 当前会话规则，本会话优先" aria-label="日志内容颜色"><span class="log-tool-ico" v-html="ColorsIcon" /></button>
+              <button @click="openFmt" :title="t('log.formatHint')" :aria-label="t('log.format')"><span class="log-tool-ico" v-html="FormatIcon" /></button>
+              <button @click="openColorWin" :title="t('log.colorsHint')" :aria-label="t('log.colors')"><span class="log-tool-ico" v-html="ColorsIcon" /></button>
               <div class="log-side-sep"></div>
-              <button @click="openFindWindow" title="在当前日志窗口中查找（Ctrl+F）" aria-label="搜索日志"><span class="log-tool-ico" v-html="SearchIcon" /></button>
+              <button @click="openFindWindow" :title="t('log.searchHint')" :aria-label="t('log.search')"><span class="log-tool-ico" v-html="SearchIcon" /></button>
             </div>
             <div class="logview" :class="{ nowrap: !wrapLines }" :style="logFontStyle" ref="logEl" tabindex="-1" @keydown="onLogKey" @scroll="onLogScroll" @wheel="onLogWheel" @mousedown="onLogMouseDown" @contextmenu="onLogContextMenu($event)" @click="onLogClick">
             <div v-if="logCaret.visible" class="log-caret" :style="{ left: logCaret.x + 'px', top: logCaret.y + 'px' }"></div>
-            <div v-if="!mergedView.length" class="muted">点击「开始」采集 {{ activeLogSerial || '设备' }} 的日志…</div>
+            <div v-if="!mergedView.length" class="muted">{{ t('log.emptyHint', { dev: activeLogSerial || t('common.device') }) }}</div>
             <template v-for="e in mergedView" :key="e.id">
               <div v-if="e.kind !== 'note'" class="logline" :style="logLineStyle(e)" :data-log-id="e.id"
-                   title="单击只定位光标（不新增行）；按回车在日志末尾新增注释行">
+                   :title="t('log.lineHint')">
                 <template v-for="segs in [findSegsFor(e)]" :key="e.id + '-segs'">
                   <template v-if="segs">
                     <span v-for="(s, i) in segs" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
@@ -372,7 +374,7 @@ const { openUpdateDialog } = useUpdate()
                 </template>
               </div>
               <div v-else class="note-line" :class="{ editing: e.id === editingNoteId }" :data-log-id="e.id" @click="editNote(e)">
-                <span v-if="e.id !== editingNoteId" class="note-text" title="单击编辑此注释 / 空行（Enter 换行，Esc 取消）">
+                <span v-if="e.id !== editingNoteId" class="note-text" :title="t('log.noteHint')">
                   <template v-for="segs in [findSegsFor(e)]" :key="e.id + '-segs'">
                     <template v-if="segs">
                       <span v-for="(s, i) in segs" :key="i" :class="{ 'find-hit': s.hit, 'find-cur': s.cur }">{{ s.t }}</span>
@@ -384,17 +386,17 @@ const { openUpdateDialog } = useUpdate()
                           @keydown.stop="onNoteKey($event, e)" @input="onNoteInput($event, e)" @blur="commitNote(e)"></textarea>
               </div>
             </template>
-            <div class="logview-tail" title="按回车在日志末尾新增注释行（此处仅供点击定位光标）"></div>
+            <div class="logview-tail" :title="t('log.tailHint')"></div>
           </div>
             </div><!-- /.log-body -->
           <!-- 右键菜单：Teleport 到 body，彻底脱离日志区 overflow 容器，避免被裁剪看不见 -->
           <Teleport to="body">
             <div v-if="ctxMenu.visible" class="ctx-overlay" @click="closeCtxMenu" @contextmenu.prevent="closeCtxMenu">
               <div class="ctx-menu" :style="{ left: ctxMenu.x + 'px', top: ctxMenu.y + 'px' }" @click.stop>
-                <button class="ctx-item" :disabled="!ctxMenu.text" @click="copySelection">复制</button>
-                <button class="ctx-item" @click="selectAllLogs">全选</button>
-                <button class="ctx-item" @click="openFindFromCtx">搜索</button>
-                <button class="ctx-item ctx-clear" @click="clearLogs(); ctxMenu.visible = false">清空</button>
+                <button class="ctx-item" :disabled="!ctxMenu.text" @click="copySelection">{{ t('common.copy') }}</button>
+                <button class="ctx-item" @click="selectAllLogs">{{ t('log.selectAll') }}</button>
+                <button class="ctx-item" @click="openFindFromCtx">{{ t('common.search') }}</button>
+                <button class="ctx-item ctx-clear" @click="clearLogs(); ctxMenu.visible = false">{{ t('common.clear') }}</button>
               </div>
             </div>
           </Teleport>
@@ -403,40 +405,40 @@ const { openUpdateDialog } = useUpdate()
         </div>
         <div v-else-if="activeMainTab === 'info'" class="infoarea">
           <div class="info-toolbar">
-            <button :disabled="deviceInfoLoading || !Object.keys(deviceInfo).length" @click="exportDeviceInfo">导出</button>
+            <button :disabled="deviceInfoLoading || !Object.keys(deviceInfo).length" @click="exportDeviceInfo">{{ t('common.export') }}</button>
           </div>
-          <div v-if="deviceInfoLoading" class="muted">获取设备信息中…</div>
+          <div v-if="deviceInfoLoading" class="muted">{{ t('info.loading') }}</div>
           <template v-else>
             <div class="info-grid">
-              <div class="info-card"><div class="info-label">名称</div><div class="info-val">{{ displayName(selectedSerial) }}</div></div>
-              <div class="info-card"><div class="info-label">型号</div><div class="info-val">{{ deviceInfo.model }}</div></div>
-              <div class="info-card"><div class="info-label">Android 版本</div><div class="info-val">{{ deviceInfo.androidVersion }}</div></div>
-              <div class="info-card"><div class="info-label">分辨率</div><div class="info-val">{{ deviceInfo.resolution }}</div></div>
-              <div class="info-card"><div class="info-label">密度</div><div class="info-val">{{ deviceInfo.density }}</div></div>
-              <div class="info-card"><div class="info-label">内存(总量)</div><div class="info-val">{{ deviceInfo.memTotal }}</div></div>
-              <div class="info-card"><div class="info-label">内存(可用)</div><div class="info-val">{{ deviceInfo.memAvailable }}</div></div>
-              <div class="info-card"><div class="info-label">存储(可用/总量)</div><div class="info-val">{{ deviceInfo.storage }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.name') }}</div><div class="info-val">{{ displayName(selectedSerial) }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.model') }}</div><div class="info-val">{{ deviceInfo.model }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.androidVersion') }}</div><div class="info-val">{{ deviceInfo.androidVersion }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.resolution') }}</div><div class="info-val">{{ deviceInfo.resolution }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.density') }}</div><div class="info-val">{{ deviceInfo.density }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.memTotal') }}</div><div class="info-val">{{ deviceInfo.memTotal }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.memAvailable') }}</div><div class="info-val">{{ deviceInfo.memAvailable }}</div></div>
+              <div class="info-card"><div class="info-label">{{ t('info.storage') }}</div><div class="info-val">{{ deviceInfo.storage }}</div></div>
               <div class="info-card"><div class="info-label">CPU</div><div class="info-val">{{ deviceInfo.cpu }}</div></div>
               <div class="info-card"><div class="info-label">android_id</div><div class="info-val">{{ deviceInfo.androidId }}</div></div>
               <div class="info-card"><div class="info-label">stbid</div><div class="info-val">{{ deviceInfo.stbId }}</div></div>
               <div class="info-card"><div class="info-label">oid</div><div class="info-val">{{ deviceInfo.oid }}</div></div>
             </div>
             <div class="info-block">
-              <div class="info-label">前台 Activity</div>
+              <div class="info-label">{{ t('info.foreground') }}</div>
               <code class="info-code">{{ deviceInfo.foregroundActivity }}</code>
             </div>
             <div class="info-block">
-              <div class="info-label">MAC（多网卡）</div>
+              <div class="info-label">{{ t('info.mac') }}</div>
               <div class="mac-list">
                 <code v-for="m in (deviceInfo.macs || [])" :key="m" class="info-code">{{ m }}</code>
               </div>
               <div v-if="!(deviceInfo.macs && deviceInfo.macs.length)" class="muted">—</div>
             </div>
             <div class="info-block">
-              <div class="info-label">dumpsys 查询</div>
+              <div class="info-label">{{ t('info.dumpsys') }}</div>
               <div class="row">
-                <input v-model="dumpsysService" placeholder="service，如 meminfo / battery / activity / window" style="flex:1" />
-                <button class="primary" @click="runDumpsys">执行</button>
+                <input v-model="dumpsysService" :placeholder="t('info.dumpsysPlaceholder')" style="flex:1" />
+                <button class="primary" @click="runDumpsys">{{ t('common.run') }}</button>
                 <button @click="runBugreport">bugreport</button>
               </div>
               <pre v-if="dumpsysOut" class="dumpsys-out">{{ dumpsysOut }}</pre>
@@ -446,35 +448,35 @@ const { openUpdateDialog } = useUpdate()
         <PollingListTab v-else-if="activeMainTab === 'activity'"
           v-model:filter="activityFilter" v-model:auto="activityAuto" v-model:interval="activityInterval"
           :running="activityRunning" :loading="activityLoading"
-          label="前台 Activity" loading-text="获取前台 Activity 列表中…" empty-text="前台 Activity"
+          :label="t('info.foreground')" :loading-text="t('list.activityLoading')" :empty-text="t('info.foreground')"
           :count="activityList.length" :matched="activityListFiltered.length" :serial="selectedSerial"
           @toggle="toggleDetect('activity')" @refresh="manualRefresh('activity')">
           <div v-for="a in activityListFiltered" :key="a.name" class="svc-item">
             <span class="svc-name">{{ a.name }}</span>
-            <span v-if="a.foreground" class="fg-badge">前台</span>
+            <span v-if="a.foreground" class="fg-badge">{{ t('list.foreground') }}</span>
           </div>
-          <div v-if="!activityListFiltered.length" class="muted">无</div>
+          <div v-if="!activityListFiltered.length" class="muted">{{ t('common.none') }}</div>
         </PollingListTab>
         <PollingListTab v-else-if="activeMainTab === 'service'"
           v-model:filter="serviceFilter" v-model:auto="serviceAuto" v-model:interval="serviceInterval"
           :running="serviceRunning" :loading="serviceLoading"
-          label="运行中的 Service" loading-text="获取 Service 列表中…" empty-text="运行中 Service"
+          :label="t('list.service')" :loading-text="t('list.serviceLoading')" :empty-text="t('list.service')"
           :count="serviceList.length" :matched="serviceListFiltered.length" :serial="selectedSerial"
           @toggle="toggleDetect('service')" @refresh="manualRefresh('service')">
           <div v-for="s in serviceListFiltered" :key="s" class="svc-item">{{ s }}</div>
-          <div v-if="!serviceListFiltered.length" class="muted">无</div>
+          <div v-if="!serviceListFiltered.length" class="muted">{{ t('common.none') }}</div>
         </PollingListTab>
         <PollingListTab v-else-if="activeMainTab === 'process'"
           v-model:filter="processFilter" v-model:auto="processAuto" v-model:interval="processInterval"
           :running="processRunning" :loading="processLoading"
-          label="当前系统中运行的进程" loading-text="获取进程列表中…" empty-text="进程与资源占用"
+          :label="t('list.process')" :loading-text="t('list.processLoading')" :empty-text="t('list.processEmpty')"
           :count="processList.length" :matched="processListFiltered.length" :serial="selectedSerial"
           @toggle="toggleDetect('process')" @refresh="manualRefresh('process')">
           <table v-if="processListFiltered.length" class="svc-table">
             <thead><tr>
               <th class="col-pid">PID</th><th class="col-name">NAME</th>
               <th class="col-num">CPU%</th><th class="col-num">RSS(MB)</th><th class="col-num">VSZ(MB)</th>
-              <th class="col-num">线程</th><th class="col-state">状态</th><th class="col-num">读(MB)</th><th class="col-num">写(MB)</th>
+              <th class="col-num">{{ t('tab.thread') }}</th><th class="col-state">{{ t('list.state') }}</th><th class="col-num">{{ t('list.readMb') }}</th><th class="col-num">{{ t('list.writeMb') }}</th>
             </tr></thead>
             <tbody>
               <tr v-for="p in processListFiltered" :key="p.pid + '-' + p.name">
@@ -489,16 +491,16 @@ const { openUpdateDialog } = useUpdate()
               </tr>
             </tbody>
           </table>
-          <div v-else class="muted">无</div>
+          <div v-else class="muted">{{ t('common.none') }}</div>
         </PollingListTab>
         <PollingListTab v-else-if="activeMainTab === 'thread'"
           v-model:filter="threadFilter" v-model:auto="threadAuto" v-model:interval="threadInterval"
           :running="threadRunning" :loading="threadLoading"
-          label="当前系统中运行的线程" loading-text="获取线程列表中…" empty-text="线程与 CPU 占用"
+          :label="t('list.thread')" :loading-text="t('list.threadLoading')" :empty-text="t('list.threadEmpty')"
           :count="threadList.length" :matched="threadListFiltered.length" :serial="selectedSerial"
           @toggle="toggleDetect('thread')" @refresh="manualRefresh('thread')">
           <table v-if="threadListFiltered.length" class="svc-table">
-            <thead><tr><th class="col-user">USER</th><th class="col-pid">PID</th><th class="col-tid">TID</th><th class="col-name">NAME</th><th class="col-num">CPU%</th><th class="col-state">状态</th></tr></thead>
+            <thead><tr><th class="col-user">USER</th><th class="col-pid">PID</th><th class="col-tid">TID</th><th class="col-name">NAME</th><th class="col-num">CPU%</th><th class="col-state">{{ t('list.state') }}</th></tr></thead>
             <tbody>
               <tr v-for="t in threadListFiltered" :key="t.pid + '-' + t.tid + '-' + t.name">
                 <td class="col-user">{{ t.user }}</td><td class="col-pid">{{ t.pid }}</td><td class="col-tid">{{ t.tid }}</td><td class="col-name" :title="t.name">{{ t.name }}</td>
@@ -506,23 +508,23 @@ const { openUpdateDialog } = useUpdate()
               </tr>
             </tbody>
           </table>
-          <div v-else class="muted">无</div>
+          <div v-else class="muted">{{ t('common.none') }}</div>
         </PollingListTab>
         <div v-else-if="activeMainTab === 'getprop'" class="listarea">
           <div class="list-toolbar">
-            <input class="list-filter" v-model="getpropFilter" placeholder="过滤 key / value（共 {{ getpropList.length }} 条）" />
-            <button :disabled="getpropLoading" @click="fetchGetprop()">刷新</button>
-            <button :disabled="getpropLoading || !getpropList.length" @click="exportGetprop">导出</button>
+            <input class="list-filter" v-model="getpropFilter" :placeholder="t('getprop.filterPlaceholder', { n: getpropList.length })" />
+            <button :disabled="getpropLoading" @click="fetchGetprop()">{{ t('common.refresh') }}</button>
+            <button :disabled="getpropLoading || !getpropList.length" @click="exportGetprop">{{ t('common.export') }}</button>
           </div>
-          <div v-if="getpropLoading" class="muted">获取 getprop 中…</div>
+          <div v-if="getpropLoading" class="muted">{{ t('getprop.loading') }}</div>
           <div v-else class="info-block">
-            <div class="info-label">系统属性 getprop（共 {{ getpropList.length }} 条{{ getpropFilter ? '，匹配 ' + getpropListFiltered.length : '' }}）</div>
+            <div class="info-label">{{ t('getprop.title', { n: getpropList.length, suffix: getpropFilter ? t('getprop.matched', { c: getpropListFiltered.length }) : '' }) }}</div>
             <div class="svc-list">
               <div v-for="p in getpropListFiltered" :key="p.key" class="prop-item">
                 <span class="prop-key">{{ p.key }}</span>
                 <span class="prop-val">{{ p.value || '—' }}</span>
               </div>
-              <div v-if="!getpropListFiltered.length" class="muted">无</div>
+              <div v-if="!getpropListFiltered.length" class="muted">{{ t('common.none') }}</div>
             </div>
           </div>
         </div>
@@ -532,40 +534,40 @@ const { openUpdateDialog } = useUpdate()
     <!-- 快捷按钮区（状态栏上一行、设备管理/日志窗口下一行）；默认收起隐藏，由状态栏「快捷按钮」开关展开 -->
     <div v-if="quickbarVisible" class="quickbar">
       <div class="qb-head">
-        <span class="qb-title">快捷按钮</span>
+        <span class="qb-title">{{ t('quickbar.title') }}</span>
         <select v-model="cmdGroup" class="qb-group">
-          <option value="全部">全部分组</option>
+          <option :value="ALL_GROUPS">{{ t('quickbar.allGroups') }}</option>
           <option v-for="gp in cmdGroups" :key="gp" :value="gp">{{ gp }}</option>
         </select>
-        <button class="qb-manage" @click="managing = !managing">{{ managing ? '完成' : '管理' }}</button>
-        <button class="qb-close" @click="closeCmdOutput" title="关闭执行结果">✕</button>
+        <button class="qb-manage" @click="managing = !managing">{{ managing ? t('common.done') : t('common.manage') }}</button>
+        <button class="qb-close" @click="closeCmdOutput" :title="t('quickbar.closeHint')">✕</button>
       </div>
       <div class="qb-buttons">
         <button v-for="(c, i) in displayCmds" :key="i" class="qbtn" :style="{ background: c.color || '', color: cmdTextColor(c.color) }" @click="runCmd(c)">{{ c.name }}</button>
-        <span v-if="!displayCmds.length" class="muted">暂无快捷命令，点「管理」添加（参数经主进程 spawn，不拼 shell）。</span>
+        <span v-if="!displayCmds.length" class="muted">{{ t('quickbar.empty') }}</span>
       </div>
       <div v-if="managing" class="qb-edit">
         <div class="row">
-          <input v-model="newCmdName" placeholder="命令名" style="width:140px" />
-          <input v-model="newCmdArgs" placeholder="adb 参数，空格分隔" style="flex:1" />
-            <input v-model="newCmdGroup" placeholder="分组(可选)" style="width:110px" />
-            <label class="chk"><input type="checkbox" v-model="newCmdIgnore" /> 忽略响应</label>
-            <button class="primary" @click="addCmd">添加</button>
+          <input v-model="newCmdName" :placeholder="t('quickbar.cmdName')" style="width:140px" />
+          <input v-model="newCmdArgs" :placeholder="t('quickbar.cmdArgs')" style="flex:1" />
+            <input v-model="newCmdGroup" :placeholder="t('quickbar.groupOptional')" style="width:110px" />
+            <label class="chk"><input type="checkbox" v-model="newCmdIgnore" /> {{ t('quickbar.ignoreResponse') }}</label>
+            <button class="primary" @click="addCmd">{{ t('common.add') }}</button>
         </div>
         <div class="cmdlist">
           <div v-for="(c, i) in quickCommands" :key="i" class="cmditem">
-            <input class="ci-name" v-model="c.name" @change="saveCfg" placeholder="命令名" />
-            <input class="ci-args" :value="c.args.join(' ')" @input="onCmdArgsInput(i, $event.target.value)" placeholder="adb 参数" />
-            <input class="ci-group" v-model="c.group" @change="saveCfg" placeholder="分组" />
-            <button class="ci-color" @click="colorEditIndex = (colorEditIndex === i ? null : i)">颜色</button>
-            <button class="ci-del" @click="removeCmd(i)">删除</button>
-            <label class="chk"><input type="checkbox" v-model="c.ignoreResponse" @change="saveCfg" /> 忽略响应</label>
+            <input class="ci-name" v-model="c.name" @change="saveCfg" :placeholder="t('quickbar.cmdName')" />
+            <input class="ci-args" :value="c.args.join(' ')" @input="onCmdArgsInput(i, $event.target.value)" :placeholder="t('quickbar.args')" />
+            <input class="ci-group" v-model="c.group" @change="saveCfg" :placeholder="t('quickbar.group')" />
+            <button class="ci-color" @click="colorEditIndex = (colorEditIndex === i ? null : i)">{{ t('common.color') }}</button>
+            <button class="ci-del" @click="removeCmd(i)">{{ t('common.delete') }}</button>
+            <label class="chk"><input type="checkbox" v-model="c.ignoreResponse" @change="saveCfg" /> {{ t('quickbar.ignoreResponse') }}</label>
             <div v-if="colorEditIndex === i" class="color-pop">
               <input type="color" :value="c.color || '#4a90d9'" @input="onCmdColor(i, $event.target.value)" />
               <div class="swatches">
                 <button v-for="sw in COLOR_PRESETS" :key="sw" :style="{ background: sw }" @click="onCmdColor(i, sw)" :title="sw"></button>
               </div>
-              <button class="ci-ok" @click="colorEditIndex = null">完成</button>
+              <button class="ci-ok" @click="colorEditIndex = null">{{ t('common.done') }}</button>
             </div>
           </div>
         </div>
@@ -576,17 +578,17 @@ const { openUpdateDialog } = useUpdate()
     <!-- 状态栏：只展示设备连接态与「进行中」提示；所有结果性文字已迁到 ResultModal -->
     <div class="statusbar">
       <span class="status-dot" :class="selectedSerial ? 'dot-ok' : 'dot-idle'"></span>
-      <span>{{ selectedSerial || '未连接' }}</span>
+      <span>{{ selectedSerial || t('status.disconnected') }}</span>
       <span class="sb-sep">|</span>
-      <span>设备数 {{ devices.length }}</span>
+      <span>{{ t('status.deviceCount') }} {{ devices.length }}</span>
       <span class="sb-sep">|</span>
-      <span>当前：{{ activeLogSerial || '—' }}</span>
+      <span>{{ t('status.current') }}{{ activeLogSerial || '—' }}</span>
       <span class="sb-sep">|</span>
-      <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-update" style="color:#185FA5;cursor:pointer" @click="openUpdateDialog">发现新版本 v{{ updateInfo.latest }}</span>
+      <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-update" style="color:#185FA5;cursor:pointer" @click="openUpdateDialog">{{ t('status.newVersion') }}{{ updateInfo.latest }}</span>
       <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-sep">|</span>
       <span class="sb-msg">{{ lastMsg }}</span>
       <span class="sb-sep">|</span>
-      <button class="sb-toggle" :class="{ active: quickbarVisible }" @click="quickbarVisible = !quickbarVisible" :title="quickbarVisible ? '收起快捷按钮区' : '展开快捷按钮区'">快捷按钮</button>
+      <button class="sb-toggle" :class="{ active: quickbarVisible }" @click="quickbarVisible = !quickbarVisible" :title="quickbarVisible ? t('status.collapseQuickbar') : t('status.expandQuickbar')">{{ t('quickbar.title') }}</button>
     </div>
 
     <!-- 关于弹窗 -->

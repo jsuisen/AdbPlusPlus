@@ -1,6 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, cfg, colorSessionMap, connectAlias, connectHistorySel, connectIp, connectOpen, connectPort, connecting, connectTimedOut, CONNECT_TIMEOUT_MS, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
+import { t } from '@/i18n'
 import { enableAutoscroll, ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
@@ -74,15 +75,15 @@ function removeDeviceFromView(serial) {
 async function disconnectDevice(serial) {
   if (!serial) return
   const isNet = serial.includes(':')
-  if (!isNet) toast('USB/本地设备已移出列表（仍物理连接，拔线后彻底移除）')
+  if (!isNet) toast(t('toast.usbRemoved'))
   removeDeviceFromView(serial)
   if (isNet) {
     try {
       const r = await api.invoke('adb:disconnect', { serial })
-      if (r.code !== 0) toast('断开命令返回非零：' + (r.out || r.err || r.code))
+      if (r.code !== 0) toast(t('toast.disconnectNonZero') + (r.out || r.err || r.code))
     } catch (e) {
       // 主进程未注册该通道（如未重启即改了 main 进程代码）时，设备已从视图移除，仅提示命令未执行
-      toast('断开命令未执行（设备已从列表移除）：' + e.message)
+      toast(t('toast.disconnectSkipped') + e.message)
     }
   }
 }
@@ -106,8 +107,8 @@ function autoStartLogcatOnConnect(serial) {
 // 避免设备无响应时 adb connect 挂死渲染进程，与连接弹窗共用 CONNECT_TIMEOUT_MS。
 async function reconnectDevice(serial) {
   if (!serial) return
-  if (!serial.includes(':')) { toast('USB/本地设备不支持 adb 重连，请重新插拔 USB 线'); return }
-  toast('正在重连：' + serial)
+  if (!serial.includes(':')) { toast(t('err.usbReconnect')); return }
+  toast(t('toast.reconnecting') + serial)
   try {
     const disc = await api.invoke('adb:run', ['disconnect', serial])
     await new Promise((r) => setTimeout(r, 1000))
@@ -133,13 +134,13 @@ async function reconnectDevice(serial) {
     }
     const ok = conn.code === 0
     const detail = cmdDetail(disc, 'adb disconnect ' + serial) + '\n' + cmdDetail(conn, 'adb connect ' + serial)
-    showResult('重连设备', (ok ? '已重连：' : '重连失败：') + serial + '\n' + detail, ok)
+    showResult(t('modal.reconnect'), (ok ? t('toast.reconnected') : t('toast.reconnectFailed')) + serial + '\n' + detail, ok)
     if (ok) {
       await refreshDevices()
       autoStartLogcatOnConnect(serial)
     }
   } catch (e) {
-    showResult('重连设备', '重连异常：' + (e && e.message ? e.message : e), false)
+    showResult(t('modal.reconnect'), t('toast.reconnectError') + (e && e.message ? e.message : e), false)
   }
 }
 
@@ -148,24 +149,24 @@ async function adbDevices() {
     const r = await api.invoke('adb:run', ['devices'])
     const body = `[exit ${r.code}]\n${r.out}${r.err}`
     openCmdModal('$ adb devices', body, `$ adb devices\n\n${body}`)
-  } catch (e) { toast('执行失败：' + e.message) }
+  } catch (e) { toast(t('toast.execFailed') + e.message) }
 }
 
 async function adbDisconnectAll() {
   try {
     const r = await api.invoke('adb:run', ['disconnect'])
-    toast((r.code === 0 ? '已断开全部网络连接：' : '断开失败：') + (r.out || r.err || r.code))
+    toast((r.code === 0 ? t('toast.allDisconnected') : t('toast.disconnectFailed')) + (r.out || r.err || r.code))
     await refreshDevices()
-  } catch (e) { toast('执行失败：' + e.message) }
+  } catch (e) { toast(t('toast.execFailed') + e.message) }
 }
 
 async function adbKillServer() {
   try {
     const r = await api.invoke('adb:run', ['kill-server'])
-    toast(r.code === 0 ? '已停止 adb 服务器' : '停止失败：' + (r.out || r.err || r.code))
+    toast(r.code === 0 ? t('toast.adbServerStopped') : t('toast.stopFailed') + (r.out || r.err || r.code))
     // 服务器停止后设备列表应清空；即便刷新因服务器未起而异常，也强制置空
     await refreshDevices().catch(() => { devices.value = [] })
-  } catch (e) { toast('执行失败：' + e.message) }
+  } catch (e) { toast(t('toast.execFailed') + e.message) }
 }
 
 function toggleGroup(k) { groupOpen[k] = !groupOpen[k] }
@@ -175,14 +176,14 @@ function expandAll() { for (const g of devGroups) groupOpen[g.key] = true }
 function collapseAll() { for (const g of devGroups) groupOpen[g.key] = false }
 
 async function runAction(item) {
-  const effLabel = (item.act === 'recordStart' && recording.value) ? '停止录屏'
-    : (item.act === 'screenshotTimer' && screenshotting.value) ? '停止截图'
-    : item.label
-  toast('已点击：' + effLabel)
-  if (item.needPkg && !appPkg.value) { showResult('设备操作', '请先在侧边栏填写应用包名', false); return }
+  const effLabel = (item.act === 'recordStart' && recording.value) ? t('action.stopRecord')
+    : (item.act === 'screenshotTimer' && screenshotting.value) ? t('action.stopScreenshot')
+    : (item.labelKey ? t(item.labelKey) : item.label)
+  toast(t('toast.clicked', { label: effLabel }))
+  if (item.needPkg && !appPkg.value) { showResult(t('modal.deviceAction'), t('err.inputPkg'), false); return }
   switch (item.act) {
-    case 'appStart': return devInvoke('启动应用', 'adb:appStart', { pkg: appPkg.value })
-    case 'appStop': return devInvoke('停止应用', 'adb:appStop', { pkg: appPkg.value })
+    case 'appStart': return devInvoke(t('action.appStart'), 'adb:appStart', { pkg: appPkg.value })
+    case 'appStop': return devInvoke(t('action.appStop'), 'adb:appStop', { pkg: appPkg.value })
     case 'procKill': {
       // 停止进程：优先杀掉日志窗口当前选中的具体进程；否则杀掉该包名下所有运行进程的 pid。
       // 与「停止应用」(am force-stop 整包) 区分：可精确终止某一私有进程(如 :remote)。
@@ -193,20 +194,20 @@ async function runAction(item) {
         const exact = procs.filter((p) => p.pkg === selectedProc.value)
         if (exact.length) targets = exact
       }
-      if (!targets.length) { showResult('停止进程', '未找到运行中的进程（' + base + '）', false); break }
+      if (!targets.length) { showResult(t('action.procKill'), t('toast.noProcess') + base + '）', false); break }
       const pids = targets.map((t) => String(t.pid))
       const killArgs = ['-s', selectedSerial.value, 'shell', 'kill', '-9', ...pids]
       try {
         const r = await api.invoke('adb:run', killArgs)
         const ok = r.code === 0
-        const text = (ok ? '已停止进程：' + targets.map((t) => t.pkg + '(' + t.pid + ')').join(', ') : '停止进程失败：' + (r.err || r.code)) + '\n' + cmdDetail(r, 'adb ' + killArgs.join(' '))
-        showResult('停止进程', text, ok)
-      } catch (e) { showResult('停止进程', '停止进程异常：' + e.message, false) }
+        const text = (ok ? t('toast.processKilled') + targets.map((t) => t.pkg + '(' + t.pid + ')').join(', ') : t('toast.killFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, 'adb ' + killArgs.join(' '))
+        showResult(t('action.procKill'), text, ok)
+      } catch (e) { showResult(t('action.procKill'), t('toast.killError') + e.message, false) }
       break
     }
-    case 'appRestart': return devInvoke('重启应用', 'adb:appRestart', { pkg: appPkg.value })
-    case 'appClear': return devInvoke('清除缓存', 'adb:appClear', { pkg: appPkg.value })
-    case 'appClearRestart': return devInvoke('清除缓存并重启', 'adb:appClearRestart', { pkg: appPkg.value })
+    case 'appRestart': return devInvoke(t('action.appRestart'), 'adb:appRestart', { pkg: appPkg.value })
+    case 'appClear': return devInvoke(t('action.appClear'), 'adb:appClear', { pkg: appPkg.value })
+    case 'appClearRestart': return devInvoke(t('action.appClearRestart'), 'adb:appClearRestart', { pkg: appPkg.value })
     case 'loadPkg': return loadProcToPkg()
     case 'appUninstall': return openUninstallModal()
     case 'screenshot': return takeScreenshot()
@@ -219,7 +220,7 @@ async function runAction(item) {
     case 'inputSwipe': { openInputModal('swipe'); return }
     case 'installApk': return openInstallModal()
     case 'connectDevice': return openConnectModal()
-    case 'clearDeviceCache': return devInvoke('清除设备缓存', 'adb:clearDeviceCache', {})
+    case 'clearDeviceCache': return devInvoke(t('action.clearDeviceCache'), 'adb:clearDeviceCache', {})
     case 'parseLocal': return parseLocal()
     case 'parseInstalled': return parseInstalled()
     case 'actActivity': { openActModal('activity'); return }
@@ -296,7 +297,7 @@ async function abortConnect(runId, target, silent) {
       ])
     } catch {} finally { if (t) clearTimeout(t) }
   }
-  if (!silent) toast('已取消连接：' + target)
+  if (!silent) toast(t('toast.connectCancelled') + target)
 }
 
 // 用户点「取消」：立即结束等待并强杀本次 adb connect
@@ -314,7 +315,7 @@ async function confirmConnect() {
   if (connecting.value) return   // 连接中重复点确认直接忽略
   const ip = connectIp.value.trim()
   const port = connectPort.value.trim() || '5555'
-  if (!ip) { toast('请输入 IP'); return }
+  if (!ip) { toast(t('err.inputIp')); return }
   const target = `${ip}:${port}`
 
   // 上次值：点确认即记录（含失败尝试），与「仅成功才入历史」分开
@@ -342,7 +343,7 @@ async function confirmConnect() {
       watchdog
     ])
     if (attempt.cancelled) return   // 已强杀，忽略迟到的成功响应
-    const msg = (r.code === 0 ? '已连接：' : '连接失败：') + (r.out || r.err || r.code)
+    const msg = (r.code === 0 ? t('toast.connected') : t('toast.connectFailed')) + (r.out || r.err || r.code)
     toast(msg)
     if (r.code === 0) {
       // 历史：按 ip:port 去重置顶；新别名非空则覆盖，未填则保留已有别名
@@ -376,9 +377,9 @@ async function confirmConnect() {
     } else if (e && e.message === 'CONNECT_TIMEOUT') {
       await abortConnect(attempt.runId, target, true)   // 超时也强杀，避免挂死的 adb 残留
       connectTimedOut.value = true
-      toast('连接超时（' + (CONNECT_TIMEOUT_MS / 1000) + ' 秒），请检查设备 IP/端口与网络')
+      toast(t('toast.connectTimeoutPrefix') + (CONNECT_TIMEOUT_MS / 1000) + t('toast.connectTimeoutSuffix'))
     } else {
-      toast('连接异常：' + (e && e.message ? e.message : e))
+      toast(t('toast.connectError') + (e && e.message ? e.message : e))
     }
   } finally {
     if (timer) clearTimeout(timer)
@@ -411,9 +412,9 @@ async function ctxSaveDevice() {
   const { ip, port } = parseSerial(serial)
   const content = JSON.stringify({ ip, port, name: displayName(serial), alias: deviceAlias[serial] || '' }, null, 2)
   try {
-    const p = await api.invoke('file:saveText', { content, defaultPath: 'device-connection.json', filters: [{ name: '设备连接', extensions: ['json'] }] })
-    if (p) toast('已保存设备连接：' + p)
-  } catch (e) { toast('保存失败：' + e.message) }
+    const p = await api.invoke('file:saveText', { content, defaultPath: 'device-connection.json', filters: [{ name: t('modal.deviceConnection'), extensions: ['json'] }] })
+    if (p) toast(t('toast.connectionSaved') + p)
+  } catch (e) { toast(t('toast.saveFailed') + e.message) }
 }
 
 function ctxRenameDevice() {
@@ -432,15 +433,15 @@ function confirmRenameDevice() {
 }
 
 async function loadDeviceFromFile() {
-  const p = await api.invoke('file:openFile', { filters: [{ name: '设备连接', extensions: ['json'] }] })
+  const p = await api.invoke('file:openFile', { filters: [{ name: t('modal.deviceConnection'), extensions: ['json'] }] })
   if (!p) return
   try {
     const text = await api.invoke('file:readText', { path: p })
     const o = JSON.parse(text)
     if (typeof o !== 'object' || !o) throw new Error('文件格式不正确')
     openConnectModal({ ip: o.ip || '', port: o.port || '5555', alias: o.alias || '' })
-    toast('已载入设备信息，确认即可连接')
-  } catch (e) { toast('加载失败：' + e.message) }
+    toast(t('toast.connectionLoaded'))
+  } catch (e) { toast(t('toast.loadFailed') + e.message) }
 }
 
 export function useDevices() {

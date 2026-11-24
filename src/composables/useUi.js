@@ -1,5 +1,6 @@
 // 由 split_app2.cjs 自动拆分生成（ui）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 import {api, alwaysOnTop, toastMsg, toastShow} from './state'
 
 function toast(msg) {
@@ -20,8 +21,8 @@ function winClose() { api.send('window:close') }
 async function winTop() {
   try {
     alwaysOnTop.value = !!(await api.invoke('window:toggleAlwaysOnTop'))
-    toast(alwaysOnTop.value ? '已开启窗口置顶' : '已取消窗口置顶')
-  } catch { toast('窗口置顶切换失败') }
+    toast(alwaysOnTop.value ? t('toast.topOn') : t('toast.topOff'))
+  } catch { toast(t('toast.topFailed')) }
 }
 
 let toastTimer = null

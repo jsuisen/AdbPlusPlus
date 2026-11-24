@@ -1,5 +1,6 @@
 // 设备信息与检测：信息卡导出、dumpsys/bugreport、四个轮询列表（经 createPollingList 工厂接线）、组件调试弹窗
 import { watch, onBeforeUnmount } from 'vue'
+import { t } from '@/i18n'
 import {actAction, actActivity, actCmdPreview, actComponent, actExtras, actFlags, actForms, actModalOpen, actModalType, actPkg, actService, actServiceBackground, activeMainTab, activityAuto, activityInterval, activityList, activityLoading, activityResumed, activityRunning, api, cfg, clearPrev, deviceInfo, deviceInfoLoading, dumpsysOut, dumpsysService, exportTs, getpropList, getpropLoading, procCpus, procPrev, processAuto, processInterval, processList, processLoading, processRunning, deviceLabel, devInvoke, selectedSerial, serviceAuto, serviceInterval, serviceList, serviceLoading, serviceRunning, threadAuto, threadInterval, threadList, threadLoading, threadPrev, threadRunning, showResult} from './state'
 import { createPollingList } from './createPollingList'
 
@@ -12,7 +13,7 @@ async function fetchDeviceInfo() {
   try {
     deviceInfo.value = await api.invoke('adb:deviceInfo', { serial: selectedSerial.value })
   } catch (e) {
-    showResult('设备信息', '获取设备信息失败：' + e.message, false, { dedupe: 'fetchDeviceInfo' })
+    showResult(t('tab.info'), t('toast.deviceInfoFailed') + e.message, false, { dedupe: 'fetchDeviceInfo' })
   } finally {
     deviceInfoLoading.value = false
   }
@@ -21,22 +22,22 @@ async function fetchDeviceInfo() {
 async function exportDeviceInfo() {
   if (deviceInfoLoading.value) return
   const d = deviceInfo.value || {}
-  if (!Object.keys(d).length) { showResult('导出设备信息', '暂无设备信息，请先刷新', false); return }
+  if (!Object.keys(d).length) { showResult(t('info.exportTitle'), t('toast.noDeviceInfo'), false); return }
   const serial = selectedSerial.value || 'unknown'
-  const lines = ['设备信息（序列号: ' + serial + '）']
-  lines.push('型号: ' + (d.model || '—'))
-  lines.push('Android 版本: ' + (d.androidVersion || '—'))
-  lines.push('分辨率: ' + (d.resolution || '—'))
-  lines.push('密度: ' + (d.density || '—'))
-  lines.push('内存(总量): ' + (d.memTotal || '—'))
-  lines.push('内存(可用): ' + (d.memAvailable || '—'))
-  lines.push('存储(可用/总量): ' + (d.storage || '—'))
+  const lines = [t('info.title') + serial + '）']
+  lines.push(t('info.modelColon') + (d.model || '—'))
+  lines.push(t('info.androidColon') + (d.androidVersion || '—'))
+  lines.push(t('info.resolutionColon') + (d.resolution || '—'))
+  lines.push(t('info.densityColon') + (d.density || '—'))
+  lines.push(t('info.memTotalColon') + (d.memTotal || '—'))
+  lines.push(t('info.memAvailableColon') + (d.memAvailable || '—'))
+  lines.push(t('info.storageColon') + (d.storage || '—'))
   lines.push('CPU: ' + (d.cpu || '—'))
   lines.push('android_id: ' + (d.androidId || '—'))
   lines.push('stbid: ' + (d.stbId || '—'))
   lines.push('oid: ' + (d.oid || '—'))
-  lines.push('前台 Activity: ' + (d.foregroundActivity || '—'))
-  lines.push('MAC（多网卡）:')
+  lines.push(t('info.foregroundColon') + (d.foregroundActivity || '—'))
+  lines.push(t('info.macColon'))
   const macs = d.macs || []
   if (macs.length) macs.forEach((m) => lines.push('  ' + m))
   else lines.push('  —')
@@ -44,7 +45,7 @@ async function exportDeviceInfo() {
   const ts = exportTs()
   const defaultPath = (cfg.value.outDir || '') + '/deviceinfo_' + deviceLabel(serial) + '_' + ts + '.txt'
   const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) showResult('导出设备信息', '已导出：' + path, true)
+  if (path) showResult(t('info.exportTitle'), t('toast.exported') + path, true)
 }
 
 async function fetchServices(silent = false) {
@@ -53,8 +54,8 @@ async function fetchServices(silent = false) {
   try {
     const r = await api.invoke('adb:services', { serial: selectedSerial.value })
     serviceList.value = r.code === 0 ? (r.list || []) : []
-    if (r.code !== 0) showResult('Service 列表', '获取 Service 失败：' + (r.err || r.code), false, { dedupe: 'fetchServices' })
-  } catch (e) { serviceList.value = []; showResult('Service 列表', '获取 Service 异常：' + e.message, false, { dedupe: 'fetchServices' }) }
+    if (r.code !== 0) showResult(t('list.service'), t('toast.serviceFailed') + (r.err || r.code), false, { dedupe: 'fetchServices' })
+  } catch (e) { serviceList.value = []; showResult(t('list.service'), t('toast.serviceError') + e.message, false, { dedupe: 'fetchServices' }) }
   finally { if (!silent) serviceLoading.value = false }
 }
 
@@ -63,7 +64,7 @@ async function fetchProcesses(silent = false) {
   if (!silent) processLoading.value = true
   try {
     const r = await api.invoke('adb:psStat', { serial: selectedSerial.value })
-    if (r.code !== 0) { showResult('进程列表', '获取进程失败：' + (r.err || r.code), false, { dedupe: 'fetchProcesses' }); processList.value = []; return }
+    if (r.code !== 0) { showResult(t('list.process'), t('toast.processFailed') + (r.err || r.code), false, { dedupe: 'fetchProcesses' }); processList.value = []; return }
     procCpus.value = r.cpus || 1
     const now = Date.now()
     processList.value = (r.list || []).map((p) => {
@@ -74,7 +75,7 @@ async function fetchProcesses(silent = false) {
       procPrev[p.pid] = { j, t: now }
       return { ...p, cpu: Math.max(0, Math.min(999, cpu)) }
     })
-  } catch (e) { processList.value = []; showResult('进程列表', '获取进程异常：' + e.message, false, { dedupe: 'fetchProcesses' }) }
+  } catch (e) { processList.value = []; showResult(t('list.process'), t('toast.processError') + e.message, false, { dedupe: 'fetchProcesses' }) }
   finally { if (!silent) processLoading.value = false }
 }
 
@@ -86,7 +87,7 @@ async function fetchThreads(silent = false) {
       api.invoke('adb:threads', { serial: selectedSerial.value }),
       api.invoke('adb:threadStat', { serial: selectedSerial.value }),
     ])
-    if (tr.code !== 0) { showResult('线程列表', '获取线程失败：' + (tr.err || tr.code), false, { dedupe: 'fetchThreads' }); threadList.value = []; return }
+    if (tr.code !== 0) { showResult(t('list.thread'), t('toast.threadFailed') + (tr.err || tr.code), false, { dedupe: 'fetchThreads' }); threadList.value = []; return }
     if (sr.cpus) procCpus.value = sr.cpus
     const map = sr.list || {}
     const now = Date.now()
@@ -101,7 +102,7 @@ async function fetchThreads(silent = false) {
       }
       return { ...t, cpu: Math.max(0, Math.min(999, cpu)) }
     })
-  } catch (e) { threadList.value = []; showResult('线程列表', '获取线程异常：' + e.message, false, { dedupe: 'fetchThreads' }) }
+  } catch (e) { threadList.value = []; showResult(t('list.thread'), t('toast.threadError') + e.message, false, { dedupe: 'fetchThreads' }) }
   finally { if (!silent) threadLoading.value = false }
 }
 
@@ -110,10 +111,10 @@ async function fetchActivities(silent = false) {
   if (!silent) activityLoading.value = true
   try {
     const r = await api.invoke('adb:activities', { serial: selectedSerial.value })
-    if (r.code !== 0) { showResult('前台 Activity', '获取前台 Activity 失败：' + (r.err || r.code), false, { dedupe: 'fetchActivities' }); activityList.value = []; return }
+    if (r.code !== 0) { showResult(t('info.foreground'), t('toast.activityFailed') + (r.err || r.code), false, { dedupe: 'fetchActivities' }); activityList.value = []; return }
     activityResumed.value = r.resumed || ''
     activityList.value = (r.list || []).map((a) => ({ name: a, foreground: a === activityResumed.value }))
-  } catch (e) { activityList.value = []; showResult('前台 Activity', '获取前台 Activity 异常：' + e.message, false, { dedupe: 'fetchActivities' }) }
+  } catch (e) { activityList.value = []; showResult(t('info.foreground'), t('toast.activityError') + e.message, false, { dedupe: 'fetchActivities' }) }
   finally { if (!silent) activityLoading.value = false }
 }
 
@@ -122,41 +123,41 @@ async function fetchGetprop(silent = false) {
   if (!silent) getpropLoading.value = true
   try {
     const r = await api.invoke('adb:getprop', { serial: selectedSerial.value })
-    if (r.code !== 0) { showResult('getprop', '获取 getprop 失败：' + (r.err || r.code), false, { dedupe: 'fetchGetprop' }); getpropList.value = []; return }
+    if (r.code !== 0) { showResult('getprop', t('toast.getpropFailed') + (r.err || r.code), false, { dedupe: 'fetchGetprop' }); getpropList.value = []; return }
     getpropList.value = r.list || []
-  } catch (e) { getpropList.value = []; showResult('getprop', '获取 getprop 异常：' + e.message, false, { dedupe: 'fetchGetprop' }) }
+  } catch (e) { getpropList.value = []; showResult('getprop', t('toast.getpropError') + e.message, false, { dedupe: 'fetchGetprop' }) }
   finally { if (!silent) getpropLoading.value = false }
 }
 
 async function exportGetprop() {
   if (getpropLoading.value) return
   const list = getpropList.value || []
-  if (!list.length) { showResult('导出 getprop', '暂无 getprop 数据，请先刷新', false); return }
+  if (!list.length) { showResult(t('getprop.exportTitle'), t('toast.noGetprop'), false); return }
   const content = list.map((p) => '[' + p.key + ']: [' + (p.value || '') + ']').join('\n')
   const ts = exportTs()
   const serial = selectedSerial.value || 'unknown'
   const defaultPath = (cfg.value.outDir || '') + '/getprop_' + deviceLabel(serial) + '_' + ts + '.txt'
   const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) showResult('导出 getprop', '已导出：' + path, true)
+  if (path) showResult(t('getprop.exportTitle'), t('toast.exported') + path, true)
 }
 
 async function runDumpsys() {
-  if (!selectedSerial.value || !dumpsysService.value.trim()) { toast('请输入 service'); return }
+  if (!selectedSerial.value || !dumpsysService.value.trim()) { toast(t('err.inputService')); return }
   try {
     const r = await api.invoke('adb:dumpsys', { serial: selectedSerial.value, service: dumpsysService.value.trim() })
     dumpsysOut.value = (r.code === 0 ? '' : '[exit ' + r.code + ']\n') + r.out + r.err
-  } catch (e) { dumpsysOut.value = '执行失败：' + e.message }
+  } catch (e) { dumpsysOut.value = t('toast.execFailed') + e.message }
 }
 
 async function runBugreport() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   const dir = await api.invoke('file:pickDir', { defaultPath: cfg.value.outDir || undefined })
   if (!dir) return
   try {
     const r = await api.invoke('adb:bugreport', { serial: selectedSerial.value, outDir: dir })
     const ok = r.code === 0
-    showResult('bugreport', (ok ? 'bugreport 已保存：' + (r.path || dir) : 'bugreport 失败：' + (r.err || r.code)) + '\n目录：' + dir, ok)
-  } catch (e) { showResult('bugreport', 'bugreport 异常：' + e.message, false) }
+    showResult('bugreport', (ok ? t('toast.bugreportSaved') + (r.path || dir) : t('toast.bugreportFailed') + (r.err || r.code)) + t('common.dirLine') + dir, ok)
+  } catch (e) { showResult('bugreport', t('toast.bugreportError') + e.message, false) }
 }
 
 // 四个轮询列表：状态 ref 在 state 层，启停/刷新/自动刷新定时器由工厂统一接线
@@ -168,13 +169,13 @@ const lists = {
 }
 
 function toggleDetect(tab) {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   lists[tab]?.toggle()
   syncAutoTimers()
 }
 
 function manualRefresh(tab) {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   lists[tab]?.refresh()
 }
 
@@ -216,35 +217,35 @@ function closeActModal() {
 }
 
 async function runActActivity() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
-  if (!actAction.value.trim() && !(actPkg.value && actActivity.value)) { toast('请填写 Action，或 包名 + Activity 类名'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
+  if (!actAction.value.trim() && !(actPkg.value && actActivity.value)) { toast(t('err.actionOrComponent')); return }
   const extras = actExtras.value.filter((e) => e.key).map((e) => ({ type: e.type, key: e.key, value: e.value }))
-  await devInvoke('启动Activity', 'adb:amStart', { pkg: actPkg.value, activity: actActivity.value, action: actAction.value, extras })
+  await devInvoke(t('action.actActivity'), 'adb:amStart', { pkg: actPkg.value, activity: actActivity.value, action: actAction.value, extras })
   closeActModal()
 }
 
 async function runActService(mode) {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
-  if (!actPkg.value || !actService.value) { toast('请填写 包名 + Service 类名'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
+  if (!actPkg.value || !actService.value) { toast(t('err.pkgAndService')); return }
   if (mode === 'start') {
     const extras = actExtras.value.filter((e) => e.key).map((e) => ({ type: e.type, key: e.key, value: e.value }))
-    await devInvoke('启动Service', 'adb:startService', { pkg: actPkg.value, service: actService.value, foreground: !actServiceBackground.value, extras })
+    await devInvoke(t('action.actStartService'), 'adb:startService', { pkg: actPkg.value, service: actService.value, foreground: !actServiceBackground.value, extras })
   } else {
-    await devInvoke('停止Service', 'adb:stopService', { pkg: actPkg.value, service: actService.value })
+    await devInvoke(t('action.actStopService'), 'adb:stopService', { pkg: actPkg.value, service: actService.value })
   }
   closeActModal()
 }
 
 async function runActBroadcast() {
-  if (!selectedSerial.value) { toast('请先选择设备'); return }
-  if (!actAction.value) { toast('请填写 Action'); return }
+  if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
+  if (!actAction.value) { toast(t('err.action')); return }
   let component = actComponent.value.trim()
   if (component && component.startsWith('.')) {
-    if (!actPkg.value.trim()) { toast('目标组件为相对类名，请先填写包名，或改用 包名/类名 完整格式'); return }
+    if (!actPkg.value.trim()) { toast(t('err.relativeComponent')); return }
     component = actPkg.value.trim() + '/' + component
   }
   const extras = actExtras.value.filter((e) => e.key).map((e) => ({ type: e.type, key: e.key, value: e.value }))
-  await devInvoke('发送广播', 'adb:broadcast', { action: actAction.value, component, extras, flags: actFlags.value })
+  await devInvoke(t('action.actBroadcast'), 'adb:broadcast', { action: actAction.value, component, extras, flags: actFlags.value })
   closeActModal()
 }
 
@@ -259,18 +260,18 @@ async function saveActCfg() {
   try {
     const p = await api.invoke('file:saveText', {
       content: JSON.stringify(data, null, 2),
-      defaultPath: `组件配置_${actModalType.value}.json`,
-      filters: [{ name: 'JSON 配置', extensions: ['json'] }]
+      defaultPath: `${t('modal.componentConfigPrefix')}${actModalType.value}.json`,
+      filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
     })
-    if (!p) { toast('已取消保存'); return }
-    toast('已保存：' + p)
-  } catch (e) { toast('保存失败：' + e.message) }
+    if (!p) { toast(t('toast.saveCancelled')); return }
+    toast(t('toast.saved') + p)
+  } catch (e) { toast(t('toast.saveFailed') + e.message) }
 }
 
 async function loadActCfg() {
   try {
-    const p = await api.invoke('file:openFile', { filters: [{ name: 'JSON 配置', extensions: ['json'] }] })
-    if (!p) { toast('已取消加载'); return }
+    const p = await api.invoke('file:openFile', { filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }] })
+    if (!p) { toast(t('toast.loadCancelled')); return }
     const d = JSON.parse(await api.invoke('file:readText', { path: p }))
     actPkg.value = d.actPkg || ''
     actActivity.value = d.actActivity || ''
@@ -280,13 +281,13 @@ async function loadActCfg() {
     actComponent.value = d.actComponent || ''
     actFlags.value = d.actFlags || ''
     actExtras.value = (d.actExtras && d.actExtras.length) ? d.actExtras : [{ type: 'es', key: '', value: '' }]
-    toast('已加载：' + p)
-  } catch (e) { toast('加载失败：' + e.message) }
+    toast(t('toast.loaded') + p)
+  } catch (e) { toast(t('toast.loadFailed') + e.message) }
 }
 
 async function copyActCmd() {
-  try { await api.invoke('clipboard:write', { text: actCmdPreview.value }); toast('已复制 adb 命令') }
-  catch { toast('复制失败') }
+  try { await api.invoke('clipboard:write', { text: actCmdPreview.value }); toast(t('toast.adbCmdCopied')) }
+  catch { toast(t('toast.copyFailed')) }
 }
 
 export function useDeviceinfo() {

@@ -8,6 +8,8 @@ export * from './state/devices.js'
 export * from './state/logcat.js'
 export * from './state/logstyle.js'
 export * from './state/actions.js'
+// 分组哨兵：显式再导出一次，便于 barrel 覆盖检查与调用方检索（export * 已包含，显式优先不冲突）
+export { ALL_GROUPS, PRESET_GROUP, NO_GROUP } from './state/actions.js'
 export * from './state/deviceinfo.js'
 export * from './state/media.js'
 export * from './state/apk.js'

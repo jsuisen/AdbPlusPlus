@@ -4,6 +4,7 @@
 import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import { toast } from '@/composables/useUi'
+import { t } from '@/i18n'
 
 const { api, closeResult, resultOk, resultOpen, resultText, resultTitle } = State
 
@@ -25,20 +26,20 @@ async function copyResult() {
   <div v-if="resultOpen" class="modal-mask result-mask" @click.self="maskClose(closeResult)">
     <div class="modal result-modal">
       <div class="modal-head">
-        操作结果
+        {{ t('result.title') }}
         <button class="modal-x" @click="closeResult">×</button>
       </div>
       <div class="modal-body">
         <div class="result-title" :class="resultOk ? 'result-ok' : 'result-fail'">
-          <span class="result-badge">{{ resultOk ? '成功' : '失败' }}</span>
+          <span class="result-badge">{{ resultOk ? t('result.success') : t('result.failure') }}</span>
           <span class="result-name">{{ resultTitle }}</span>
         </div>
         <pre class="result-text">{{ resultText }}</pre>
-        <div class="result-tip muted">正文可选中复制；点「复制文本」可复制完整结果。</div>
+        <div class="result-tip muted">{{ t('result.hint') }}</div>
       </div>
       <div class="modal-foot">
-        <button @click="copyResult">复制文本</button>
-        <button class="primary" @click="closeResult">关闭</button>
+        <button @click="copyResult">{{ t('result.copyText') }}</button>
+        <button class="primary" @click="closeResult">{{ t('common.close') }}</button>
       </div>
     </div>
   </div>

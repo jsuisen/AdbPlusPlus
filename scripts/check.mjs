@@ -7,6 +7,7 @@
 // 5) state barrel：state/*.js 导出名必须全部经 barrel 再导出且不重复
 // 6) App.vue：模板标识符可解析 + 模板 ref 必须有同名 setup 绑定
 // 7) 全部 .vue：模板布尔赋值（xxx = true/false）必须有 setup 绑定，防 _ctx 隐式回退
+// 8) i18n：内置 locale key 集合一致 / t('字面量') key 存在 / 逻辑比较禁中文常量 / 裸中文清单(WARN) / 文案不入 IPC
 import fs from 'node:fs'
 import path from 'node:path'
 import { execSync, spawnSync } from 'node:child_process'
@@ -131,6 +132,8 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
   const tmpl = src.slice(src.indexOf('<template>'))
   const defined = new Set(['true', 'false', 'null', 'undefined', 'Object', 'Math', 'Date', 'JSON', 'String', 'Number', 'Array'])
   for (const m of script.matchAll(/import\s*\{([^}]*)\}\s*from\s*'[^']*'/g)) m[1].split(',').forEach(n => defined.add(n.trim().split(/\s+as\s+/).pop().trim()))
+  // 默认导入（如 v-html 用的 SVG ?raw 常量）也要登记，否则模板标识符扫描误报
+  for (const m of script.matchAll(/import\s+([A-Za-z_$][\w$]*)\s+from\s*'[^']*'/g)) defined.add(m[1])
   for (const m of script.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=/g)) m[1].split(',').forEach(n => defined.add(n.trim().split(':')[0].trim()))
   for (const m of script.matchAll(/\b(?:const|let|var)\s+(\w+)/g)) defined.add(m[1])
   for (const m of script.matchAll(/\bfunction\s+(\w+)/g)) defined.add(m[1])
@@ -169,6 +172,7 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     const tmpl = src.slice(src.indexOf('<template>'))
     const bound = new Set()
     for (const m of script.matchAll(/import\s*\{([^}]*)\}\s*from\s*'[^']*'/g)) m[1].split(',').forEach(n => bound.add(n.trim().split(/\s+as\s+/).pop().trim()))
+    for (const m of script.matchAll(/import\s+([A-Za-z_$][\w$]*)\s+from\s*'[^']*'/g)) bound.add(m[1])
     for (const m of script.matchAll(/\b(?:const|let|var)\s*\{([^}]*)\}\s*=/g)) m[1].split(',').forEach(n => bound.add(n.trim().split(':')[0].trim()))
     for (const m of script.matchAll(/\b(?:const|let|var)\s+(\w+)/g)) bound.add(m[1])
     for (const m of script.matchAll(/\bfunction\s+(\w+)/g)) bound.add(m[1])
@@ -178,6 +182,89 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     }
   }
   ok('组件模板布尔赋值均有 setup 绑定', assignBad.length === 0, [...new Set(assignBad)].slice(0, 3).join(' | '))
+}
+
+// ---------- 8. i18n 门禁 ----------
+{
+  const { flatten } = await import('../shared/i18n/translate.js')
+  const zh = flatten((await import('../shared/i18n/locales/zh-CN.js')).default)
+  const keycodeZh = flatten((await import('../shared/i18n/locales/keycode.zh-CN.js')).default)
+  const base = { ...zh }
+  for (const [k, v] of Object.entries(keycodeZh)) base['keycode.' + k] = v
+
+  // 8.1 内置 locale key 集合必须与基准完全一致（外部语言包不进 CI，运行期校验）
+  const keyProblems = []
+  for (const id of ['zh-CN', 'en-US']) {
+    const main = flatten((await import(`../shared/i18n/locales/${id}.js`)).default)
+    const kc = flatten((await import(`../shared/i18n/locales/keycode.${id}.js`)).default)
+    const keys = new Set([...Object.keys(main), ...Object.keys(kc).map(k => 'keycode.' + k)])
+    const miss = Object.keys(base).filter(k => !keys.has(k))
+    const extra = [...keys].filter(k => !Object.prototype.hasOwnProperty.call(base, k))
+    if (miss.length || extra.length) {
+      keyProblems.push(`${id}: 缺[${miss.slice(0, 3).join(',')}] 多[${extra.slice(0, 3).join(',')}]`)
+    }
+  }
+  ok('i18n 内置 locale key 集合一致', keyProblems.length === 0, keyProblems.join(' | '))
+
+  // 8.2 t('字面量') 的 key 必须存在。只查含点号的形态，避免误伤其它模块里同名的 t() 局部变量。
+  const badKeys = []
+  const i18nFiles = [...walk('src'), ...walk('main')]
+  for (const f of i18nFiles) {
+    const src = read(f)
+    for (const m of src.matchAll(/\b(?:t|mt)\(\s*'([^']+)'/g)) {
+      const k = m[1]
+      if (/^[a-z][\w-]*(?:\.[\w-]+)+$/.test(k) && !Object.prototype.hasOwnProperty.call(base, k)) {
+        badKeys.push(path.relative('.', f) + ': ' + k)
+      }
+    }
+  }
+  ok('i18n t() 字面量 key 均存在', badKeys.length === 0, badKeys.slice(0, 3).join(' | '))
+
+  // 8.3 逻辑比较禁止中文常量（中文哨兵切语言后会静默失效）
+  const chineseCmp = []
+  for (const f of i18nFiles) {
+    const src = read(f)
+    for (const m of src.matchAll(/={2,3}\s*'[^']*[\u4e00-\u9fff][^']*'/g)) {
+      chineseCmp.push(path.relative('.', f) + ': ' + m[0].trim())
+    }
+  }
+  ok('i18n 逻辑比较无中文常量', chineseCmp.length === 0, chineseCmp.slice(0, 3).join(' | '))
+
+  // 8.4 裸中文残留清单（WARN，不阻断；P1~P5 逐批清零）
+  const bare = []
+  const skipFiles = /[\\/](locales|i18n|state\/actions\.js)[\\/]/
+  const vueFiles = fs.readdirSync('src').flatMap(f => {
+    const p = path.join('src', f)
+    return fs.statSync(p).isDirectory()
+      ? (function walkVue(d) { return fs.readdirSync(d).flatMap(x => {
+          const q = path.join(d, x)
+          return fs.statSync(q).isDirectory() ? walkVue(q) : (x.endsWith('.vue') ? [q] : [])
+        }) })(p)
+      : (f.endsWith('.vue') ? [p] : [])
+  })
+  for (const f of vueFiles) {
+    if (skipFiles.test(f)) continue
+    const src = read(f)
+    const all = src.slice(src.indexOf('<template>'))
+    const styleAt = all.indexOf('<style')   // 样式段里的中文注释不是 UI 文案
+    const tmpl = (styleAt < 0 ? all : all.slice(0, styleAt))
+      .replace(/<!--[\s\S]*?-->/g, '').replace(/\{\{[\s\S]*?\}\}/g, '')
+    for (const m of tmpl.matchAll(/>(\s*[^<>]*[\u4e00-\u9fff][^<>]*\s*)</g)) {
+      const text = m[1].trim()
+      if (text) bare.push(path.relative('.', f) + ': ' + text.slice(0, 30))
+    }
+  }
+  if (bare.length) console.log(`WARN i18n 模板裸中文 ${bare.length} 处（P1~P5 逐批迁移）: ${bare.slice(0, 6).join(' | ')}`)
+  else console.log('PASS i18n 模板无裸中文')
+
+  // 8.5 文案不得进 IPC 参数：外部语言包能改文案，必须守住文案不参与命令拼接
+  const textInIpc = []
+  for (const f of i18nFiles) {
+    const src = read(f)
+    for (const m of src.matchAll(/\bapi\.(?:invoke|send)\(\s*(?:t|mt)\s*\(/g)) textInIpc.push(path.relative('.', f))
+    for (const m of src.matchAll(/\bdevInvoke\([^,]+,\s*(?:t|mt)\s*\(/g)) textInIpc.push(path.relative('.', f))
+  }
+  ok('i18n 文案未进入 IPC 参数', textInIpc.length === 0, [...new Set(textInIpc)].slice(0, 3).join(' | '))
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)
