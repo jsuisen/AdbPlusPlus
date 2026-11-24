@@ -128,7 +128,11 @@ function buildCatalog() {
     byId.set(id, { id, name, builtin: true, files: [], warnings: [] })
   }
   for (const [filePath, pack] of packCache) {
-    if (!pack.locale) continue   // locale 为空 = 导出模板，不加载
+    if (!pack.locale) {
+      // locale 为空：可能是导出模板，也可能是解析失败。告警必须让用户在设置面板看见，不能静默吞掉。
+      allWarnings.push(...pack.warnings)
+      continue
+    }
     if (!/^[A-Za-z0-9_-]{1,40}$/.test(pack.locale)) {
       allWarnings.push(mt('langwarn.invalidLocale', { name: path.basename(filePath) }))
       continue
@@ -195,7 +199,9 @@ export function loadLocale(id, force = false) {
   let fallbackId = files.map(f => packCache.get(f).fallback).find(Boolean) || ''
   if (!fallbackId || fallbackId === targetId || !catalog.some(x => x.id === fallbackId)) fallbackId = 'zh-CN'
 
-  const builtin = BUILTIN[targetId] || BUILTIN['zh-CN']
+  // 外部新语言没有内置同名字典时不能塞入 zh-CN：那会让声明的 fallback 永远命中不到。
+  // 正确链路是「外部包 → fallback → zh-CN」，由 t() 的字典查找逐级完成。
+  const builtin = BUILTIN[targetId] || {}
   currentDict = { ...builtin, ...ext }
   fallbackDict = BUILTIN[fallbackId] || {}
   currentFallbackId = fallbackId

@@ -12,6 +12,7 @@
     "build:renderer": "vite build",
     "check": "node scripts/check.mjs",
     "test": "node --test",
+    "lang:sample": "node scripts/lang-sample.cjs",
     "build": "vite build && electron-builder --win nsis",
     "pack": "vite build && electron-builder --win dir",
     "dist": "vite build && electron-builder --win nsis"

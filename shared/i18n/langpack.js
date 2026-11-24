@@ -70,6 +70,8 @@ export function parseXmlLangPack(text) {
     const lt = s.indexOf('<', i)
     if (lt < 0) throw new Error('<resources> 未闭合')
     if (lt > i && s.slice(i, lt).trim()) throw new Error('根节点内存在裸文本')
+    // 标签之间允许换行/缩进：闭合 resources 前的空白不算裸文本
+    if (s.startsWith('</resources>', lt)) break
     if (s.startsWith('<string', lt) && /^<string[\s>]/.test(s.slice(lt))) {
       const gt = s.indexOf('>', lt)
       if (gt < 0) throw new Error('<string> 标签未闭合')

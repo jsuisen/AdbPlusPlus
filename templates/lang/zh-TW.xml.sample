@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  繁體中文語言包範本。
+  用法：複製到 adbtool-config.json 同目錄並改名為 zh-TW.xml，
+        再把 adbtool-config.json 的 "lang" 設為 "zh-TW"。
+  或直接執行：npm run lang:sample -- zh-TW
+-->
+<resources locale="zh-TW" name="繁體中文（範例）" fallback="zh-CN">
+  <string name="menu.connectDevice">連接裝置</string>
+  <string name="menu.loadDevice">載入裝置</string>
+  <string name="menu.refreshDevices">重新整理裝置</string>
+  <string name="menu.parseLocalApk">解析本機 APK</string>
+  <string name="menu.settings">設定</string>
+  <string name="menu.about">關於</string>
+
+  <string name="tab.log">日誌</string>
+  <string name="tab.info">裝置資訊</string>
+  <string name="tab.activity">前景 Activity</string>
+  <string name="tab.process">處理程序</string>
+  <string name="tab.thread">執行緒</string>
+  <string name="common.start">開始</string>
+  <string name="common.stop">停止</string>
+  <string name="common.refresh">重新整理</string>
+  <string name="common.export">匯出</string>
+
+  <string name="log.filterByPkg">依套件名稱篩選</string>
+  <string name="log.wholeWord">全詞比對</string>
+  <string name="log.quickFilter">快速篩選</string>
+  <string name="log.emptyHint">點擊「開始」採集 {dev} 的日誌…</string>
+
+  <string name="settings.langPack">語言包</string>
+  <string name="settings.language">介面語言</string>
+</resources>

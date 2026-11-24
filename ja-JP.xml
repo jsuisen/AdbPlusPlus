@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ADB++ 外部语言包示例（日本語）。
+  仅翻译常用词条，其余自动回退到内置语言。
+  切换方式：设置 → 语言包 → 界面语言 选「日本語（外部）」，
+  或把 adbtool-config.json 的 "lang" 改为 "ja-JP" 后重启。
+-->
+<resources locale="ja-JP" name="日本語（示例）" fallback="en-US">
+  <!-- 菜单栏 -->
+  <string name="menu.connectDevice">デバイス接続</string>
+  <string name="menu.loadDevice">デバイス読込</string>
+  <string name="menu.refreshDevices">デバイス更新</string>
+  <string name="menu.parseLocalApk">ローカル APK 解析</string>
+  <string name="menu.settings">設定</string>
+  <string name="menu.about">情報</string>
+
+  <!-- 主区域 -->
+  <string name="tab.log">ログ</string>
+  <string name="tab.info">デバイス情報</string>
+  <string name="tab.activity">フォアグラウンド Activity</string>
+  <string name="tab.process">プロセス</string>
+  <string name="tab.thread">スレッド</string>
+  <string name="common.start">開始</string>
+  <string name="common.stop">停止</string>
+  <string name="common.refresh">更新</string>
+  <string name="common.export">エクスポート</string>
+  <string name="common.search">検索</string>
+
+  <!-- 日志工具栏 -->
+  <string name="log.filterByPkg">パッケージ名で絞り込み</string>
+  <string name="log.wholeWord">完全一致</string>
+  <string name="log.quickFilter">クイック絞り込み</string>
+  <string name="log.tagFilterPlaceholder">Tag 絞り込み</string>
+  <string name="log.textFilterPlaceholder">キーワード絞り込み</string>
+  <string name="log.emptyHint">「開始」を押して {dev} のログを収集…</string>
+
+  <!-- 设置 -->
+  <string name="settings.title">設定</string>
+  <string name="settings.langPack">言語パック</string>
+  <string name="settings.language">UI 言語</string>
+  <string name="settings.exportTemplate">言語テンプレートをエクスポート</string>
+  <string name="settings.reloadPacks">言語パックを再読込</string>
+</resources>

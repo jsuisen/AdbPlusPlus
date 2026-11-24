@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  英文微調範例：外部語言包可覆蓋內建 en-US 的任意詞條。
+  用法：npm run lang:sample -- en-US.custom
+        複製後檔案名為 en-US.custom.xml，locale 宣告為 en-US，因此會覆蓋內建英文。
+-->
+<resources locale="en-US" name="English (Custom)">
+  <string name="menu.connectDevice">Attach device</string>
+  <string name="log.quickFilter">Tag filter</string>
+  <string name="log.emptyHint">Click Start to collect logs from {dev}…</string>
+  <string name="settings.langPack">Language files</string>
+</resources>

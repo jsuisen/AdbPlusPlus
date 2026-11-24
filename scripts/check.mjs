@@ -309,6 +309,30 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
   const filteredScriptChinese = scriptChinese.filter(x =>
     !x.includes('语言包加载失败') && !x.includes('配置保存失败') && !x.includes('解析失败') && !x.includes('迁移'))
   ok('i18n 脚本段无裸中文', filteredScriptChinese.length === 0, filteredScriptChinese.slice(0, 3).join(' | '))
+
+  // 8.8 内嵌语言包样例：词条 key 与占位符必须合法，否则用户测试时会被静默丢弃
+  {
+    const { parseXmlLangPack, parseJsonLangPack, validateEntries } = await import('../shared/i18n/langpack.js')
+    const problems = []
+    const candidates = []
+    if (fs.existsSync('templates/lang')) {
+      for (const f of fs.readdirSync('templates/lang')) {
+        if (/\.xml(\.sample)?$|\.lang\.json(\.sample)?$/.test(f)) candidates.push(path.join('templates/lang', f))
+      }
+    }
+    // 工程根的内嵌示例（dev 语言包扫描目录）
+    if (fs.existsSync('ja-JP.xml')) candidates.push('ja-JP.xml')
+    for (const f of candidates) {
+      try {
+        const text = read(f)
+        const p = /\.json/.test(f) ? parseJsonLangPack(text) : parseXmlLangPack(text)
+        if (!p.locale) { problems.push(`${f}: locale 为空`); continue }
+        const v = validateEntries(p.entries, base, f)
+        if (v.warnings.length) problems.push(`${f}: ${v.warnings[0]}`)
+      } catch (e) { problems.push(`${f}: ${e.message}`) }
+    }
+    ok('i18n 内嵌语言包样例词条合法', problems.length === 0, problems.slice(0, 3).join(' | '))
+  }
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)
