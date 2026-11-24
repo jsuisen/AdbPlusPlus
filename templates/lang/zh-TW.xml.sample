@@ -7,7 +7,6 @@
 -->
 <resources locale="zh-TW" name="繁體中文（範例）" fallback="zh-CN">
   <string name="menu.connectDevice">連接裝置</string>
-  <string name="menu.loadDevice">載入裝置</string>
   <string name="menu.refreshDevices">重新整理裝置</string>
   <string name="menu.parseLocalApk">解析本機 APK</string>
   <string name="menu.settings">設定</string>

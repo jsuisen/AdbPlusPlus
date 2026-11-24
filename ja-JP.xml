@@ -8,7 +8,6 @@
 <resources locale="ja-JP" name="日本語（示例）" fallback="en-US">
   <!-- 菜单栏 -->
   <string name="menu.connectDevice">デバイス接続</string>
-  <string name="menu.loadDevice">デバイス読込</string>
   <string name="menu.refreshDevices">デバイス更新</string>
   <string name="menu.parseLocalApk">ローカル APK 解析</string>
   <string name="menu.settings">設定</string>

@@ -53,9 +53,13 @@ import ColorsIcon from './assets/icons/as-logcat/colors.svg?raw'
 import SearchIcon from './assets/icons/as-logcat/search.svg?raw'
 import SidebarCloseIcon from './assets/icons/as-logcat/sidebar-close.svg?raw'
 import SidebarOpenIcon from './assets/icons/as-logcat/sidebar-open.svg?raw'
+import { actionIconSvg, MODE_ICONS } from './assets/icons/action-icons.js'
+
+// 侧栏按钮行为标记：高危 > 弹窗 > 直接执行。danger 是现有高危标记，不扩范围。
+function actionMode(it) { return it.danger ? 'danger' : it.modal ? 'modal' : 'run' }
 
 const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
-const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
+const { collapseAll, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
 
@@ -173,10 +177,12 @@ const { openUpdateDialog } = useUpdate()
                 :aria-label="collapsedSidebar ? t('menu.expandSidebar') : t('menu.collapseSidebar')">
           <span class="menu-ico" v-html="collapsedSidebar ? SidebarOpenIcon : SidebarCloseIcon" />
         </button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="openConnectModal">{{ t('menu.connectDevice') }}</button>
-        <button @click="loadDeviceFromFile">{{ t('menu.loadDevice') }}</button>
         <button @click="refreshDevices">{{ t('menu.refreshDevices') }}</button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="parseLocal">{{ t('menu.parseLocalApk') }}</button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="settingsOpen = true">{{ t('menu.settings') }}</button>
         <button @click="aboutOpen = true">{{ t('menu.about') }}</button>
       </div>
@@ -238,10 +244,12 @@ const { openUpdateDialog } = useUpdate()
                     primary: (it.act === 'recordStart' && !recording) || (it.act === 'screenshotTimer' && !screenshotting),
                     danger: (it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting) || it.danger
                   }]"
-                    :data-icon="it.icon || ''"
+                    :data-mode="(it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting) ? 'run' : actionMode(it)"
                     :disabled="(!selectedSerial && !it.server) || (it.needProc && !selectedProc) || (it.needPkg && !appPkg)"
                     @click="runAction(it)">
-                    {{ (it.act === 'recordStart' && recording) ? t('action.stopRecord') : (it.act === 'screenshotTimer' && screenshotting) ? t('action.stopScreenshot') : (it.act === 'captureToggle' && capturing[selectedSerial]) ? t('action.stopCapture') : (it.labelKey ? t(it.labelKey) : it.label) }}
+                    <span class="sbtn-ico" v-html="actionIconSvg(it.icon)" aria-hidden="true"></span>
+                    <span class="sbtn-label">{{ (it.act === 'recordStart' && recording) ? t('action.stopRecord') : (it.act === 'screenshotTimer' && screenshotting) ? t('action.stopScreenshot') : (it.act === 'captureToggle' && capturing[selectedSerial]) ? t('action.stopCapture') : (it.labelKey ? t(it.labelKey) : it.label) }}</span>
+                    <span class="sbtn-mode" v-html="MODE_ICONS[(it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting) ? 'run' : actionMode(it)]" aria-hidden="true"></span>
                   </button>
                 </template>
               </div>
