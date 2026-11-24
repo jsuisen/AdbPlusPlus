@@ -333,6 +333,14 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
     }
     ok('i18n 内嵌语言包样例词条合法', problems.length === 0, problems.slice(0, 3).join(' | '))
   }
+
+  // 8.9 系统语言探测：zh* → zh-CN，其余 → en-US（lang 留空时生效）
+  {
+    const { localeFromSystem } = await import('../main/i18n.js')
+    const cases = [['zh-CN', 'zh-CN'], ['zh-TW', 'zh-CN'], ['en-US', 'en-US'], ['ja-JP', 'en-US'], ['', 'en-US']]
+    const bad = cases.filter(([loc, expect]) => localeFromSystem(loc) !== expect).map(([loc]) => loc)
+    ok('i18n 系统语言探测规则', bad.length === 0, bad.join(' | '))
+  }
 }
 
 console.log(fail === 0 ? 'CHECK-OK 全部通过' : `CHECK-FAIL ${fail} 项`)

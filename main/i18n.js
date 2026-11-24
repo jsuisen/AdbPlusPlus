@@ -44,6 +44,12 @@ let catalog = []
 const packCache = new Map()   // 文件路径 → { locale, name, fallback, entries, warnings, mtimeMs, size }
 let allWarnings = []
 
+// 系统 locale → 内置语言 id。纯函数，便于单测；设计约定 zh* → zh-CN，其余 → en-US。
+// 外部语言包（如 ja-JP）不会被自动选中：没有对应的系统 locale，必须由用户显式设置。
+export function localeFromSystem(loc) {
+  return String(loc || '').toLowerCase().startsWith('zh') ? 'zh-CN' : 'en-US'
+}
+
 // 只登记目录与首选语言；不触碰磁盘。
 export function initMainI18n(dir, lang) {
   configDir = dir || ''

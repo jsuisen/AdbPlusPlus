@@ -16,8 +16,10 @@ let startupProcTimer = null
 // force=true 用于「重新加载语言包」与切换语言 —— 外部文件改动立即生效。
 export async function loadI18n(id, force = false) {
   try {
-    await api.invoke(I18N_CATALOG)
-    const data = await api.invoke(I18N_LOAD, { id: id || 'zh-CN', force })
+    // catalog.current 是主进程已按系统语言探测出的 id；渲染层不得再硬编码 zh-CN 覆盖它。
+    const catalog = await api.invoke(I18N_CATALOG)
+    const target = id || (catalog && catalog.current) || 'zh-CN'
+    const data = await api.invoke(I18N_LOAD, { id: target, force })
     setLocale(data)
     document.title = t('app.title')
     document.documentElement.lang = data.id || 'zh-CN'
@@ -32,7 +34,8 @@ export function useApp() {
 onMounted(async () => {
   const c = await api.invoke('config:get')
   applyConfig(c)
-  await loadI18n(c.lang || 'zh-CN')
+  // lang 为空时传空串，让主进程的系统语言探测结果生效（见 loadI18n）
+  await loadI18n(c.lang || '')
   setKeycodeMode(c.keycodeLangMode || 'follow')
   document.addEventListener('mousedown', onDocMouseDown)
   document.addEventListener('keydown', onGlobalKey)   // Ctrl+F 打开查找窗口 / Esc 关闭

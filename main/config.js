@@ -4,7 +4,7 @@ import { CONFIG_GET, CONFIG_SAVE } from '../shared/ipc-channels.js'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { initMainI18n, setMainLocale } from './i18n.js'
+import { initMainI18n, localeFromSystem, setMainLocale } from './i18n.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -92,7 +92,9 @@ export function loadConfig() {
   // screenshotDir 为空时落到 exe 所在目录（截图到路径 / 连续截图的默认落点）
   if (!merged.screenshotDir) merged.screenshotDir = defaultOutDir()
   // 只登记语言包所在目录与首选语言，不扫盘不解析（首次 i18n IPC 才懒加载）。
-  initMainI18n(configDir(), merged.lang || '')
+  // lang 留空 = 跟随系统：app.getLocale() 探测 zh* → zh-CN，其余 → en-US。
+  // 探测结果不写回配置文件，用户换系统语言后仍然跟随。
+  initMainI18n(configDir(), merged.lang || localeFromSystem(app.getLocale()))
   return merged
 }
 
@@ -127,7 +129,7 @@ export function saveConfig(cfg) {
     fs.writeFileSync(pointerPath, JSON.stringify({ configPath: target }, null, 2))
   }
   activeCfgPath = target
-  setMainLocale(clean.lang || '')
+  setMainLocale(clean.lang || localeFromSystem(app.getLocale()))
   return clean
 }
 
