@@ -154,9 +154,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .sbtn-mode { display: inline-flex; flex: 0 0 11px; width: 11px; height: 11px; color: var(--muted); }
 .sbtn-mode svg { display: block; width: 11px; height: 11px; }
 .sbtn[data-mode="modal"] .sbtn-mode { color: #185fa5; }
-.sbtn[data-mode="danger"] .sbtn-mode { color: currentColor; }
+.sbtn[data-mode="danger"] .sbtn-mode { color: var(--danger); }
 .sbtn.primary .sbtn-ico, .sbtn.danger .sbtn-ico { color: currentColor; }
-.sbtn.primary .sbtn-mode, .sbtn.danger .sbtn-mode { color: currentColor; }
+/* 红底只留给录屏/连拍的「停止」态；高危四项（卸载/撤销权限/重启/kill-server）走默认底色 + 红色叹号 */
 .sbtn.danger { color: #fff; background: var(--danger); border-color: var(--danger); }
 
 /* 功能区 */

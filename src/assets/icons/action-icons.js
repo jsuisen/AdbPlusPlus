@@ -51,7 +51,6 @@ export const ACTION_ICONS = {
 }
 
 export const MODE_ICONS = {
-  run: '<svg viewBox="0 0 10 10" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 1l4 4-4 4"/></svg>',
   modal: '<svg viewBox="0 0 10 10" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="2" width="8" height="6" rx="1"/><path d="M1 4h8"/></svg>',
   danger: '<svg viewBox="0 0 10 10" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 1l4 8H1L5 1z"/><path d="M5 4v2M5 7.6v.1"/></svg>'
 }
