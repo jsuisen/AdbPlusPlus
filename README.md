@@ -132,7 +132,19 @@ NSIS 配置为非一键安装，允许选安装目录并创建桌面快捷方式
 
 ## 语言包测试（开发模式）
 
-外部语言包从 `adbtool-config.json` 所在目录扫描（开发态 = 工程根），识别 `*.xml` 与 `*.lang.json`。工程根已内嵌 `ja-JP.xml` 示例，`templates/lang/` 下另有繁体中文与英文微调样例。
+外部语言包从 `adbtool-config.json` 所在目录扫描（开发态 = 工程根），识别 `*.xml` 与 `*.lang.json`。工程根已内嵌 7 种语言包：
+
+| 文件 | 语言 | 覆盖 |
+|---|---|---|
+| `ja-JP.xml` | 日本語 | **完整版**，620 条（全部界面词条） |
+| `zh-TW.xml` | 繁體中文 | 核心词条 65 条 |
+| `ko-KR.xml` | 한국어 | 核心词条 71 条 |
+| `fr-FR.xml` | Français | 核心词条 68 条 |
+| `es-ES.xml` | Español | 核心词条 68 条 |
+| `ur-PK.xml` | اردو | 核心词条 67 条 |
+| `ru-RU.xml` | Русский | 核心词条 122 条 |
+
+未翻译词条按各自 `fallback` 回退。`KEYCODE` 描述不在这 7 个包里，走内置英文（可用设置里的「KEYCODE 描述语言」切换）。`templates/lang/` 下另有可扩展的样例模板。
 
 - 立即测试：在设置 → 语言包 → 界面语言选「日本語（示例）」，或把 `adbtool-config.json` 的 `"lang"` 改为 `"ja-JP"` 后重启。
 - 复制其它样例：`npm run lang:sample -- zh-TW`（目标已存在需加 `--force`），然后同上切换。

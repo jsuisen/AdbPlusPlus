@@ -320,8 +320,10 @@ const walk = (dir) => fs.readdirSync(dir).flatMap(f => {
         if (/\.xml(\.sample)?$|\.lang\.json(\.sample)?$/.test(f)) candidates.push(path.join('templates/lang', f))
       }
     }
-    // 工程根的内嵌示例（dev 语言包扫描目录）
-    if (fs.existsSync('ja-JP.xml')) candidates.push('ja-JP.xml')
+    // 工程根的全部内嵌语言包（dev 语言包扫描目录）
+    for (const f of fs.readdirSync('.')) {
+      if (/\.xml$|\.lang\.json$/.test(f) && fs.statSync(f).isFile()) candidates.push(f)
+    }
     for (const f of candidates) {
       try {
         const text = read(f)
