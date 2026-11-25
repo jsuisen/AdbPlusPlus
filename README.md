@@ -2,7 +2,48 @@
 
 ![](screensave/img.png)
 
-> **语言 / Language**: [简体中文](#zh-CN) · [繁體中文](#zh-TW) · [日本語](#ja-JP) · [한국어](#ko-KR) · [Français](#fr-FR) · [Español](#es-ES) · [Русский](#ru-RU) · [اردو](#ur-PK)
+> **语言 / Language**: [English](#en-US) · [简体中文](#zh-CN) · [繁體中文](#zh-TW) · [日本語](#ja-JP) · [한국어](#ko-KR) · [Français](#fr-FR) · [Español](#es-ES) · [Русский](#ru-RU) · [اردو](#ur-PK)
+
+<a id="en-US"></a>
+
+## English
+
+An engineering-grade ADB desktop tool for Windows. Built with Electron 37 + Vue 3, focused on log analysis and device debugging, with all adb/aapt child processes centralized in the main process.
+
+References: Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy.
+
+### Logs (Android Studio Logcat style)
+
+- Multi-device in parallel: per-device tabs with independent collection state; logs are auto-saved to disk in a separate file per device.
+- Real-time streaming collection with filtering by level (V/D/I/W/E/F), Tag, keyword, regex, and package name; whole-word Tag matching; select all processes of an APK at once by package name.
+- Tag / keyword filter history with lockable entries (locked entries are never trimmed or cleared); quick Tag filtering (auto-generates a regex).
+- Log level colors (text / background / bold) plus coloring by content keyword (global rules + session rules, session takes precedence); configurable display format for date / pid / package name / Tag.
+- Find (Ctrl+F, floating non-obstructive window), word-wrap toggle, export to `.log`, and auto-save to disk.
+- Press Enter inside the log to insert a note line; a single click places the caret (collapsed selection), arrow keys move the caret, Ctrl+↑/↓ scrolls line by line, Ctrl+←/→ moves by word; behavior can be toggled in Settings - Window.
+- Rendering strategy: the full log is cached in memory; only the last `maxRender` (default 20000) filtered lines are handed to Vue, avoiding DOM explosion.
+
+### Device info & diagnostics
+
+- Info card: model, Android version, resolution, density, memory, storage, CPU, android_id, stbid, oid, multi-NIC MAC, foreground Activity; exportable.
+- `dumpsys <service>` query, `bugreport`, `getprop` list (filter + export).
+- Four polling lists: foreground Activity / running Services / processes (PID, CPU, RSS, VSZ, threads, state, IO) / threads, each with its own switch, interval, filter, and manual refresh.
+
+### Device operations (sidebar groups)
+
+- Package operations: load package, launch/stop/restart app, stop process, clear cache, clear cache and restart, uninstall, Monkey test.
+- Component debugging: start Activity / Service, send broadcast, stop Service.
+- Media: screenshot, screenshot to path, continuous screenshots (configurable interval), screen recording.
+- Network capture: `tcpdump` stays resident on the device, `pkill -INT` flushes on stop, pull / list / delete pcap on demand; supports `su -c` to elevate only tcpdump; unified operations in the capture manager dialog.
+- Input: input text, send keys (with KEYCODE reference table), tap, swipe; actions can be saved as quick buttons.
+- Grant/revoke permissions (Beta), push/pull files, install/uninstall APK, parse installed APK, root/unroot/remount, reboot, `adb devices` / `disconnect` / `kill-server`.
+
+### Others
+
+- **APK parsing**: two paths — local APK and installed packages on the device; `aapt dump badging` outputs package name, version, label, launch Activity, permission list, and MD5; Chinese paths automatically use a temporary ASCII copy to work around aapt encoding issues.
+- **Quick commands**: filter by group, add/edit/delete, color presets, ignore response, execution output (copy/save); persistent to config across restarts.
+- **Custom window**: no native title bar (self-drawn menu bar), always-on-top (pin button; main process reads the real state before toggling), minimize/maximize/close; Ctrl+/-/0 and Ctrl+scroll to zoom (0.3~3); click the device clock at the top to activate time sync (calibrated every 10s, reset on restart).
+- **Settings panel (10 pages)**: General (maxRender, caret behavior, startup update check, config path, import/export settings), Window, app log path, log font (system font dropdown), log level colors, log content colors, log auto-save, filter history, capture settings, screenshot settings.
+- **Update check**: one async check 30s after startup (can be disabled), manual check in the About dialog; when a new version is available, a status bar badge + upgrade dialog appear, with a "don't remind today" option. Data source is GitHub Releases, falling back to the repo's `package.json` on failure.
 
 <a id="zh-CN"></a>
 
