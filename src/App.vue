@@ -53,9 +53,17 @@ import ColorsIcon from './assets/icons/as-logcat/colors.svg?raw'
 import SearchIcon from './assets/icons/as-logcat/search.svg?raw'
 import SidebarCloseIcon from './assets/icons/as-logcat/sidebar-close.svg?raw'
 import SidebarOpenIcon from './assets/icons/as-logcat/sidebar-open.svg?raw'
+import { actionIconSvg, MODE_ICONS } from './assets/icons/action-icons.js'
+
+// 侧栏按钮行为标记：高危 > 弹窗 > 直接执行；直接执行不渲染任何标记。
+// danger 只作高危语义（红色叹号）；红底仅保留给录屏/连拍的「停止」态。
+function sbtnMode(it) {
+  if ((it.act === 'recordStart' && recording.value) || (it.act === 'screenshotTimer' && screenshotting.value)) return ''
+  return it.danger ? 'danger' : it.modal ? 'modal' : ''
+}
 
 const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
-const { collapseAll, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
+const { collapseAll, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
 
@@ -173,10 +181,12 @@ const { openUpdateDialog } = useUpdate()
                 :aria-label="collapsedSidebar ? t('menu.expandSidebar') : t('menu.collapseSidebar')">
           <span class="menu-ico" v-html="collapsedSidebar ? SidebarOpenIcon : SidebarCloseIcon" />
         </button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="openConnectModal">{{ t('menu.connectDevice') }}</button>
-        <button @click="loadDeviceFromFile">{{ t('menu.loadDevice') }}</button>
         <button @click="refreshDevices">{{ t('menu.refreshDevices') }}</button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="parseLocal">{{ t('menu.parseLocalApk') }}</button>
+        <span class="menu-sep" aria-hidden="true"></span>
         <button @click="settingsOpen = true">{{ t('menu.settings') }}</button>
         <button @click="aboutOpen = true">{{ t('menu.about') }}</button>
       </div>
@@ -236,12 +246,14 @@ const { openUpdateDialog } = useUpdate()
                   </label>
                   <button v-else :class="['sbtn', {
                     primary: (it.act === 'recordStart' && !recording) || (it.act === 'screenshotTimer' && !screenshotting),
-                    danger: (it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting) || it.danger
+                    danger: (it.act === 'recordStart' && recording) || (it.act === 'screenshotTimer' && screenshotting)
                   }]"
-                    :data-icon="it.icon || ''"
+                    :data-mode="sbtnMode(it)"
                     :disabled="(!selectedSerial && !it.server) || (it.needProc && !selectedProc) || (it.needPkg && !appPkg)"
                     @click="runAction(it)">
-                    {{ (it.act === 'recordStart' && recording) ? t('action.stopRecord') : (it.act === 'screenshotTimer' && screenshotting) ? t('action.stopScreenshot') : (it.act === 'captureToggle' && capturing[selectedSerial]) ? t('action.stopCapture') : (it.labelKey ? t(it.labelKey) : it.label) }}
+                    <span class="sbtn-ico" v-html="actionIconSvg(it.icon)" aria-hidden="true"></span>
+                    <span class="sbtn-label">{{ (it.act === 'recordStart' && recording) ? t('action.stopRecord') : (it.act === 'screenshotTimer' && screenshotting) ? t('action.stopScreenshot') : (it.act === 'captureToggle' && capturing[selectedSerial]) ? t('action.stopCapture') : (it.labelKey ? t(it.labelKey) : it.label) }}</span>
+                    <span v-if="sbtnMode(it)" class="sbtn-mode" v-html="MODE_ICONS[sbtnMode(it)]" aria-hidden="true"></span>
                   </button>
                 </template>
               </div>

@@ -56,9 +56,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   padding: 0 6px; background: var(--panel); border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
-.menu-left { display: flex; gap: 4px; min-width: 0; -webkit-app-region: no-drag; }
+.menu-left { display: flex; align-items: center; gap: 4px; min-width: 0; -webkit-app-region: no-drag; }
 /* 菜单栏左侧按钮：收紧内边距（内边距），与上面 gap 一起缩小外边距 */
 .menu-left button { padding: 3px 8px; }
+/* 菜单栏分组竖分隔符：连接设备 / 解析本地APK / 设置 三组功能之间的 1px 竖线 */
+.menu-sep { flex: 0 0 1px; width: 1px; height: 16px; margin: 0 3px; background: var(--border); }
 /* 侧栏折叠图标按钮：固定尺寸，与其他文字按钮同高；图标 16×16，颜色随按钮 color（default/hover 可见） */
 /* 按钮尺寸与日志窗口左侧工具条一致（28×28）。
    图标设 20px 而非 16px：Lucide panel-left 是 24 网格描边、有效图形约占画布 75%，
@@ -145,8 +147,16 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .sg-head { cursor: pointer; font-weight: 600; font-size: 14px; padding: 4px 2px; user-select: none; }
 .sg-head .caret { display: inline-block; width: 14px; }
 .sg-body { display: grid; grid-template-columns: 1fr; gap: 4px; padding: 2px 0 4px; }
-.sbtn { font-size: 12px; padding: 2px 6px; text-align: left; }
-.sbtn::before { content: '⚙️'; margin-right: 5px; }
+.sbtn { font-size: 12px; padding: 2px 6px; text-align: left; display: flex; align-items: center; gap: 6px; }
+.sbtn-ico { display: inline-flex; flex: 0 0 14px; width: 14px; height: 14px; color: var(--muted); }
+.sbtn-ico svg { display: block; width: 14px; height: 14px; }
+.sbtn-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sbtn-mode { display: inline-flex; flex: 0 0 11px; width: 11px; height: 11px; color: var(--muted); }
+.sbtn-mode svg { display: block; width: 11px; height: 11px; }
+.sbtn[data-mode="modal"] .sbtn-mode { color: #185fa5; }
+.sbtn[data-mode="danger"] .sbtn-mode { color: var(--danger); }
+.sbtn.primary .sbtn-ico, .sbtn.danger .sbtn-ico { color: currentColor; }
+/* 红底只留给录屏/连拍的「停止」态；高危四项（卸载/撤销权限/重启/kill-server）走默认底色 + 红色叹号 */
 .sbtn.danger { color: #fff; background: var(--danger); border-color: var(--danger); }
 
 /* 功能区 */

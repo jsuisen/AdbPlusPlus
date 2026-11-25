@@ -20,61 +20,62 @@ export const appPkg = ref('')
 
 export const groupOpen = reactive({ app: true, pkgops: true, media: true, netcap: true, input: true, perm: true, file: true, other: true })
 
-// 每个功能项的 icon 用于侧边栏按钮文字左侧的语义 emoji（data-icon + CSS ::before）
+// icon 为 action-icons.js 中的线性 SVG 名称；modal 表示点击后先弹窗填参数；danger 表示高危（优先级高于 modal）。
+// 三者共同决定按钮右侧的行为标记：直接执行 / 弹窗 / 高危。
 export const devGroups = [
   { key: 'pkgops', titleKey: 'group.pkgops', items: [
     { kind: 'pkg' },
-    { labelKey: 'action.loadPkg', act: 'loadPkg', needProc: true, icon: '🔍' },
-    { labelKey: 'action.appStart', act: 'appStart', needPkg: true, icon: '▶️' },
-    { labelKey: 'action.appStop', act: 'appStop', needPkg: true, icon: '⏹️' },
-    { labelKey: 'action.procKill', act: 'procKill', needPkg: true, icon: '🛑' },
-    { labelKey: 'action.appRestart', act: 'appRestart', needPkg: true, icon: '🔄' },
-    { labelKey: 'action.appClear', act: 'appClear', needPkg: true, icon: '🧹' },
-    { labelKey: 'action.appClearRestart', act: 'appClearRestart', needPkg: true, icon: '♻️' },
-    { labelKey: 'action.uninstall', act: 'appUninstall', needPkg: true, danger: true, icon: '🗑️' },
-    { labelKey: 'action.monkey', act: 'monkey', needPkg: true, icon: '🐒' }
+    { labelKey: 'action.loadPkg', act: 'loadPkg', needProc: true, icon: 'search' },
+    { labelKey: 'action.appStart', act: 'appStart', needPkg: true, icon: 'play' },
+    { labelKey: 'action.appStop', act: 'appStop', needPkg: true, icon: 'square' },
+    { labelKey: 'action.procKill', act: 'procKill', needPkg: true, icon: 'kill' },
+    { labelKey: 'action.appRestart', act: 'appRestart', needPkg: true, icon: 'restart' },
+    { labelKey: 'action.appClear', act: 'appClear', needPkg: true, icon: 'clear' },
+    { labelKey: 'action.appClearRestart', act: 'appClearRestart', needPkg: true, icon: 'clearRestart' },
+    { labelKey: 'action.uninstall', act: 'appUninstall', needPkg: true, danger: true, modal: true, icon: 'trash' },
+    { labelKey: 'action.monkey', act: 'monkey', needPkg: true, modal: true, icon: 'flask' }
   ]},
   { key: 'app', titleKey: 'group.app', items: [
-    { labelKey: 'action.actActivity', act: 'actActivity', icon: '🪟' },
-    { labelKey: 'action.actStartService', act: 'actStartService', icon: '⚙️' },
-    { labelKey: 'action.actStopService', act: 'actStopService', icon: '⛔' },
-    { labelKey: 'action.actBroadcast', act: 'actBroadcast', icon: '📢' }
+    { labelKey: 'action.actActivity', act: 'actActivity', modal: true, icon: 'window' },
+    { labelKey: 'action.actStartService', act: 'actStartService', modal: true, icon: 'cog' },
+    { labelKey: 'action.actStopService', act: 'actStopService', modal: true, icon: 'squareX' },
+    { labelKey: 'action.actBroadcast', act: 'actBroadcast', modal: true, icon: 'radio' }
   ]},
   { key: 'media', titleKey: 'group.media', items: [
-    { labelKey: 'action.screenshot', act: 'screenshot', icon: '📷' },
-    { labelKey: 'action.screenshotToPath', act: 'screenshotToPath', icon: '💾' },
-    { labelKey: 'action.screenshotTimer', act: 'screenshotTimer', icon: '📸' },
-    { labelKey: 'action.recordStart', act: 'recordStart', icon: '🎥' }
+    { labelKey: 'action.screenshot', act: 'screenshot', icon: 'camera' },
+    { labelKey: 'action.screenshotToPath', act: 'screenshotToPath', icon: 'save' },
+    { labelKey: 'action.screenshotTimer', act: 'screenshotTimer', icon: 'timer' },
+    { labelKey: 'action.recordStart', act: 'recordStart', icon: 'video' }
   ]},
   { key: 'netcap', titleKey: 'group.netcap', items: [
-    { labelKey: 'action.captureToggle', act: 'captureToggle', icon: '📡' },
-    { labelKey: 'action.captureManager', act: 'captureManager', icon: '📋' }
+    { labelKey: 'action.captureToggle', act: 'captureToggle', icon: 'antenna' },
+    { labelKey: 'action.captureManager', act: 'captureManager', modal: true, icon: 'list' }
   ]},
   { key: 'input', titleKey: 'group.input', items: [
-    { labelKey: 'action.inputText', act: 'inputText', icon: '✏️' },
-    { labelKey: 'action.inputKey', act: 'inputKey', icon: '⌨️' },
-    { labelKey: 'action.inputTap', act: 'inputTap', icon: '👆' },
-    { labelKey: 'action.inputSwipe', act: 'inputSwipe', icon: '👉' }
+    { labelKey: 'action.inputText', act: 'inputText', modal: true, icon: 'pencil' },
+    { labelKey: 'action.inputKey', act: 'inputKey', modal: true, icon: 'keyboard' },
+    { labelKey: 'action.inputTap', act: 'inputTap', modal: true, icon: 'tap' },
+    { labelKey: 'action.inputSwipe', act: 'inputSwipe', modal: true, icon: 'swipe' }
   ]},
   { key: 'perm', titleKey: 'group.perm', items: [
-    { labelKey: 'action.grant', act: 'grant', icon: '✅' },
-    { labelKey: 'action.revoke', act: 'revoke', danger: true, icon: '❌' }
+    { labelKey: 'action.grant', act: 'grant', modal: true, icon: 'checkCircle' },
+    { labelKey: 'action.revoke', act: 'revoke', danger: true, modal: true, icon: 'xCircle' }
   ]},
   { key: 'file', titleKey: 'group.file', items: [
-    { labelKey: 'action.pushFile', act: 'pushFile', icon: '⬆️' },
-    { labelKey: 'action.pullFile', act: 'pullFile', icon: '⬇️' }
+    { labelKey: 'action.pushFile', act: 'pushFile', modal: true, icon: 'upload' },
+    { labelKey: 'action.pullFile', act: 'pullFile', modal: true, icon: 'download' }
   ]},
   { key: 'other', titleKey: 'group.other', items: [
-    { labelKey: 'action.installApk', act: 'installApk', icon: '📦' },
-    { labelKey: 'action.parseInstalled', act: 'parseInstalled', icon: '📱' },
-    { labelKey: 'action.clearDeviceCache', act: 'clearDeviceCache', icon: '🧽' },
-    { labelKey: 'action.reboot', act: 'reboot', danger: true, icon: '🔁' },
-    { label: 'root', act: 'root', icon: '🔑' },
-    { label: 'unroot', act: 'unroot', icon: '🔒' },
-    { label: 'remount', act: 'remount', icon: '💿' },
-    { label: 'adb devices', act: 'adbDevices', server: true, icon: '🖥️' },
-    { label: 'adb disconnect', act: 'adbDisconnectAll', server: true, icon: '🔌' },
-    { label: 'adb kill-server', act: 'adbKillServer', server: true, danger: true, icon: '💀' }
+    { labelKey: 'action.installApk', act: 'installApk', modal: true, icon: 'package' },
+    { labelKey: 'action.parseInstalled', act: 'parseInstalled', modal: true, icon: 'phone' },
+    { labelKey: 'action.clearDeviceCache', act: 'clearDeviceCache', icon: 'sparkles' },
+    { labelKey: 'action.reboot', act: 'reboot', danger: true, modal: true, icon: 'power' },
+    { label: 'root', act: 'root', icon: 'key' },
+    { label: 'unroot', act: 'unroot', icon: 'lock' },
+    { label: 'remount', act: 'remount', icon: 'drive' },
+    { label: 'adb devices', act: 'adbDevices', server: true, icon: 'monitor' },
+    { label: 'adb disconnect', act: 'adbDisconnectAll', server: true, icon: 'unplug' },
+    { label: 'adb kill-server', act: 'adbKillServer', server: true, danger: true, icon: 'kill' }
   ]}
 ]
 

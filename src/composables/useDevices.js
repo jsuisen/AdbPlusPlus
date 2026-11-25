@@ -432,20 +432,8 @@ function confirmRenameDevice() {
   renameOpen.value = false
 }
 
-async function loadDeviceFromFile() {
-  const p = await api.invoke('file:openFile', { filters: [{ name: t('modal.deviceConnection'), extensions: ['json'] }] })
-  if (!p) return
-  try {
-    const text = await api.invoke('file:readText', { path: p })
-    const o = JSON.parse(text)
-    if (typeof o !== 'object' || !o) throw new Error('文件格式不正确')
-    openConnectModal({ ip: o.ip || '', port: o.port || '5555', alias: o.alias || '' })
-    toast(t('toast.connectionLoaded'))
-  } catch (e) { toast(t('toast.loadFailed') + e.message) }
-}
-
 export function useDevices() {
 
-  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
 }
-export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, loadDeviceFromFile, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
