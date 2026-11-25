@@ -1,7 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（logcat）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
-import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, wrapLines, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
+import {MAX_BUFFER, _noteSaveTimers, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogBufMap, autoLogMeta, autoscroll, beginBlockingBusy, cfg, ctxMenu, deviceLabel, displayLogs, editingNoteId, endBlockingBusy, ensureLogFilter, escapeRegExp, findBox, findCur, findDraft, findEl, findFocused, findHistory, findHitsByLine, findIndex, findMatches, findOpen, findPos, findSize, findSnap, findTargetInput, fmtDraft, fmtModalOpen, logEl, logErrMap, logFmt, logFont, logsMap, mergedView, wrapLines, nextLogId, nextNoteId, notesMap, pidPkgMap, procsMap, procsLoading, procFilterByPkg, qfOpen, qfTags, regexFilter, runningMap, scrollPosMap, selectedProc, tagFilter, textFilter, ymd, ymdhms, showResult} from './state'
 import { escapeRegexTag, getCaretRect, sanitizeSerial, sortPkgs, unescapeRegexTag } from './shared'
 import { toast } from './useUi'
 import { saveCfg } from './useConfig'
@@ -862,20 +862,45 @@ function editNote(n) {
   })
 }
 
+// 分批构造导出文本：每 2000 行让出一次主线程，避免大量日志时界面完全冻结
+async function buildExportContent(arr) {
+  const parts = []
+  const CHUNK = 2000
+  for (let i = 0; i < arr.length; i += CHUNK) {
+    const end = Math.min(i + CHUNK, arr.length)
+    for (let j = i; j < end; j++) {
+      const e = arr[j]
+      parts.push(e.kind === 'note' ? (e.text || '') : formatLogLine(e))
+    }
+    if (end < arr.length) await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+  return parts.join('\n')
+}
+
 async function exportLogs() {
   const arr = mergedView.value
   if (!arr.length) return
-  // 由模型直接构造：设备日志按格式，注释按原文（空注释即空行），顺序与屏幕一致
-  const content = arr.map((e) => e.kind === 'note' ? (e.text || '') : formatLogLine(e)).join('\n')
-  if (!content.trim()) return
-  const d = new Date()
-  const p = (n) => String(n).padStart(2, '0')
-  const ts = '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds())
-  const defaultPath = (cfg.value.outDir || '') + '/logcat_' + deviceLabel(activeLogSerial.value || 'unknown') + '_' + ts + '.log'
-  const path = await api.invoke('file:saveText', {
-    content, defaultPath, filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
-  })
-  if (path) showResult(t('log.exportTitle'), t('toast.exported') + path, true)
+  beginBlockingBusy(t('log.exporting'))
+  try {
+    // 等遮罩真正绘制出来再做重活，否则用户看不到加载动画
+    await nextTick()
+    await new Promise((resolve) => requestAnimationFrame(resolve))
+    // 设备日志按格式，注释按原文（空注释即空行），顺序与屏幕一致
+    const content = await buildExportContent(arr)
+    if (!content.trim()) return
+    const d = new Date()
+    const p = (n) => String(n).padStart(2, '0')
+    const ts = '' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds())
+    const defaultPath = (cfg.value.outDir || '') + '/logcat_' + deviceLabel(activeLogSerial.value || 'unknown') + '_' + ts + '.log'
+    const path = await api.invoke('file:saveText', {
+      content, defaultPath, filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
+    })
+    if (path) showResult(t('log.exportTitle'), t('toast.exported') + path, true)
+  } catch (e) {
+    showResult(t('log.exportTitle'), t('log.exportFailed') + (e && e.message ? e.message : String(e)), false)
+  } finally {
+    endBlockingBusy()
+  }
 }
 
 // 「浏览」按钮：立即用系统文件管理器打开自动保存日志的目录（outDir）

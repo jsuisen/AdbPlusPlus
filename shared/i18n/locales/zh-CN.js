@@ -507,6 +507,8 @@ export default {
   'toast.saved': '已保存：',
   'toast.exported': '已导出：',
   'log.exportTitle': '导出日志',
+  'log.exporting': '正在导出日志…',
+  'log.exportFailed': '导出日志失败：',
   'action.inputKey': '模拟按键',
   'install.title': '安装 APK',
   'toast.installDone': '安装完成：',

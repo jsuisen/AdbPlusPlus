@@ -506,6 +506,8 @@ export default {
   'toast.saved': 'Saved: ',
   'toast.exported': 'Exported: ',
   'log.exportTitle': 'Export log',
+  'log.exporting': 'Exporting logs…',
+  'log.exportFailed': 'Failed to export log: ',
   'action.inputKey': 'Send key',
   'install.title': 'Install APK',
   'toast.installDone': 'Installed: ',

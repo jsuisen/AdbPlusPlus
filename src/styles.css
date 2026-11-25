@@ -413,6 +413,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .result-text { margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: #f7f8fa; color: var(--text); font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 45vh; overflow: auto; user-select: text; }
 .result-tip { margin-top: 8px; font-size: 12px; }
 
+/* ---------- 阻断式「进行中」遮罩（日志导出） ---------- */
+/* 覆盖整个应用并拦截输入，直到操作完成才恢复界面交互 */
+.blocking-busy-mask { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.78); }
+.blocking-busy-card { display: flex; align-items: center; gap: 10px; padding: 14px 22px; border: 1px solid var(--border); border-radius: 10px; background: #fff; color: var(--text); box-shadow: 0 8px 30px rgba(0,0,0,.18); font-size: 14px; }
+.blocking-busy-card .busy-spinner { width: 18px; height: 18px; border-width: 3px; }
+
 /* ---------- 非阻断式「进行中」加载指示 ---------- */
 /* pointer-events:none 是关键：不拦截鼠标，后台所有元素保持可交互 */
 .busy-pill { position: fixed; right: 18px; bottom: 40px; z-index: 90; display: flex; align-items: center; gap: 9px; padding: 8px 14px; border-radius: 20px; background: #fff; color: var(--text); border: 1px solid var(--border); box-shadow: 0 4px 16px rgba(0,0,0,.16); font-size: 13px; pointer-events: none; animation: busy-in .15s ease; }

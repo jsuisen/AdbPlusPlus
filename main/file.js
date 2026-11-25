@@ -31,7 +31,7 @@ export function registerFileIpc() {
   ipcMain.handle(FILE_SAVE_TEXT, async (_e, { content, defaultPath, filters }) => {
     const { canceled, filePath } = await dialog.showSaveDialog({ defaultPath, filters })
     if (canceled || !filePath) return null
-    fs.writeFileSync(filePath, content, 'utf8')
+    await fs.promises.writeFile(filePath, content, 'utf8')
     return filePath
   })
 

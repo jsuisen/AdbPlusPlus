@@ -55,3 +55,20 @@ export function endBusy() {
   busyCount = Math.max(0, busyCount - 1)
   if (busyCount === 0) busy.value = false
 }
+
+// ---- 阻断式「进行中」遮罩 ----
+// 用于日志导出这类必须独占界面的操作：遮罩拦截所有鼠标/键盘输入，直到操作结束。
+export const blockingBusy = ref(false)
+export const blockingBusyText = ref('')
+let blockingBusyCount = 0
+
+export function beginBlockingBusy(text) {
+  blockingBusyCount += 1
+  blockingBusyText.value = String(text || t('busy.processing'))
+  blockingBusy.value = true
+}
+
+export function endBlockingBusy() {
+  blockingBusyCount = Math.max(0, blockingBusyCount - 1)
+  if (blockingBusyCount === 0) blockingBusy.value = false
+}
