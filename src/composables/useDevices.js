@@ -84,6 +84,9 @@ async function disconnectDevice(serial) {
     } catch (e) {
       // 主进程未注册该通道（如未重启即改了 main 进程代码）时，设备已从视图移除，仅提示命令未执行
       toast(t('toast.disconnectSkipped') + e.message)
+    } finally {
+      // 以 adb server 的真实列表为准重新同步：offline 条目被清掉后不要留在侧栏
+      await refreshDevices()
     }
   }
 }
