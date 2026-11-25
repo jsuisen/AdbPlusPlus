@@ -379,7 +379,7 @@ npm install
 ## 开发
 
 ```bash
-npm run dev          # Vite(5173, strictPort) + Electron；端口被占会直接失败，先释放 5173
+npm run dev          # Vite + Electron；从 5173 起自动探测可用端口（避开系统保留端口），两者共用同一端口
 npm run check        # 静态验证：tsc checkJs / 通道常量与白名单 / 无环 / barrel 完整 / 模板绑定
 npm test             # 单测：安全白名单(logcat/netcap/adb) / 轮询工厂 / 纯函数
 ```

@@ -18,7 +18,8 @@ export default defineConfig(({ command }) => ({
     emptyOutDir: true
   },
   server: {
-    port: 5173,
+    // dev.js 启动时探测可用端口并通过 DEV_PORT 注入；直跑 vite 时回退 5173
+    port: Number(process.env.DEV_PORT) || 5173,
     strictPort: true
   }
 }))
