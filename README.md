@@ -1,12 +1,17 @@
 # ADB++
 
-Windows 平台的工程级 ADB 桌面工具。Electron 37 + Vue 3，专注日志分析与设备调试，所有 adb/aapt 子进程统一收口在主进程。
-
 ![](screensave/img.png)
+
+> **语言 / Language**: [简体中文](#zh-CN) · [繁體中文](#zh-TW) · [日本語](#ja-JP) · [한국어](#ko-KR) · [Français](#fr-FR) · [Español](#es-ES) · [Русский](#ru-RU) · [اردو](#ur-PK)
+
+<a id="zh-CN"></a>
+
+## 简体中文
+
+Windows 平台的工程级 ADB 桌面工具。Electron 37 + Vue 3，专注日志分析与设备调试，所有 adb/aapt 子进程统一收口在主进程。
 
 参考：Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy。
 
-## 功能一览
 
 ### 日志（类 Android Studio Logcat）
 
@@ -40,6 +45,293 @@ Windows 平台的工程级 ADB 桌面工具。Electron 37 + Vue 3，专注日志
 - **自定义窗口**：无原生标题栏（自绘菜单栏），置顶（图钉按钮，主进程读真实状态翻转）、最小化/最大化/关闭；Ctrl+/-/0 与 Ctrl+滚轮缩放（0.3~3）；顶部设备时钟点击激活后同步设备时间（10 秒校准，重启复位）。
 - **设置面板 10 页**：通用（maxRender、光标行为、启动检测升级、配置路径、设置导入导出）、窗口属性、程序日志路径、日志字体（系统字体下拉）、日志级别颜色、日志内容颜色、日志自动保存、历史过滤设置、抓包设置、截图设置。
 - **版本检测**：启动 30 秒后异步检测一次（可关），关于弹窗手动检测；有新版本时状态栏徽标 + 升级对话框，可「本日不再提醒」。数据源为 GitHub Releases，失败回退读仓库 `package.json`。
+
+<a id="zh-TW"></a>
+
+## 繁體中文
+
+Windows 平台的工程級 ADB 桌面工具。Electron 37 + Vue 3，專注日誌分析與裝置除錯，所有 adb/aapt 子處理程序統一集中於主處理程序。
+
+參考：Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy。
+
+### 日誌（類 Android Studio Logcat）
+
+- 多裝置並行：依裝置區分 tab 與獨立採集狀態，日誌依裝置分檔自動寫入磁碟。
+- 即時串流採集，級別（V/D/I/W/E/F）、Tag、關鍵字、正則、包名篩選；Tag 全詞比對、依包名一次選取該 APK 的所有處理程序。
+- Tag / 關鍵字篩選歷史，可鎖定條目（鎖定項不被裁剪/清空）；按 Tag 快速篩選（自動產生正則）。
+- 日誌級別顏色（文字/背景/粗體）+ 按內容關鍵字上色（全域規則 + 工作階段規則，工作階段優先）；顯示格式可設定日期 / pid / 包名 / Tag。
+- 尋找（Ctrl+F，浮動非遮擋視窗）、換行開關、匯出 `.log`、自動儲存至磁碟。
+- 日誌內可按 Enter 插入註解行；單擊定位游標（收合選取範圍），方向鍵移動游標、Ctrl+↑/↓ 逐行捲動視窗、Ctrl+←/→ 按詞移動，行為可於「設定 - 視窗屬性」切換。
+- 渲染策略：全量快取在記憶體，篩選後只取尾部 `maxRender`（預設 20000）行交給 Vue，避免 DOM 爆炸。
+
+### 裝置資訊與偵測
+
+- 資訊卡：型號、Android 版本、解析度、密度、記憶體、儲存空間、CPU、android_id、stbid、oid、多網卡 MAC、前景 Activity；可匯出。
+- `dumpsys &lt;service&gt;` 查詢、`bugreport`、`getprop` 清單（篩選 + 匯出）。
+- 四個輪詢清單：前景 Activity / 執行中 Service / 處理程序（PID、CPU、RSS、VSZ、執行緒、狀態、IO）/ 執行緒，各自獨立開關、間隔、篩選與手動重整。
+
+### 裝置操作（側邊欄分組）
+
+- 包名操作：載入包名、啟動/停止/重啟應用程式、停止處理程序、清除快取、清除快取並重啟、解除安裝、Monkey 測試。
+- 元件除錯：啟動 Activity / Service、傳送廣播、停止 Service。
+- 媒體：截圖、截圖至指定路徑、連續截圖（間隔可設定）、螢幕錄影。
+- 網路封包擷取：裝置端 `tcpdump` 常駐，停止時以 `pkill -INT` 刷盤，視需要 pull / 列出 / 刪除 pcap；支援 `su -c` 僅為 tcpdump 提權；封包擷取管理彈出視窗統一操作。
+- 輸入：輸入文字、模擬按鍵（含 KEYCODE 速查表）、模擬點擊、模擬滑動；動作可儲存為快捷按鈕。
+- 權限授予/撤銷（Beta）、推送/拉取檔案、安裝/解除安裝 APK、解析已安裝 APK、root/unroot/remount、重啟、`adb devices` / `disconnect` / `kill-server`。
+
+### 其他
+
+- **APK 解析**：本機 APK 與裝置已安裝包兩條路徑，`aapt dump badging` 輸出包名、版本、label、啟動 Activity、權限清單與 MD5；中文路徑自動改用暫存 ASCII 副本，以規避 aapt 編碼問題。
+- **快捷指令**：依分組篩選，新增、刪除、修改、顏色預設、忽略回應、執行輸出（複製/儲存）；支援開機式持久化至設定檔。
+- **自訂視窗**：無原生標題列（自繪選單列）、置頂（圖釘按鈕，主處理程序讀取真實狀態後翻轉）、最小化/最大化/關閉；Ctrl+/-/0 與 Ctrl+滾輪縮放（0.3~3）；頂部裝置時鐘點擊啟用後同步裝置時間（10 秒校準，重啟復位）。
+- **設定面板 10 頁**：一般（maxRender、游標行為、啟動時偵測更新、設定檔路徑、設定匯入匯出）、視窗屬性、程式日誌路徑、日誌字型（系統字型下拉式選單）、日誌級別顏色、日誌內容顏色、日誌自動儲存、歷史篩選設定、封包擷取設定、截圖設定。
+- **版本偵測**：啟動 30 秒後非同步偵測一次（可關閉），關於對話框可手動偵測；有新版本時狀態列標誌 + 升級對話框，可「本日不再提醒」。資料來源為 GitHub Releases，失敗時回退讀取儲存庫 `package.json`。
+
+<a id="ja-JP"></a>
+
+## 日本語
+
+Windows プラットフォーム向けのエンジニアリンググレード ADB デスクトップツールです。Electron 37 + Vue 3 を採用し、ログ解析とデバイスデバッグに特化。すべての adb/aapt サブプロセスをメインプロセスに一元管理しています。
+
+参考：Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy。
+
+### ログ（Android Studio Logcat 風）
+
+- 複数デバイスの並行処理：デバイスごとに tab と独立した収集状態を割り当て、ログはデバイス別のファイルに自動保存されます。
+- リアルタイムストリーミング収集、レベル（V/D/I/W/E/F）、Tag、キーワード、正規表現、パッケージ名によるフィルタリング。Tag は完全一致、パッケージ名でその APK の全プロセスを一括選択できます。
+- Tag / キーワードフィルタの履歴、項目のロックが可能（ロックした項目はトリミング／クリアされません）。Tag によるクイックフィルタ（正規表現を自動生成）。
+- ログレベルの色（文字／背景／太字）＋ 内容キーワードによる着色（グローバルルール ＋ セッションルール、セッションが優先）。表示形式は日付 / pid / パッケージ名 / Tag を設定可能。
+- 検索（Ctrl+F、フローティングの非遮蔽ウィンドウ）、折り返し切り替え、`.log` へのエクスポート、ディスクへの自動保存。
+- ログ内で Enter キーによりコメント行を挿入可能。シングルクリックでカーソルを配置（選択範囲を折りたたむ）、方向キーでカーソル移動、Ctrl+↑/↓ で行単位のスクロール、Ctrl+←/→ で単語単位の移動。動作は「設定 - ウィンドウプロパティ」で切り替え可能です。
+- レンダリング戦略：全量をメモリにキャッシュし、フィルタリング後に末尾の `maxRender`（デフォルト 20000）行のみを Vue に渡すことで、DOM の肥大化を回避します。
+
+### デバイス情報と検出
+
+- 情報カード：モデル、Android バージョン、解像度、密度、メモリ、ストレージ、CPU、android_id、stbid、oid、複数 NIC の MAC、フォアグラウンド Activity。エクスポート可能。
+- `dumpsys <service>` クエリ、`bugreport`、`getprop` 一覧（フィルタ ＋ エクスポート）。
+- 4 つのポーリングリスト：フォアグラウンド Activity / 実行中 Service / プロセス（PID、CPU、RSS、VSZ、スレッド、状態、IO）/ スレッド。それぞれ独立したオン／オフ、間隔、フィルタ、手動更新を備えます。
+
+### デバイス操作（サイドバーグループ）
+
+- パッケージ名操作：パッケージ名の読み込み、アプリの起動／停止／再起動、プロセスの停止、キャッシュのクリア、キャッシュクリア後の再起動、アンインストール、Monkey テスト。
+- コンポーネントデバッグ：Activity / Service の起動、ブロードキャストの送信、Service の停止。
+- メディア：スクリーンショット、パス指定でのスクリーンショット、連続スクリーンショット（間隔設定可能）、画面録画。
+- ネットワークパケットキャプチャ：デバイス側で `tcpdump` を常駐させ、停止時に `pkill -INT` でバッファをディスクにフラッシュ。必要に応じて pcap の pull / 一覧 / 削除が可能。`su -c` で tcpdump のみに権限付与をサポート。キャプチャ管理ダイアログで一括操作。
+- 入力：テキスト入力、キー操作のシミュレーション（KEYCODE 早見表を含む）、タップのシミュレーション、スワイプのシミュレーション。アクションはクイックボタンとして保存可能。
+- 権限の付与／取り消し（Beta）、ファイルのプッシュ／プル、APK のインストール／アンインストール、インストール済み APK の解析、root/unroot/remount、再起動、`adb devices` / `disconnect` / `kill-server`。
+
+### その他
+
+- **APK 解析**：ローカル APK とデバイスインストール済みパッケージの 2 経路。`aapt dump badging` でパッケージ名、バージョン、label、起動 Activity、権限一覧、MD5 を出力。日本語を含む非 ASCII パスは自動的に一時的な ASCII コピーを介して aapt のエンコーディング問題を回避します。
+- **クイックコマンド**：グループ別のフィルタ、追加／削除／編集、カラープリセット、レスポンスの無視、実行出力（コピー／保存）。起動時に設定へ永続化する方式をサポート。
+- **カスタムウィンドウ**：ネイティブタイトルバーなし（自描画のメニューバー）、常に最前面（ピンボタン、メインプロセスが実際の状態を読み取って切り替え）、最小化／最大化／閉じる。Ctrl+/-/0 と Ctrl+ホイールでズーム（0.3~3）。上部のデバイス時計はクリックで有効化するとデバイス時刻と同期（10 秒ごとに較正、再起動でリセット）。
+- **設定パネル 10 ページ**：一般（maxRender、カーソル動作、起動時のアップデート検出、設定パス、設定のインポート／エクスポート）、ウィンドウプロパティ、プログラムログのパス、ログフォント（システムフォントのドロップダウン）、ログレベルの色、ログ内容の色、ログの自動保存、履歴フィルタ設定、キャプチャ設定、スクリーンショット設定。
+- **バージョン検出**：起動 30 秒後に非同期で 1 回検出（無効化可能）、バージョン情報ダイアログで手動検出。新バージョンがある場合はステータスバーのバッジ ＋ アップグレードダイアログを表示し、「本日は再表示しない」を選択可能。データソースは GitHub Releases で、失敗時はリポジトリの `package.json` を読み込んでフォールバックします。
+
+<a id="ko-KR"></a>
+
+## 한국어
+
+Windows 플랫폼용 엔지니어링급 ADB 데스크톱 도구입니다. Electron 37 + Vue 3으로 구축되어 로그 분석과 디바이스 디버깅에 집중하며, 모든 adb/aapt 하위 프로세스를 메인 프로세스에 일원화하여 관리합니다.
+
+참고: Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy.
+
+### 로그 (Android Studio Logcat 유사)
+
+- 멀티 디바이스 병렬 처리: 디바이스별로 tab과 독립적인 수집 상태를 분리하고, 로그를 디바이스별 파일로 자동 저장합니다.
+- 실시간 스트리밍 수집, 레벨(V/D/I/W/E/F), Tag, 키워드, 정규식, 패키지명 필터링을 지원합니다. Tag 전체 단어 일치, 패키지명으로 해당 APK의 모든 프로세스를 한 번에 선택할 수 있습니다.
+- Tag / 키워드 필터 기록, 항목 잠금 기능(잠긴 항목은 잘라내기/지우기되지 않음); Tag별 빠른 필터링(정규식 자동 생성).
+- 로그 레벨 색상(텍스트/배경/굵게) + 내용 키워드별 색상 지정(전역 규칙 + 세션 규칙, 세션 우선); 표시 형식은 날짜 / pid / 패키지명 / Tag를 설정할 수 있습니다.
+- 검색(Ctrl+F, 떠 있는 비차단 창), 줄바꿈 전환, `.log` 내보내기, 디스크 자동 저장을 지원합니다.
+- 로그 내에서 Enter로 주석 줄을 삽입할 수 있습니다. 단일 클릭으로 커서 위치 지정(선택 영역 접기), 방향키로 커서 이동, Ctrl+↑/↓로 줄 단위 스크롤, Ctrl+←/→로 단어 단위 이동하며, 동작은 「설정 - 창 속성」에서 전환할 수 있습니다.
+- 렌더링 전략: 전체 데이터를 메모리에 캐시하고, 필터링 후 뒤쪽 `maxRender`(기본값 20000)줄만 Vue에 전달하여 DOM 폭증을 방지합니다.
+
+### 디바이스 정보 및 감지
+
+- 정보 카드: 모델, Android 버전, 해상도, 밀도, 메모리, 저장 공간, CPU, android_id, stbid, oid, 다중 NIC MAC, 포그라운드 Activity; 내보내기 가능.
+- `dumpsys <service>` 조회, `bugreport`, `getprop` 목록(필터 + 내보내기).
+- 4개의 폴링 목록: 포그라운드 Activity / 실행 중 Service / 프로세스(PID, CPU, RSS, VSZ, 스레드, 상태, IO) / 스레드. 각각 독립적인 켜기/끄기, 간격, 필터 및 수동 새로고침을 지원합니다.
+
+### 디바이스 작업 (사이드바 그룹)
+
+- 패키지명 작업: 패키지명 불러오기, 앱 시작/정지/재시작, 프로세스 정지, 캐시 지우기, 캐시 지우고 재시작, 제거, Monkey 테스트.
+- 컴포넌트 디버깅: Activity / Service 시작, 브로드캐스트 전송, Service 정지.
+- 미디어: 스크린샷, 지정 경로에 스크린샷 저장, 연속 스크린샷(간격 설정 가능), 화면 녹화.
+- 네트워크 패킷 캡처: 디바이스에서 `tcpdump` 상주 실행, 중지 시 `pkill -INT`로 디스크에 기록, 필요 시 pull / 목록 / pcap 삭제; `su -c`로 tcpdump에만 권한 상승 지원; 캡처 관리 팝업에서 일괄 작업.
+- 입력: 텍스트 입력, 키 입력 시뮬레이션(KEYCODE 요약표 포함), 클릭 시뮬레이션, 스와이프 시뮬레이션; 동작을 바로가기 버튼으로 저장할 수 있습니다.
+- 권한 부여/취소(Beta), 파일 푸시/풀, APK 설치/제거, 설치된 APK 분석, root/unroot/remount, 재부팅, `adb devices` / `disconnect` / `kill-server`.
+
+### 기타
+
+- **APK 분석**: 로컬 APK와 디바이스에 설치된 패키지 두 경로를 지원하며, `aapt dump badging`으로 패키지명, 버전, label, 시작 Activity, 권한 목록과 MD5를 출력합니다. 중국어 경로는 임시 ASCII 사본을 자동으로 사용해 aapt 인코딩 문제를 회피합니다.
+- **빠른 명령**: 그룹별 필터링, 추가/수정/삭제, 색상 프리셋, 응답 무시, 실행 출력(복사/저장); 시작 시 자동 적용되도록 설정에 영구 저장할 수 있습니다.
+- **사용자 지정 창**: 기본 제목 표시줄 없음(자체 그린 메뉴바), 항상 위에 표시(핀 버튼, 메인 프로세스가 실제 상태를 읽어 전환), 최소화/최대화/닫기; Ctrl+/-/0 및 Ctrl+휠 확대/축소(0.3~3); 상단 디바이스 시계를 클릭해 활성화하면 디바이스 시간과 동기화(10초 보정, 재시작 시 초기화).
+- **설정 패널 10개 페이지**: 일반(maxRender, 커서 동작, 시작 시 업데이트 확인, 설정 경로, 설정 가져오기/내보내기), 창 속성, 프로그램 로그 경로, 로그 글꼴(시스템 글꼴 드롭다운), 로그 레벨 색상, 로그 내용 색상, 로그 자동 저장, 기록 필터 설정, 캡처 설정, 스크린샷 설정.
+- **버전 확인**: 시작 30초 후 비동기로 한 번 확인(끄기 가능), 정보 팝업에서 수동 확인; 새 버전이 있으면 상태 표시줄 배지 + 업그레이드 대화상자를 표시하며 「오늘 다시 알리지 않음」을 선택할 수 있습니다. 데이터 소스는 GitHub Releases이며, 실패 시 저장소의 `package.json`을 읽어 대체합니다.
+
+<a id="fr-FR"></a>
+
+## Français
+
+Un outil de bureau ADB de niveau ingénierie pour la plateforme Windows. Electron 37 + Vue 3, axé sur l'analyse des journaux et le débogage des appareils, tous les sous-processus adb/aapt sont centralisés dans le processus principal.
+
+Références : Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy.
+
+### Journaux (similaires à Android Studio Logcat)
+
+- Parallélisme multi-appareils : des tab séparés par appareil avec des états de collecte indépendants, les journaux sont automatiquement écrits sur le disque dans des fichiers distincts par appareil.
+- Collecte en flux temps réel, filtrage par niveau (V/D/I/W/E/F), Tag, mot-clé, expression régulière et nom de package ; correspondance exacte du Tag (mot entier), sélection en une seule fois de tous les processus d'un APK par nom de package.
+- Historique des filtres Tag / mot-clé, verrouillage des entrées (les entrées verrouillées ne sont ni rognées ni effacées) ; filtrage rapide par Tag (génération automatique d'expression régulière).
+- Couleurs par niveau de journal (texte / arrière-plan / gras) + coloration par mot-clé de contenu (règles globales + règles de session, priorité à la session) ; format d'affichage configurable : date / pid / nom de package / Tag.
+- Recherche (Ctrl+F, fenêtre flottante non obstructive), bascule de retour à la ligne, export `.log`, sauvegarde automatique sur le disque.
+- Insertion de lignes de commentaire par Entrée dans le journal ; clic simple pour positionner le curseur (repli de la sélection), déplacement du curseur par les touches directionnelles, défilement ligne par ligne avec Ctrl+↑/↓, déplacement mot par mot avec Ctrl+←/→, comportement commutable dans « Paramètres - Propriétés de la fenêtre ».
+- Stratégie de rendu : mise en cache intégrale en mémoire, après filtrage seules les `maxRender` dernières lignes (20000 par défaut) sont transmises à Vue, afin d'éviter une explosion du DOM.
+
+### Informations et détection de l'appareil
+
+- Fiche d'informations : modèle, version d'Android, résolution, densité, mémoire, stockage, CPU, android_id, stbid, oid, MAC de plusieurs cartes réseau, Activity au premier plan ; exportable.
+- Requêtes `dumpsys <service>`, `bugreport`, listes `getprop` (filtrage + export).
+- Quatre listes interrogées périodiquement : Activity au premier plan / Service en cours d'exécution / processus (PID, CPU, RSS, VSZ, threads, état, IO) / threads, chacune avec activation, intervalle, filtrage et actualisation manuelle indépendants.
+
+### Opérations sur l'appareil (groupées dans la barre latérale)
+
+- Opérations sur les noms de package : chargement des noms de package, démarrage/arrêt/redémarrage d'application, arrêt de processus, nettoyage du cache, nettoyage du cache et redémarrage, désinstallation, test Monkey.
+- Débogage des composants : démarrage d'Activity / Service, envoi de diffusions, arrêt de Service.
+- Multimédia : capture d'écran, capture d'écran vers un chemin, captures d'écran en continu (intervalle configurable), enregistrement d'écran.
+- Capture réseau : `tcpdump` résident côté appareil, vidage sur disque avec `pkill -INT` à l'arrêt, pull / liste / suppression des pcap à la demande ; prise en charge de `su -c` pour n'élever les privilèges que de tcpdump ; opérations centralisées dans une fenêtre de gestion de la capture.
+- Saisie : saisie de texte, simulation de touches (avec table de référence rapide KEYCODE), simulation de clics, simulation de glissements ; les actions peuvent être enregistrées comme boutons raccourcis.
+- Octroi/révocation de permissions (Beta), push/pull de fichiers, installation/désinstallation d'APK, analyse des APK installés, root/unroot/remount, redémarrage, `adb devices` / `disconnect` / `kill-server`.
+
+### Divers
+
+- **Analyse d'APK** : deux voies, APK locaux et paquets installés sur l'appareil, `aapt dump badging` affiche le nom de package, la version, le label, l'Activity de lancement, la liste des permissions et le MD5 ; les chemins chinois passent automatiquement par une copie temporaire ASCII pour éviter les problèmes d'encodage d'aapt.
+- **Commandes rapides** : filtrage par groupe, ajout/modification/suppression, préréglages de couleur, ignorabilité de la réponse, sortie d'exécution (copie/sauvegarde) ; persistance de type « au démarrage » dans la configuration.
+- **Fenêtre personnalisée** : pas de barre de titre native (barre de menu dessinée sur mesure), toujours au-dessus (bouton punaise, bascule par lecture de l'état réel dans le processus principal), minimisation/maximisation/fermeture ; zoom avec Ctrl+/-/0 et Ctrl+molette (0,3~3) ; l'horloge de l'appareil en haut, une fois activée par clic, synchronise l'heure de l'appareil (calibration de 10 secondes, réinitialisation au redémarrage).
+- **Panneau de paramètres en 10 pages** : général (maxRender, comportement du curseur, détection des mises à jour au démarrage, chemin de configuration, import/export des paramètres), propriétés de la fenêtre, chemin des journaux du programme, police des journaux (liste déroulante des polices système), couleurs des niveaux de journal, couleurs du contenu des journaux, sauvegarde automatique des journaux, paramètres de l'historique des filtres, paramètres de capture, paramètres de capture d'écran.
+- **Détection de version** : une vérification asynchrone 30 secondes après le démarrage (désactivable), vérification manuelle via la fenêtre « À propos » ; en cas de nouvelle version, badge dans la barre d'état + boîte de dialogue de mise à jour, avec option « Ne pas me le rappeler aujourd'hui ». La source de données est GitHub Releases, avec repli sur la lecture de `package.json` du dépôt en cas d'échec.
+
+<a id="es-ES"></a>
+
+## Español
+
+Herramienta de escritorio ADB de nivel profesional para Windows. Electron 37 + Vue 3, centrada en el análisis de registros y la depuración de dispositivos; todos los subprocesos adb/aapt se centralizan en el proceso principal.
+
+Referencia: Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy.
+
+### Registros (similar a Android Studio Logcat)
+
+- Multidispositivo en paralelo: tab independientes por dispositivo con estados de captura propios; los registros se escriben automáticamente en disco en archivos separados por dispositivo.
+- Captura por streaming en tiempo real con filtros por nivel (V/D/I/W/E/F), Tag, palabra clave, expresión regular y nombre de paquete; coincidencia de palabra completa para Tag y selección en un solo paso de todos los procesos de un APK por nombre de paquete.
+- Historial de filtros por Tag / palabra clave, con opción de bloquear entradas (las entradas bloqueadas no se recortan ni se borran); filtrado rápido por Tag (genera automáticamente la expresión regular).
+- Colores por nivel de registro (texto / fondo / negrita) + coloreado por palabra clave del contenido (reglas globales + reglas de sesión, con prioridad de las reglas de sesión); formato de visualización configurable con fecha / pid / nombre de paquete / Tag.
+- Búsqueda (Ctrl+F, ventana flotante no obstructiva), ajuste de línea activable, exportación a `.log` y guardado automático en disco.
+- Inserción de líneas de comentario con Intro dentro de los registros; clic para colocar el cursor (contraer la selección), teclas de flecha para mover el cursor, Ctrl+↑/↓ para desplazar la ventana línea por línea, Ctrl+←/→ para moverse por palabras; el comportamiento se puede cambiar en «Ajustes - Propiedades de la ventana».
+- Estrategia de renderizado: se almacena la totalidad en caché en memoria y, tras filtrar, solo se entregan a Vue las últimas `maxRender` líneas (20000 por defecto), para evitar una explosión del DOM.
+
+### Información y detección del dispositivo
+
+- Tarjeta de información: modelo, versión de Android, resolución, densidad, memoria, almacenamiento, CPU, android_id, stbid, oid, MAC de múltiples interfaces de red y Activity en primer plano; exportable.
+- Consulta `dumpsys <service>`, `bugreport`, listados de `getprop` (filtrado + exportación).
+- Cuatro listas de sondeo: Activity en primer plano / Service en ejecución / procesos (PID, CPU, RSS, VSZ, hilos, estado, IO) / hilos, cada una con activación, intervalo, filtrado y actualización manual independientes.
+
+### Operaciones del dispositivo (agrupadas en la barra lateral)
+
+- Operaciones por nombre de paquete: cargar paquetes, iniciar/detener/reiniciar aplicaciones, detener procesos, limpiar caché, limpiar caché y reiniciar, desinstalar, prueba Monkey.
+- Depuración de componentes: iniciar Activity / Service, enviar un broadcast y detener Service.
+- Multimedia: captura de pantalla, captura a una ruta específica, capturas consecutivas (intervalo configurable) y grabación de pantalla.
+- Captura de red: `tcpdump` residente en el dispositivo, con volcado a disco mediante `pkill -INT` al detener, y pull / listado / eliminación de pcap según se necesite; admite `su -c` para elevar privilegios solo de tcpdump; gestión centralizada desde un diálogo de captura.
+- Entrada: introducción de texto, simulación de teclas (incluye tabla de referencia rápida de KEYCODE), clics simulados y deslizamientos simulados; las acciones se pueden guardar como botones de acceso rápido.
+- Concesión/revocación de permisos (Beta), push/pull de archivos, instalación/desinstalación de APK, análisis de APK instalados, root/unroot/remount, reinicio, `adb devices` / `disconnect` / `kill-server`.
+
+### Otros
+
+- **Análisis de APK**: dos vías, APK locales y paquetes instalados en el dispositivo; `aapt dump badging` muestra el nombre de paquete, la versión, label, la Activity de inicio, la lista de permisos y MD5; las rutas en chino se redirigen automáticamente a una copia temporal en ASCII para evitar problemas de codificación de aapt.
+- **Comandos rápidos**: filtrado por grupo, añadir/eliminar/modificar, preajustes de color, opción de ignorar la respuesta y salida de ejecución (copiar/guardar); admite persistencia automática en la configuración al iniciar.
+- **Ventana personalizada**: sin barra de título nativa (barra de menú dibujada por la aplicación), siempre arriba (botón de chincheta, el proceso principal lee el estado real y lo invierte), minimizar/maximizar/cerrar; Ctrl+/-/0 y Ctrl+rueda del ratón para el zoom (0.3~3); el reloj del dispositivo en la parte superior, al activarse con un clic, sincroniza la hora del dispositivo (calibración de 10 segundos, se reinicia al arrancar).
+- **Panel de ajustes de 10 páginas**: general (maxRender, comportamiento del cursor, comprobación de actualizaciones al iniciar, ruta de configuración, importación/exportación de ajustes), propiedades de la ventana, ruta de los registros del programa, fuente de los registros (desplegable de fuentes del sistema), colores por nivel de registro, colores del contenido de los registros, guardado automático de registros, ajustes del historial de filtros, ajustes de captura de red y ajustes de captura de pantalla.
+- **Comprobación de versión**: una comprobación asíncrona 30 segundos después del inicio (se puede desactivar) y comprobación manual desde el diálogo «Acerca de»; cuando hay una versión nueva, se muestra una insignia en la barra de estado + un diálogo de actualización, con la opción de «no recordar hoy». La fuente de datos son las GitHub Releases y, si falla, se recurre a leer `package.json` del repositorio.
+
+<a id="ru-RU"></a>
+
+## Русский
+
+Десктопный инструмент ADB инженерного уровня для Windows. Electron 37 + Vue 3, с упором на анализ логов и отладку устройств; все дочерние процессы adb/aapt централизованно обрабатываются в главном процессе.
+
+Ориентиры: Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy.
+
+### Логи (аналог Android Studio Logcat)
+
+- Параллельная работа с несколькими устройствами: отдельные tab и независимое состояние сбора для каждого устройства, логи автоматически записываются на диск в отдельные файлы по устройствам.
+- Потоковый сбор в реальном времени с фильтрацией по уровням (V/D/I/W/E/F), Tag, ключевым словам, регулярным выражениям и имени пакета; совпадение Tag целиком, выбор всех процессов APK по имени пакета одним действием.
+- История фильтров по Tag / ключевым словам с возможностью закрепления записей (закреплённые не обрезаются и не очищаются); быстрая фильтрация по Tag (автоматическая генерация регулярного выражения).
+- Цвета уровней логов (текст/фон/полужирный) + окраска по ключевым словам в содержимом (глобальные правила + правила сессии, приоритет у сессии); настраиваемый формат отображения: дата / pid / имя пакета / Tag.
+- Поиск (Ctrl+F, плавающее окно, не перекрывающее содержимое), переключатель переноса строк, экспорт в `.log`, автоматическое сохранение на диск.
+- Внутри лога можно вставить строку-комментарий нажатием Enter; одиночный щелчок позиционирует курсор (сворачивая выделение), стрелки перемещают курсор, Ctrl+↑/↓ прокручивают окно по строкам, Ctrl+←/→ перемещают по словам; поведение переключается в «Настройки — Свойства окна».
+- Стратегия рендеринга: полный объём кэшируется в памяти, после фильтрации Vue передаются только последние `maxRender` строк (по умолчанию 20000), чтобы избежать раздувания DOM.
+
+### Информация об устройстве и диагностика
+
+- Информационная карточка: модель, версия Android, разрешение, плотность, память, хранилище, CPU, android_id, stbid, oid, MAC нескольких сетевых интерфейсов, активный Activity; поддерживается экспорт.
+- Запросы `dumpsys <service>`, `bugreport`, списки `getprop` (фильтрация + экспорт).
+- Четыре списка с опросом: активный Activity / запущенные Service / процессы (PID, CPU, RSS, VSZ, потоки, состояние, IO) / потоки — у каждого собственный переключатель, интервал, фильтрация и обновление вручную.
+
+### Операции с устройством (группы в боковой панели)
+
+- Операции с именами пакетов: загрузка списка пакетов, запуск/остановка/перезапуск приложения, остановка процесса, очистка кэша, очистка кэша с перезапуском, удаление, тест Monkey.
+- Отладка компонентов: запуск Activity / Service, отправка широковещательного сообщения, остановка Service.
+- Медиа: снимок экрана, снимок в указанный путь, непрерывные снимки (настраиваемый интервал), запись экрана.
+- Перехват сетевого трафика: постоянно работающий `tcpdump` на устройстве, при остановке `pkill -INT` сбрасывает данные на диск, по запросу pull / список / удаление pcap; поддержка `su -c` для повышения прав только для tcpdump; единый диалог управления перехватом.
+- Ввод: ввод текста, имитация нажатий клавиш (включая справочную таблицу KEYCODE), имитация касаний, имитация свайпов; действия можно сохранять как быстрые кнопки.
+- Предоставление/отзыв разрешений (Beta), отправка/получение файлов, установка/удаление APK, разбор установленных APK, root/unroot/remount, перезагрузка, `adb devices` / `disconnect` / `kill-server`.
+
+### Прочее
+
+- **Разбор APK**: два пути — локальные APK и уже установленные на устройстве пакеты; `aapt dump badging` выводит имя пакета, версию, label, стартовый Activity, список разрешений и MD5; для путей с китайскими иероглифами автоматически используется временная ASCII-копия, чтобы обойти проблемы aapt с кодировкой.
+- **Быстрые команды**: фильтрация по группам, добавление/изменение/удаление, предустановки цвета, игнорирование ответа, вывод выполнения (копирование/сохранение); поддержка постоянного сохранения в конфигурации, действующего после перезапуска.
+- **Настраиваемое окно**: без нативной строки заголовка (меню рисуется самостоятельно), режим поверх всех окон (кнопка-скрепка, переключение на основе реального состояния, считываемого главным процессом), свёртывание/развёртывание/закрытие; Ctrl+/-/0 и Ctrl+колёсико для масштабирования (0.3~3); верхние часы устройства после активации нажатием синхронизируют время устройства (калибровка 10 секунд, сброс при перезапуске).
+- **Панель настроек, 10 вкладок**: общие (maxRender, поведение курсора, проверка обновлений при запуске, путь конфигурации, импорт/экспорт настроек), свойства окна, путь к логам программы, шрифт логов (выпадающий список системных шрифтов), цвета уровней логов, цвета содержимого логов, автосохранение логов, настройки истории фильтров, настройки перехвата трафика, настройки снимков экрана.
+- **Проверка версий**: асинхронная проверка через 30 секунд после запуска (можно отключить), ручная проверка в диалоге «О программе»; при наличии новой версии — значок в строке состояния + диалог обновления с возможностью «не напоминать сегодня». Источник данных — GitHub Releases, при неудаче используется резервное чтение `package.json` из репозитория.
+
+<a id="ur-PK"></a>
+
+## اردو
+
+Windows پلیٹ فارم کے لیے انجینئرنگ گریڈ کا ایک ADB ڈیسک ٹاپ ٹول۔ Electron 37 + Vue 3 کے ساتھ، جو لاگ تجزیے اور ڈیوائس ڈیبگنگ پر توجہ مرکوز رکھتا ہے، تمام adb/aapt ذیلی عمل مرکزی عمل میں ہی یکجا کیے جاتے ہیں۔
+
+حوالہ: Android Studio Logcat / Android Turbo Tools / SecureCRT / Notepad++ / WorkBuddy۔
+
+### لاگ (Android Studio Logcat کی طرز پر)
+
+- کئی ڈیوائسز بیک وقت: ڈیوائس کے لحاظ سے الگ tab اور آزاد جمع کرنے کی حالت، لاگ ڈیوائس کے مطابق الگ فائلوں میں خودکار طور پر ڈسک پر محفوظ کیے جاتے ہیں۔
+- حقیقی وقت میں مسلسل جمع کرنا، سطح (V/D/I/W/E/F)، Tag، کلیدی لفظ، regex، پیکج نام کی فلٹرنگ؛ Tag کا مکمل لفظ سے میل، پیکج نام کے ذریعے ایک ہی بار میں اُس APK کے تمام عمل منتخب کرنا۔
+- Tag / کلیدی لفظ فلٹرنگ کی تاریخ، اشیاء کو لاک کیا جا سکتا ہے (لاک شدہ اشیاء نہ کاٹی جاتی ہیں نہ صاف)؛ Tag کے ذریعے فوری فلٹرنگ (خودکار طور پر regex بنایا جاتا ہے)۔
+- لاگ کی سطح کے رنگ (متن / پس منظر / بولڈ) + مواد کے کلیدی الفاظ کے مطابق رنگ (عالمی اصول + سیشن اصول، سیشن کو ترجیح)؛ ڈسپلے فارمیٹ قابلِ ترتیب: تاریخ / pid / پیکج نام / Tag۔
+- تلاش (Ctrl+F، تیرتی ہوئی ونڈو جو رکاوٹ نہیں بنتی)، لائن توڑنے کا سوئچ، `.log` برآمد کرنا، ڈسک پر خودکار محفوظ کرنا۔
+- لاگ کے اندر Enter سے تبصرے کی لائن شامل کی جا سکتی ہے؛ ایک کلک سے کرسر وہاں ٹھہرتا ہے (منتخب حصہ سمیٹ کر)، تیر کی کلیدوں سے کرسر حرکت کرتا ہے، Ctrl+↑/↓ سے ایک ایک لائن اسکرول ہوتی ہے، Ctrl+←/→ سے لفظ بہ لفظ آگے بڑھتا ہے، یہ رویہ «ترتیبات - ونڈو خصوصیات» میں تبدیل کیا جا سکتا ہے۔
+- رینڈرنگ کی حکمتِ عملی: پورا مواد میموری میں محفوظ، فلٹر کے بعد صرف آخری `maxRender` (پہلے سے طے شدہ 20000) لائنیں Vue کو سونپی جاتی ہیں، تاکہ DOM کا بوجھ بڑھنے سے بچا جا سکے۔
+
+### ڈیوائس کی معلومات اور جانچ
+
+- معلوماتی کارڈ: ماڈل، Android ورژن، ریزولوشن، کثافت، میموری، اسٹوریج، CPU، android_id، stbid، oid، متعدد نیٹ ورک کارڈز کے MAC، سامنے والی Activity؛ برآمد کیا جا سکتا ہے۔
+- `dumpsys <service>` استفسار، `bugreport`، `getprop` فہرست (فلٹر + برآمد)۔
+- چار مسلسل جانچ کی فہرستیں: سامنے والی Activity / چل رہی Service / عمل (PID، CPU، RSS، VSZ، تھریڈز، حالت، IO) / تھریڈز، ہر ایک کا الگ سوئچ، وقفہ، فلٹر اور دستی تازہ کاری۔
+
+### ڈیوائس کے آپریشن (سائیڈ بار میں گروپ بندی)
+
+- پیکج نام کے آپریشن: پیکج نام لوڈ کرنا، ایپلیکیشن شروع / روکنا / دوبارہ شروع کرنا، عمل روکنا، کیش صاف کرنا، کیش صاف کر کے دوبارہ شروع کرنا، انسٹال ہٹانا، Monkey ٹیسٹ۔
+- اجزاء کی ڈیبگنگ: Activity / Service شروع کرنا، براڈکاسٹ بھیجنا، Service روکنا۔
+- میڈیا: اسکرین شاٹ، مخصوص راستے پر اسکرین شاٹ، مسلسل اسکرین شاٹ (وقفہ قابلِ ترتیب)، اسکرین ریکارڈنگ۔
+- نیٹ ورک پیکٹ کیپچر: ڈیوائس پر `tcpdump` مستقل چلتا رہتا ہے، روکنے پر `pkill -INT` سے ڈسک پر محفوظ کیا جاتا ہے، ضرورت کے مطابق pull / فہرست / pcap حذف؛ `su -c` کے ذریعے صرف tcpdump کو بلند اختیارات دینے کی سہولت؛ کیپچر مینجمنٹ پاپ اپ سے تمام آپریشن ایک جگہ۔
+- ان پٹ: متن داخل کرنا، بٹن دبانے کی نقل (KEYCODE کی فوری جدول سمیت)، کلک کی نقل، سوائپ کی نقل؛ اعمال کو شارٹ کٹ بٹن کے طور پر محفوظ کیا جا سکتا ہے۔
+- اجازت دینا / واپس لینا (Beta)، فائلوں کا push / pull، APK انسٹال / انسٹال ہٹانا، انسٹال شدہ APK کا تجزیہ، root/unroot/remount، دوبارہ شروع کرنا، `adb devices` / `disconnect` / `kill-server`۔
+
+### متفرقات
+
+- **APK کا تجزیہ**: مقامی APK اور ڈیوائس پر موجود انسٹال شدہ پیکج، دو راستے؛ `aapt dump badging` سے پیکج نام، ورژن، label، شروع ہونے والی Activity، اجازتوں کی فہرست اور MD5 حاصل ہوتے ہیں؛ چینی راستوں کے لیے خودکار طور پر عارضی ASCII کاپی استعمال کی جاتی ہے تاکہ aapt کی انکوڈنگ دشواری سے بچا جا سکے۔
+- **شارٹ کٹ کمانڈز**: گروپ کے مطابق فلٹر، شامل کرنا / ترمیم / حذف، رنگوں کی پہلے سے طے شدہ ترتیبات، جواب نظرانداز کرنا، عمل کا نتیجہ (کاپی / محفوظ کرنا)؛ اسٹارٹ اپ کے ساتھ ترتیبات میں مستقل محفوظ رکھنے کی سہولت۔
+- **مرضی کے مطابق ونڈو**: کوئی مقامی عنوان کی پٹی نہیں (خود تیار مینو بار)، ہمیشہ سامنے رہنا (پن بٹن، مرکزی عمل اصل حالت پڑھ کر ٹوگل کرتا ہے)، چھوٹا / بڑا / بند کرنا؛ Ctrl+/-/0 اور Ctrl+اسکرول وہیل سے زوم (0.3~3)؛ اوپر والی ڈیوائس گھڑی کو چالو کرنے پر ڈیوائس کا وقت ہم آہنگ ہوتا ہے (10 سیکنڈ کیلیبریشن، دوبارہ شروع پر ری سیٹ)۔
+- **ترتیبات کا پینل (10 صفحات)**: عمومی (maxRender، کرسر کا رویہ، اسٹارٹ اپ پر اپ ڈیٹ کی جانچ، ترتیبات کا راستہ، ترتیبات درآمد / برآمد)، ونڈو خصوصیات، پروگرام لاگ کا راستہ، لاگ فونٹ (سسٹم فونٹ ڈراپ ڈاؤن)، لاگ کی سطح کے رنگ، لاگ مواد کے رنگ، لاگ خودکار محفوظ، تاریخی فلٹر کی ترتیبات، کیپچر کی ترتیبات، اسکرین شاٹ کی ترتیبات۔
+- **ورژن کی جانچ**: اسٹارٹ اپ کے 30 سیکنڈ بعد ایک بار غیر متزامن طور پر جانچ (بند کیا جا سکتا ہے)، «about» پاپ اپ سے دستی جانچ؛ نیا ورژن آنے پر اسٹیٹس بار پر نشان + اپ گریڈ ڈائیلاگ، «آج دوبارہ یاد نہ دلانا» کا اختیار۔ ڈیٹا کا ماخذ GitHub Releases ہے، ناکامی کی صورت میں ریپوزٹری کی `package.json` پڑھی جاتی ہے۔
 
 ## 目录结构
 
