@@ -212,6 +212,8 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   // 过滤历史形状归一化：旧配置缺字段 → 空列表；异常形状 → 回落空列表，避免下拉渲染时抛错。
   cfg.value.filterHistory = normalizeFilterHistory(c.filterHistory)
   cfg.value.filterHistoryMax = normalizeFilterHistoryMax(c.filterHistoryMax)
+  // 用户主动「关闭」过的网络设备：只接受字符串数组，避免异常配置让设备列表过滤抛错。
+  if (Array.isArray(c.hiddenSerials)) cfg.value.hiddenSerials = c.hiddenSerials.filter((s) => typeof s === 'string' && s).map((s) => s.trim())
   // 连接历史形状归一化：旧配置缺字段 → 空数组；异常形状 → 空数组，避免下拉渲染时抛错。
   // 同时按历史里的别名重建 deviceAlias：别名此前只在内存，现随配置跨重启恢复。
   const hist = Array.isArray(c.connectHistory) ? c.connectHistory : []
@@ -294,7 +296,7 @@ async function importSettings() {
     showResult(t('settings.importSettings'), t('toast.invalidConfig') + t('common.fileLine') + p, false); return
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
     showResult(t('settings.importSettings'), t('toast.noConfigItems') + t('common.fileLine') + p, false); return
   }

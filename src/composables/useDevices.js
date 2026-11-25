@@ -27,7 +27,10 @@ async function refreshDevices() {
   if (refreshing.value) return   // 防止设备事件与定时器并发刷新叠加
   refreshing.value = true
   try {
-    const list = await api.invoke('adb:devices')
+    const all = await api.invoke('adb:devices')
+    // 用户点过「关闭」的设备即使被 adb server 重新列出也不再进入侧栏
+    const hidden = new Set(Array.isArray(cfg.value.hiddenSerials) ? cfg.value.hiddenSerials : [])
+    const list = all.filter((d) => !hidden.has(d.serial))
     const newSerials = list.map((d) => d.serial)
     // 清理已移除设备的日志会话与缓存（停掉其 logcat，删映射，避免内存泄漏）
     for (const s of Object.keys(logsMap)) {
@@ -72,12 +75,22 @@ function removeDeviceFromView(serial) {
   if (activeLogSerial.value === serial) activeLogSerial.value = selectedSerial.value
 }
 
+// 连接/重连成功后解除隐藏，避免设备永远回不到侧栏
+function clearHiddenSerial(serial) {
+  if (!serial || !Array.isArray(cfg.value.hiddenSerials)) return
+  cfg.value.hiddenSerials = cfg.value.hiddenSerials.filter((s) => s !== serial)
+  saveCfg()
+}
+
 async function disconnectDevice(serial) {
   if (!serial) return
   const isNet = serial.includes(':')
   if (!isNet) toast(t('toast.usbRemoved'))
   removeDeviceFromView(serial)
   if (isNet) {
+    // 记住被关闭的网络设备：adb server 可能残留 offline 条目并在后续刷新中再次列出
+    const hidden = Array.isArray(cfg.value.hiddenSerials) ? cfg.value.hiddenSerials : (cfg.value.hiddenSerials = [])
+    if (!hidden.includes(serial)) { hidden.push(serial); saveCfg() }
     try {
       const r = await api.invoke('adb:disconnect', { serial })
       if (r.code !== 0) toast(t('toast.disconnectNonZero') + (r.out || r.err || r.code))
@@ -139,6 +152,7 @@ async function reconnectDevice(serial) {
     const detail = cmdDetail(disc, 'adb disconnect ' + serial) + '\n' + cmdDetail(conn, 'adb connect ' + serial)
     showResult(t('modal.reconnect'), (ok ? t('toast.reconnected') : t('toast.reconnectFailed')) + serial + '\n' + detail, ok)
     if (ok) {
+      clearHiddenSerial(serial)
       await refreshDevices()
       autoStartLogcatOnConnect(serial)
     }
@@ -370,7 +384,8 @@ async function confirmConnect() {
       if (alias) deviceAlias[target] = alias
       saveCfg()
       connectOpen.value = false
-      // 连接成功后自动开始采集：先刷新设备列表让目标 serial 进入 devices，再切 tab 启动
+      // 连接成功后自动开始采集：先解除隐藏并刷新设备列表，再切 tab 启动
+      clearHiddenSerial(target)
       await refreshDevices()
       autoStartLogcatOnConnect(target)
     }

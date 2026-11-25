@@ -273,25 +273,12 @@ export function registerAdbIpc() {
     return run('adb.exe', ['-s', serial, 'logcat', '-c'])
   })
 
-  // 断开设备：前端已乐观地从视图移除该设备后再调用本通道。
-  // 网络设备（serial 含 ':'）断线后容易在 adb server 中残留 offline 条目，单发 adb disconnect
-  // 有时只返回非零而不清理。断开后用 adb devices 核对，仍在则用 adb reconnect offline 清理
-  // 离线传输（只影响 offline 条目，不动在线设备）。
+  // 断开设备：只透传 adb disconnect，不再调用 adb reconnect offline。
+  // 后者会把 offline 设备重新拉回 adb devices，导致侧栏「关闭」后设备反复出现。
+  // adb server 若残留 offline 条目，由渲染层的隐藏列表阻止其重新进入侧栏。
   ipcMain.handle(ADB_DISCONNECT, async (_e, { serial }) => {
     if (!serial) throw new Error('serial 必填')
-    const r = await run('adb.exe', ['disconnect', serial], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
-    let after = await listDevices()
-    if (!after.some((d) => d.serial === serial && d.status !== 'device')) return r
-    const reco = await run('adb.exe', ['reconnect', 'offline'], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
-    after = await listDevices()
-    const stillOffline = after.some((d) => d.serial === serial && d.status !== 'device')
-    return {
-      ...r,
-      code: stillOffline ? (r.code || reco.code) : 0,
-      out: [r.out, reco.out].filter(Boolean).join('\n'),
-      err: [r.err, reco.err].filter(Boolean).join('\n'),
-      offlineCleared: !stillOffline
-    }
+    return run('adb.exe', ['disconnect', serial], { timeoutMs: DEVICE_QUERY_TIMEOUT_MS })
   })
 
   // ---- 组件调试（am start / startservice / stopservice / broadcast） ----

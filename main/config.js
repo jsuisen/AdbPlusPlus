@@ -50,6 +50,7 @@ const DEFAULT = {
   tagFilter: '',
   textFilter: '',
   lastSerial: '',
+  hiddenSerials: [],   // 用户点过「关闭」的网络设备：不再在侧栏显示，直到再次连接成功
   outDir: '',          // 空 → 落到 exe 所在目录
   targetPkg: '',
   configPath: '',      // 自定义 adbtool-config.json 路径（完整文件路径，含文件名）；空 → 用默认位置（exe/工程根同级）
