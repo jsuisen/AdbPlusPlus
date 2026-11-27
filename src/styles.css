@@ -62,6 +62,14 @@
 
 * { box-sizing: border-box; }
 
+/* 全局滚动条配色：未接触 #CCCCCC，悬停 #5A5A5A。
+   只改颜色不改宽度/布局；不要写 scrollbar-color —— 标准属性一旦生效会禁用 ::-webkit-scrollbar-* 伪元素，
+   :hover 变色就失效了。全局 * 覆盖 Teleport 到 body 的下拉/菜单以及各弹窗内部滚动区。 */
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #CCCCCC; border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: #5A5A5A; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
 html, body {
   margin: 0;
   height: 100%;
