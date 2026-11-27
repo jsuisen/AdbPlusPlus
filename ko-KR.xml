@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 한국어 — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- 한국어 — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="ko-KR" name="한국어" fallback="en-US">
   <string name="about.checkUpdate">업데이트 확인</string>
   <string name="about.desc">ADB++, 데스크톱 ADB 도구</string>
@@ -677,4 +677,43 @@
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">다운로드 중입니다. 잠시 기다려 주세요…</string>
   <string name="offlinelog.copyPathHint">클릭하여 다운로드 파일의 전체 경로 복사</string>
+  <!-- ===== zh-CN.js 업데이트 기록 동기화: 테마/배경, 로그 스크롤, 자동 재연결, busy 안내 ===== -->
+  <string name="sidebar.resizeHint">사이드바 오른쪽 가장자리를 끌어 너비를 조절할 수 있습니다(자동 저장)</string>
+  <string name="settings.theme">테마</string>
+  <string name="settings.themeSystem">시스템 따름</string>
+  <string name="settings.themeLight">라이트</string>
+  <string name="settings.themeDark">다크</string>
+  <string name="settings.themeDesc">즉시 적용됩니다. 로그 레벨 기본 색상은 테마에 맞게 초기화되며, 사용자 지정 색상은 유지됩니다.</string>
+  <string name="settings.bgMaster">사용자 지정 배경 활성화(마스터 스위치)</string>
+  <string name="settings.bgMasterDesc">끄면 배경 이미지와 로그 영역/비로그 영역의 배경색·투명도가 모두 기본값으로 돌아갑니다.</string>
+  <string name="settings.bgImage">배경 이미지</string>
+  <string name="settings.bgPick">이미지 선택</string>
+  <string name="settings.bgNoImage">선택된 이미지 없음</string>
+  <string name="settings.bgImageHint">PNG/JPG/WebP만 지원하며 파일당 10MB를 넘을 수 없습니다. 표시 시 긴 변 1920px로 비율을 유지해 축소합니다.</string>
+  <string name="settings.bgZoneChrome">비로그 영역 배경(메뉴바 / 사이드바 / 퀵바 / 상태바)</string>
+  <string name="settings.bgZoneLog">로그 영역 배경</string>
+  <string name="settings.bgColor">배경색</string>
+  <string name="settings.bgAlpha">배경 투명도</string>
+  <string name="settings.bgLogHint">줄 내 레벨 색상과 규칙 색상은 불투명 색으로 영역 투명도보다 우선합니다. 투명도를 낮추면 로그 스크롤 시 렌더링 부하가 늘 수 있습니다.</string>
+  <string name="settings.bgReset">배경 기본값 복원</string>
+  <string name="settings.logScrolling">로그 스크롤</string>
+  <string name="settings.wheelDownLockBottom">로그 끝에서 아래로 스크롤하면 하단에 고정(기본 활성)</string>
+  <string name="settings.wheelDownLockBottomHint">로그가 맨 아래에 있고 추적 중이 아닐 때 아래로 한 번 더 스크롤하면 하단에 고정되고 이후 자동 추적이 재개됩니다.</string>
+  <string name="settings.wheelSpeed">스크롤 속도(배율)</string>
+  <string name="settings.wheelSpeedHint">로그 영역의 세로 스크롤에만 적용됩니다. 1.0이 기본값이며, 크게 하면 빠르고 작게 하면 느립니다. 위로 스크롤하면 하단 추적이 해제됩니다.</string>
+  <string name="settings.autoReconnect">ADB 연결 끊김 시 자동 재연결(기본 활성)</string>
+  <string name="settings.autoReconnectHint">네트워크 디바이스가 예기치 않게 끊기면 복구될 때까지 자동으로 재연결합니다. 수동으로 닫기/연결 해제/연결 취소한 경우에는 재연결하지 않습니다. USB 디바이스는 adb로 재연결할 수 없으므로 다시 꽂아야 합니다.</string>
+  <string name="settings.autoReconnectInterval">재연결 간격(초)</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600초, 기본값 5초. 재시도 실패 후 갱신된 간격으로 다시 세기 시작합니다.</string>
+  <string name="toast.autoReconnected">자동으로 다시 연결했습니다:</string>
+  <string name="toast.bgFailed">배경 이미지를 읽을 수 없거나 지원되지 않는 형식입니다</string>
+  <string name="busy.pullFile">파일 pull 중…</string>
+  <string name="busy.pushFile">파일 push 중…</string>
+  <string name="busy.screenshot">스크린샷 촬영 중…</string>
+  <string name="busy.recordStop">화면 녹화 저장 중…</string>
+  <string name="busy.apkPull">APK pull 및 분석 중…</string>
+  <string name="busy.capturePull">캡처 파일 다운로드 중…</string>
+  <string name="busy.bugreport">bugreport 생성 중…</string>
+  <string name="busy.export">내보내는 중…</string>
+  <string name="busy.save">저장 중…</string>
 </resources>

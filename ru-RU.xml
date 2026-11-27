@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Русский — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- Русский — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="ru-RU" name="Русский" fallback="en-US">
   <string name="about.checkUpdate">Проверить обновления</string>
   <string name="about.desc">ADB++ — десктопный инструмент ADB</string>
@@ -677,4 +677,43 @@
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">Загрузка, пожалуйста, подождите…</string>
   <string name="offlinelog.copyPathHint">Нажмите, чтобы скопировать полный путь загруженного файла</string>
+  <!-- ===== Синхронизировано с журналом изменений zh-CN.js: тема/фон, прокрутка логов, автопереподключение, busy-сообщения ===== -->
+  <string name="sidebar.resizeHint">Перетащите правый край влево или вправо, чтобы изменить ширину боковой панели (сохраняется автоматически)</string>
+  <string name="settings.theme">Тема</string>
+  <string name="settings.themeSystem">Как в системе</string>
+  <string name="settings.themeLight">Светлая</string>
+  <string name="settings.themeDark">Тёмная</string>
+  <string name="settings.themeDesc">Применяется сразу. Цвета уровней по умолчанию сбрасываются согласно теме, пользовательские цвета сохраняются.</string>
+  <string name="settings.bgMaster">Включить пользовательский фон (главный переключатель)</string>
+  <string name="settings.bgMasterDesc">При выключении изображение и цвета с прозрачностью обеих зон возвращаются к значениям по умолчанию.</string>
+  <string name="settings.bgImage">Фоновое изображение</string>
+  <string name="settings.bgPick">Выбрать изображение</string>
+  <string name="settings.bgNoImage">Изображение не выбрано</string>
+  <string name="settings.bgImageHint">Поддерживаются PNG/JPG/WebP, не более 10 МБ на файл. При показе пропорционально масштабируется до 1920 px по длинной стороне.</string>
+  <string name="settings.bgZoneChrome">Фон области без логов (меню / боковая панель / панель быстрых действий / строка состояния)</string>
+  <string name="settings.bgZoneLog">Фон области логов</string>
+  <string name="settings.bgColor">Цвет фона</string>
+  <string name="settings.bgAlpha">Прозрачность фона</string>
+  <string name="settings.bgLogHint">Цвета уровней и правил в строках непрозрачны и перекрывают прозрачность зоны; снижение прозрачности может увеличить нагрузку при прокрутке логов.</string>
+  <string name="settings.bgReset">Сбросить фон</string>
+  <string name="settings.logScrolling">Прокрутка логов</string>
+  <string name="settings.wheelDownLockBottom">Закрепление у нижнего края при прокрутке вниз в конце логов (включено по умолчанию)</string>
+  <string name="settings.wheelDownLockBottomHint">Когда логи уже внизу и слежение выключено, ещё одна прокрутка вниз закрепляет нижний край и возобновляет автослежение.</string>
+  <string name="settings.wheelSpeed">Скорость прокрутки (множитель)</string>
+  <string name="settings.wheelSpeedHint">Действует только на вертикальную прокрутку в области логов. По умолчанию 1.0; больше — быстрее, меньше — медленнее. Прокрутка вверх по-прежнему отключает слежение.</string>
+  <string name="settings.autoReconnect">Автопереподключение при потере связи ADB (включено по умолчанию)</string>
+  <string name="settings.autoReconnectHint">Сетевые устройства переподключаются автоматически после внезапного отключения, пока не восстановится связь. Ручное закрытие / отключение / отмена соединения не переподключаются. USB-устройства требуют повторного подключения кабеля.</string>
+  <string name="settings.autoReconnectInterval">Интервал повторной попытки (секунды)</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600 секунд, по умолчанию 5; после каждой неудачи отсчёт начинается заново с новым интервалом.</string>
+  <string name="toast.autoReconnected">Переподключено автоматически:</string>
+  <string name="toast.bgFailed">Не удалось прочитать фоновое изображение или его формат не поддерживается</string>
+  <string name="busy.pullFile">Получение файла…</string>
+  <string name="busy.pushFile">Отправка файла…</string>
+  <string name="busy.screenshot">Создание снимка экрана…</string>
+  <string name="busy.recordStop">Сохранение записи экрана…</string>
+  <string name="busy.apkPull">Получение и разбор APK…</string>
+  <string name="busy.capturePull">Загрузка файла перехвата…</string>
+  <string name="busy.bugreport">Создание bugreport…</string>
+  <string name="busy.export">Экспорт…</string>
+  <string name="busy.save">Сохранение…</string>
 </resources>

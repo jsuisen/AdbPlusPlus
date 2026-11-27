@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Español — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- Español — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="es-ES" name="Español" fallback="en-US">
   <string name="about.checkUpdate">Buscar actualizaciones</string>
   <string name="about.desc">ADB++, una herramienta ADB de escritorio</string>
@@ -677,4 +677,43 @@ Archivo: </string>
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">Descargando, espere…</string>
   <string name="offlinelog.copyPathHint">Haga clic para copiar la ruta completa del archivo descargado</string>
+  <!-- ===== Sincronizado con el registro de cambios de zh-CN.js: tema/fondo, desplazamiento de registros, reconexión, avisos busy ===== -->
+  <string name="sidebar.resizeHint">Arrastra a izquierda o derecha para ajustar el ancho de la barra lateral (se guarda automáticamente)</string>
+  <string name="settings.theme">Tema</string>
+  <string name="settings.themeSystem">Seguir el sistema</string>
+  <string name="settings.themeLight">Claro</string>
+  <string name="settings.themeDark">Oscuro</string>
+  <string name="settings.themeDesc">Se aplica al instante. Los colores predeterminados por nivel se reinician según el tema; los colores personalizados se conservan.</string>
+  <string name="settings.bgMaster">Activar fondo personalizado (interruptor general)</string>
+  <string name="settings.bgMasterDesc">Al desactivarlo, la imagen y los colores y la transparencia de ambas zonas vuelven a los valores predeterminados.</string>
+  <string name="settings.bgImage">Imagen de fondo</string>
+  <string name="settings.bgPick">Elegir imagen</string>
+  <string name="settings.bgNoImage">Ninguna imagen seleccionada</string>
+  <string name="settings.bgImageHint">Solo PNG/JPG/WebP, hasta 10 MB por archivo. Se escala proporcionalmente a 1920 px en el lado mayor para mostrarla.</string>
+  <string name="settings.bgZoneChrome">Fondo del área sin registros (barra de menú / barra lateral / barra rápida / barra de estado)</string>
+  <string name="settings.bgZoneLog">Fondo del área de registros</string>
+  <string name="settings.bgColor">Color de fondo</string>
+  <string name="settings.bgAlpha">Transparencia del fondo</string>
+  <string name="settings.bgLogHint">Los colores de nivel y de reglas de las líneas son sólidos y prevalecen sobre la transparencia de la zona; reducir la transparencia puede aumentar la carga al desplazar los registros.</string>
+  <string name="settings.bgReset">Restablecer fondo</string>
+  <string name="settings.logScrolling">Desplazamiento de registros</string>
+  <string name="settings.wheelDownLockBottom">Fijar al final al desplazarse hacia abajo en el final de los registros (activado por defecto)</string>
+  <string name="settings.wheelDownLockBottomHint">Cuando los registros están al final y no hay seguimiento, un nuevo desplazamiento hacia abajo fija el final y reanuda el seguimiento automático.</string>
+  <string name="settings.wheelSpeed">Velocidad de desplazamiento (multiplicador)</string>
+  <string name="settings.wheelSpeedHint">Solo afecta al desplazamiento vertical en el área de registros. 1.0 es el valor predeterminado; mayor es más rápido y menor más lento. Desplazarse hacia arriba cancela el seguimiento del final.</string>
+  <string name="settings.autoReconnect">Reconexión automática al perder la conexión ADB (activada por defecto)</string>
+  <string name="settings.autoReconnectHint">Los dispositivos de red se reconectan automáticamente tras una desconexión inesperada hasta que vuelven a estar en línea. Cerrar, desconectar o cancelar manualmente nunca se reintenta. Los dispositivos USB requieren volver a conectar el cable.</string>
+  <string name="settings.autoReconnectInterval">Intervalo de reintento (segundos)</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600 segundos, 5 por defecto; tras cada fallo se cuenta de nuevo con el intervalo actualizado.</string>
+  <string name="toast.autoReconnected">Reconectado automáticamente:</string>
+  <string name="toast.bgFailed">No se pudo leer la imagen de fondo o su formato no es compatible</string>
+  <string name="busy.pullFile">Extrayendo archivo…</string>
+  <string name="busy.pushFile">Enviando archivo…</string>
+  <string name="busy.screenshot">Tomando captura de pantalla…</string>
+  <string name="busy.recordStop">Guardando grabación de pantalla…</string>
+  <string name="busy.apkPull">Extrayendo y analizando APK…</string>
+  <string name="busy.capturePull">Descargando archivo de captura…</string>
+  <string name="busy.bugreport">Generando bugreport…</string>
+  <string name="busy.export">Exportando…</string>
+  <string name="busy.save">Guardando…</string>
 </resources>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 日本語 — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- 日本語 — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="ja-JP" name="日本語" fallback="en-US">
   <string name="about.checkUpdate">バージョン確認</string>
   <string name="about.desc">ADB++、プロジェクト向け ADB デスクトップツール</string>
@@ -674,4 +674,43 @@
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">ダウンロード中です。しばらくお待ちください…</string>
   <string name="offlinelog.copyPathHint">クリックしてダウンロード先の完全パスをコピー</string>
+  <!-- ===== zh-CN.js 更新记录同步：主题/背景、日志滚轮、断线自动重连、busy 提示 ===== -->
+  <string name="sidebar.resizeHint">左右にドラッグしてサイドバーの幅を調整できます（自動保存）</string>
+  <string name="settings.theme">テーマ</string>
+  <string name="settings.themeSystem">システムに追随</string>
+  <string name="settings.themeLight">ライト</string>
+  <string name="settings.themeDark">ダーク</string>
+  <string name="settings.themeDesc">切り替えは即時反映です。ログレベルの既定色はテーマに合わせてリセットされますが、カスタム色は保持されます。</string>
+  <string name="settings.bgMaster">カスタム背景を有効にする（マスタースイッチ）</string>
+  <string name="settings.bgMasterDesc">オフにすると背景画像とログ領域／非ログ領域の背景色・透明度がすべて既定値に戻ります。</string>
+  <string name="settings.bgImage">背景画像</string>
+  <string name="settings.bgPick">画像を選択</string>
+  <string name="settings.bgNoImage">画像が選択されていません</string>
+  <string name="settings.bgImageHint">PNG/JPG/WebP に対応、1 ファイル 10MB 以下。表示時は長辺 1920px に等比縮小されます。</string>
+  <string name="settings.bgZoneChrome">非ログ領域の背景（メニュー／サイドバー／クイックバー／ステータスバー）</string>
+  <string name="settings.bgZoneLog">ログ領域の背景</string>
+  <string name="settings.bgColor">背景色</string>
+  <string name="settings.bgAlpha">背景の透明度</string>
+  <string name="settings.bgLogHint">行内のレベル色とルール色は実色で、領域の透明度より優先されます。透明度を下げるとログスクロール時の描画負荷が増える場合があります。</string>
+  <string name="settings.bgReset">背景を既定に戻す</string>
+  <string name="settings.logScrolling">ログのスクロール</string>
+  <string name="settings.wheelDownLockBottom">ログ末尾で下スクロールすると最下部に固定（デフォルト有効）</string>
+  <string name="settings.wheelDownLockBottomHint">ログが最下部にあり追従していないとき、もう一度下へスクロールすると最下部に固定され、以降は自動追従します。</string>
+  <string name="settings.wheelSpeed">スクロール速度（倍率）</string>
+  <string name="settings.wheelSpeedHint">ログ領域の縦スクロールのみに適用。1.0 が既定で、大きくすると速く、小さくすると遅くなります。上スクロールは追従を解除します。</string>
+  <string name="settings.autoReconnect">ADB 切断時の自動再接続（デフォルト有効）</string>
+  <string name="settings.autoReconnectHint">ネットワークデバイスが予期せず切断されると、復帰するまで自動再接続します。手動で閉じる／切断／接続キャンセルは再接続しません。USB デバイスは adb で再接続できないため差し直してください。</string>
+  <string name="settings.autoReconnectInterval">再接続間隔（秒）</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600 秒、デフォルト 5 秒。失敗後は更新した間隔で再カウントします。</string>
+  <string name="toast.autoReconnected">自動再接続しました：</string>
+  <string name="toast.bgFailed">背景画像を読み込めないか、形式がサポートされていません</string>
+  <string name="busy.pullFile">ファイルを pull 中…</string>
+  <string name="busy.pushFile">ファイルを push 中…</string>
+  <string name="busy.screenshot">スクリーンショット中…</string>
+  <string name="busy.recordStop">画面録画を保存中…</string>
+  <string name="busy.apkPull">APK を pull して解析中…</string>
+  <string name="busy.capturePull">キャプチャファイルをダウンロード中…</string>
+  <string name="busy.bugreport">bugreport を生成中…</string>
+  <string name="busy.export">エクスポート中…</string>
+  <string name="busy.save">保存中…</string>
 </resources>

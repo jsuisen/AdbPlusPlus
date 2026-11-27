@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 繁體中文 — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- 繁體中文 — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="zh-TW" name="繁體中文" fallback="en-US">
   <string name="about.checkUpdate">版本檢測</string>
   <string name="about.desc">ADB++，工程級ADB桌面工具</string>
@@ -677,4 +677,43 @@
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">正在下載，請稍候…</string>
   <string name="offlinelog.copyPathHint">點擊複製本機下載檔案的完整路徑</string>
+  <!-- ===== 依 zh-CN.js 更新记录同步：主题与背景、日志滚动、断线自动重连、busy 提示 ===== -->
+  <string name="sidebar.resizeHint">按住並左右拖動可調整側邊欄寬度（自動儲存）</string>
+  <string name="settings.theme">介面主題</string>
+  <string name="settings.themeSystem">跟隨系統</string>
+  <string name="settings.themeLight">淺色</string>
+  <string name="settings.themeDark">深色</string>
+  <string name="settings.themeDesc">切換立即生效。日誌級別預設色隨主題重設，自訂顏色保留。</string>
+  <string name="settings.bgMaster">啟用自訂背景（總開關）</string>
+  <string name="settings.bgMasterDesc">關閉後背景圖與日誌區／非日誌區的背景色、透明度全部還原為預設值。</string>
+  <string name="settings.bgImage">背景圖</string>
+  <string name="settings.bgPick">選擇圖片</string>
+  <string name="settings.bgNoImage">未選擇圖片</string>
+  <string name="settings.bgImageHint">支援 PNG/JPG/WebP，單一檔案不超過 10MB；顯示時等比縮放至最長邊 1920px。</string>
+  <string name="settings.bgZoneChrome">非日誌區背景（選單列／側欄／快捷欄／狀態列）</string>
+  <string name="settings.bgZoneLog">日誌區背景</string>
+  <string name="settings.bgColor">背景色</string>
+  <string name="settings.bgAlpha">背景透明度</string>
+  <string name="settings.bgLogHint">行內級別色與內容規則色為實色，覆蓋本區透明度；調低透明度可能增加日誌捲動時的渲染開銷。</string>
+  <string name="settings.bgReset">還原背景預設值</string>
+  <string name="settings.logScrolling">日誌捲動</string>
+  <string name="settings.wheelDownLockBottom">日誌捲到底後再向下滾輪自動鎖定底部（預設開啟）</string>
+  <string name="settings.wheelDownLockBottomHint">日誌已貼底且未跟隨時，再向下捲動一下即可鎖定底部，後續日誌繼續自動跟隨。</string>
+  <string name="settings.wheelSpeed">滾輪捲動速度（倍率）</string>
+  <string name="settings.wheelSpeedHint">僅作用於日誌區垂直滾輪；1.0 為預設，調大更快、調小更慢；向上捲仍會取消底部跟隨。</string>
+  <string name="settings.autoReconnect">ADB 斷線自動重連（預設開啟）</string>
+  <string name="settings.autoReconnectHint">網路裝置非人工斷開時自動重連，直到恢復；手動關閉、斷開、取消連線不會重連。USB 裝置無法用 adb 重連，需重新插拔。</string>
+  <string name="settings.autoReconnectInterval">重連間隔（秒）</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600 秒，預設 5 秒；每次重試失敗後按新間隔繼續計時。</string>
+  <string name="toast.autoReconnected">已自動重連：</string>
+  <string name="toast.bgFailed">背景圖讀取失敗或格式不支援</string>
+  <string name="busy.pullFile">正在拉取檔案…</string>
+  <string name="busy.pushFile">正在推送檔案…</string>
+  <string name="busy.screenshot">正在截圖…</string>
+  <string name="busy.recordStop">正在儲存螢幕錄影…</string>
+  <string name="busy.apkPull">正在拉取並解析 APK…</string>
+  <string name="busy.capturePull">正在下載封包擷取檔案…</string>
+  <string name="busy.bugreport">正在產生 bugreport…</string>
+  <string name="busy.export">正在匯出…</string>
+  <string name="busy.save">正在儲存…</string>
 </resources>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- اردو — 完整词条（671 条）；占位符与内置基准一致。 -->
+<!-- اردو — 完整词条（709 条）；占位符与内置基准一致。 -->
 <resources locale="ur-PK" name="اردو" fallback="en-US">
   <string name="about.checkUpdate">اپ ڈیٹس چیک کریں</string>
   <string name="about.desc">ADB++، ایک ڈیسک ٹاپ ADB ٹول</string>
@@ -677,4 +677,43 @@
   <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
   <string name="offlinelog.downloading">ڈاؤن لوڈ جاری ہے، براہِ کرم انتظار کریں…</string>
   <string name="offlinelog.copyPathHint">ڈاؤن لوڈ شدہ فائل کے مکمل راستے کو کاپی کرنے کے لیے کلک کریں</string>
+  <!-- ===== zh-CN.js کی اپ ڈیٹ ہسٹری کے مطابق: تھیم/پس منظر، لاگ اسکرول، خودکار دوبارہ کنکشن، busy پیغامات ===== -->
+  <string name="sidebar.resizeHint">سائیڈ بار کا دائیں کنارہ گھسیٹ کر چوڑائی بدلیں (خودکار طور پر محفوظ)</string>
+  <string name="settings.theme">تھیم</string>
+  <string name="settings.themeSystem">سسٹم کے مطابق</string>
+  <string name="settings.themeLight">روشن</string>
+  <string name="settings.themeDark">تاریک</string>
+  <string name="settings.themeDesc">فوری طور پر لاگو ہوتا ہے۔ لاگ لیول کے پہلے سے طے شدہ رنگ تھیم کے مطابق دوبارہ طے ہوتے ہیں، مرضی کے رنگ برقرار رہتے ہیں۔</string>
+  <string name="settings.bgMaster">مرضی کا پس منظر چالو کریں (مرکزی سوئچ)</string>
+  <string name="settings.bgMasterDesc">بند کرنے پر تصویر اور لاگ / غیر لاگ دونوں علاقوں کے رنگ اور شفافیت پہلے سے طے شدہ حالت میں واپس آ جاتے ہیں۔</string>
+  <string name="settings.bgImage">پس منظر کی تصویر</string>
+  <string name="settings.bgPick">تصویر منتخب کریں</string>
+  <string name="settings.bgNoImage">کوئی تصویر منتخب نہیں</string>
+  <string name="settings.bgImageHint">صرف PNG/JPG/WebP، فی فائل 10MB سے زیادہ نہیں۔ دکھاتے وقت طویل ترین کنارے 1920px کے تناسب سے چھوٹا کیا جاتا ہے۔</string>
+  <string name="settings.bgZoneChrome">غیر لاگ علاقے کا پس منظر (مینو بار / سائیڈ بار / کوئیک بار / اسٹیٹس بار)</string>
+  <string name="settings.bgZoneLog">لاگ علاقے کا پس منظر</string>
+  <string name="settings.bgColor">پس منظر کا رنگ</string>
+  <string name="settings.bgAlpha">پس منظر کی شفافیت</string>
+  <string name="settings.bgLogHint">سطر کے اندر لیول اور اصول کے رنگ مضبوط ہوتے ہیں اور علاقے کی شفافیت پر غالب آتے ہیں؛ شفافیت کم کرنے سے لاگ اسکرول پر رینڈرنگ کا بوجھ بڑھ سکتا ہے۔</string>
+  <string name="settings.bgReset">پس منظر کو پہلے والا بنائیں</string>
+  <string name="settings.logScrolling">لاگ اسکرول</string>
+  <string name="settings.wheelDownLockBottom">لاگ کے آخر میں نیچے اسکرول پر نیچے کو لاک کریں (پہلے سے طے شدہ آن)</string>
+  <string name="settings.wheelDownLockBottomHint">جب لاگ نیچے ہو اور پیروی نہ ہو، ایک بار مزید نیچے اسکرول کرنے سے نیچے لاک ہو جاتا ہے اور خودکار پیروی دوبارہ شروع ہوتی ہے۔</string>
+  <string name="settings.wheelSpeed">اسکرول کی رفتار (گنا)</string>
+  <string name="settings.wheelSpeedHint">صرف لاگ علاقے کی عمودی اسکرول پر اثر انداز ہوتا ہے۔ 1.0 پہلے سے طے شدہ ہے، بڑا کرنے پر تیز، چھوٹا کرنے پر سست۔ اُوپر اسکرول کرنے سے نیچے کی پیروی ختم ہو جاتی ہے۔</string>
+  <string name="settings.autoReconnect">ADB منقطع ہونے پر خودکار دوبارہ کنکشن (پہلے سے طے شدہ آن)</string>
+  <string name="settings.autoReconnectHint">نیٹ ورک ڈیوائس کے غیر متوقع طور پر منقطع ہونے پر دوبارہ آن لائن ہونے تک خودکار کوشش جاری رہتی ہے۔ دستی بند کرنا، منقطع کرنا یا کنکشن منسوخ کرنا دوبارہ نہیں کیا جاتا۔ USB ڈیوائس کو دوبارہ لگانا پڑتا ہے۔</string>
+  <string name="settings.autoReconnectInterval">دوبارہ کوشش کا وقفہ (سیکنڈ)</string>
+  <string name="settings.autoReconnectIntervalHint">1~3600 سیکنڈ، پہلے سے طے شدہ 5 سیکنڈ؛ ہر ناکام کوشش کے بعد نیا وقفہ دوبارہ شمار ہوتا ہے۔</string>
+  <string name="toast.autoReconnected">خودکار طور پر دوبارہ منسلک:</string>
+  <string name="toast.bgFailed">پس منظر کی تصویر پڑھی نہیں جا سکی یا اس کی شکل معاون نہیں</string>
+  <string name="busy.pullFile">فائل حاصل کی جا رہی ہے…</string>
+  <string name="busy.pushFile">فائل بھیجی جا رہی ہے…</string>
+  <string name="busy.screenshot">اسکرین شاٹ لیا جا رہا ہے…</string>
+  <string name="busy.recordStop">اسکرین ریکارڈنگ محفوظ کی جا رہی ہے…</string>
+  <string name="busy.apkPull">APK حاصل کر کے تجزیہ کیا جا رہا ہے…</string>
+  <string name="busy.capturePull">کیپچر فائل ڈاؤن لوڈ کی جا رہی ہے…</string>
+  <string name="busy.bugreport">bugreport تیار کیا جا رہا ہے…</string>
+  <string name="busy.export">برآمد کیا جا رہا ہے…</string>
+  <string name="busy.save">محفوظ کیا جا رہا ہے…</string>
 </resources>
