@@ -44,6 +44,7 @@ export function defaultOutDir() {
 
 const DEFAULT = {
   lang: '',            // 界面语言 id：空 = 首次启动按系统语言探测；外部语言包 id 亦可直接写这里
+  theme: 'system',     // 界面主题：'system' 跟随系统 / 'light' 浅色 / 'dark' 深色；非法值在启动时回落 system
   keycodeLangMode: 'follow', // KEYCODE 描述语言：'follow' 跟随界面 / 'en' 始终英文（本机偏好，不随设置导入导出）
   quickCommands: [],   // [{ name, args: string[] }]
   levelFilter: '',     // V/D/I/W/E/F 或空

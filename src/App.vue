@@ -2,6 +2,7 @@
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from './i18n'
 import { ALL_GROUPS } from './composables/state'
+import AppSelect from './components/AppSelect.vue'
 import * as State from './composables/state'
 import { useDevices } from './composables/useDevices'
 import { useConfig } from './composables/useConfig'
@@ -287,11 +288,8 @@ const { openUpdateDialog } = useUpdate()
           <div class="toolbar">
             <button :class="currentRunning ? 'danger' : 'primary'" @click="toggleLogcat">{{ currentRunning ? t('common.stop') : t('common.start') }}</button>
             <span class="toolbar-gap"></span>
-            <select v-model="levelFilter" class="level-select">
-              <option value="V">Verbose</option><option value="D">Debug</option>
-              <option value="I">Info</option><option value="W">Warn</option>
-              <option value="E">Error</option><option value="F">Assert</option>
-            </select>
+            <AppSelect v-model="levelFilter" class="level-select"
+                       :options="[{ value: 'V', label: 'Verbose' }, { value: 'D', label: 'Debug' }, { value: 'I', label: 'Info' }, { value: 'W', label: 'Warn' }, { value: 'E', label: 'Error' }, { value: 'F', label: 'Assert' }]" />
             <span class="toolbar-gap"></span>
             <label class="proc-chk" :title="t('log.pkgFilterHint')">
               <input type="checkbox" v-model="procFilterByPkg" />{{ t('log.filterByPkg') }}
@@ -301,11 +299,8 @@ const { openUpdateDialog } = useUpdate()
                    结果回来时弹层已打开，DOM 更新不会回填当前弹层 —— 表现为「点开就是空白」。
                    故去掉点开即刷新，改成独立 ↻ 按钮（在弹层外点击，数据到齐后再打开下拉）。
                    列表由启动 / 切设备 / proc:changed 事件预拉，失败保留上一次成功列表。 -->
-              <select v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" :title="t('log.procSelectHint')">
-                <option value="">{{ procFilterByPkg ? t('log.pkgOnly') : t('log.pkgProc') }}</option>
-                <option v-if="procsLoading[activeLogSerial]" value="" disabled>{{ t('common.loading') }}</option>
-                <option v-for="o in procOptions" :key="o.key" :value="o.value">{{ o.label }}</option>
-              </select>
+              <AppSelect v-model="selectedProc" :disabled="!activeLogSerial" style="max-width:200px" :title="t('log.procSelectHint')"
+                         :options="[{ value: '', label: procFilterByPkg ? t('log.pkgOnly') : t('log.pkgProc') }, ...(procsLoading[activeLogSerial] ? [{ value: '', label: t('common.loading'), disabled: true }] : []), ...procOptions]" />
               <button type="button" class="proc-refresh" :title="t('log.refreshProcs')" @click="() => refreshProcs()">↻</button>
             </span>
             <span class="toolbar-gap"></span>
@@ -548,10 +543,8 @@ const { openUpdateDialog } = useUpdate()
     <div v-if="quickbarVisible" class="quickbar">
       <div class="qb-head">
         <span class="qb-title">{{ t('quickbar.title') }}</span>
-        <select v-model="cmdGroup" class="qb-group">
-          <option :value="ALL_GROUPS">{{ t('quickbar.allGroups') }}</option>
-          <option v-for="gp in cmdGroups" :key="gp" :value="gp">{{ gp }}</option>
-        </select>
+        <AppSelect v-model="cmdGroup" class="qb-group"
+                   :options="[{ value: ALL_GROUPS, label: t('quickbar.allGroups') }, ...cmdGroups]" />
         <button class="qb-manage" @click="managing = !managing">{{ managing ? t('common.done') : t('common.manage') }}</button>
         <button class="qb-close" @click="closeCmdOutput" :title="t('quickbar.closeHint')">✕</button>
       </div>
@@ -597,7 +590,7 @@ const { openUpdateDialog } = useUpdate()
       <span class="sb-sep">|</span>
       <span>{{ t('status.current') }}{{ activeLogSerial || '—' }}</span>
       <span class="sb-sep">|</span>
-      <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-update" style="color:#185FA5;cursor:pointer" @click="openUpdateDialog">{{ t('status.newVersion') }}{{ updateInfo.latest }}</span>
+      <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-update" style="color:var(--primary);cursor:pointer" @click="openUpdateDialog">{{ t('status.newVersion') }}{{ updateInfo.latest }}</span>
       <span v-if="updateInfo && updateInfo.hasUpdate" class="sb-sep">|</span>
       <span class="sb-msg">{{ lastMsg }}</span>
       <span class="sb-sep">|</span>

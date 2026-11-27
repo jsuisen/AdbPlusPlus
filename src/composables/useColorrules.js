@@ -11,10 +11,11 @@ function openAddColorRule(scope) {
   colorDraft.keyword = ''
   colorDraft.byTag = false
   colorDraft.byMsg = false
-  colorDraft.color = '#FF0000'
+  const dark = document.documentElement.dataset.theme === 'dark'
+  colorDraft.color = dark ? '#ff6b6b' : '#FF0000'
   colorDraft.bold = false
   colorDraft.enabled = true
-  colorDraft.bgColor = '#FFFFFF'
+  colorDraft.bgColor = dark ? '#22262d' : '#FFFFFF'
   colorDraft.bgOn = true
   colorDraftErr.value = ''
   colorModalOpen.value = true

@@ -1,6 +1,7 @@
 <script setup>
 // 重启设备弹窗
 import * as State from '@/composables/state'
+import AppSelect from '../AppSelect.vue'
 import { maskClose } from '@/composables/useConfig'
 import { closeRebootModal, runReboot } from '@/composables/useActions'
 import { t } from '@/i18n'
@@ -14,11 +15,8 @@ const { rebootModalOpen, rebootMode } = State
       <div class="modal-head">{{ t('action.reboot') }}<button class="modal-x" @click="closeRebootModal">×</button></div>
       <div class="modal-body">
         <label>{{ t('reboot.mode') }}
-          <select v-model="rebootMode" style="width:100%">
-            <option value="">{{ t('reboot.normal') }}</option>
-            <option value="bootloader">{{ t('reboot.bootloader') }}</option>
-            <option value="recovery">{{ t('reboot.recovery') }}</option>
-          </select>
+          <AppSelect v-model="rebootMode" style="width:100%"
+                     :options="[{ value: '', label: t('reboot.normal') }, { value: 'bootloader', label: t('reboot.bootloader') }, { value: 'recovery', label: t('reboot.recovery') }]" />
         </label>
       </div>
       <div class="modal-foot">

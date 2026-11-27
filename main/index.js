@@ -1,6 +1,6 @@
 // Bootstrap：创建窗口、注册各模块 IPC。所有子进程调用收口在主进程。
-import { app, BrowserWindow, Menu, ipcMain } from 'electron'
-import { WINDOW_MINIMIZE, WINDOW_TOGGLE_MAX, WINDOW_CLOSE, WINDOW_IS_ALWAYS_ON_TOP, WINDOW_TOGGLE_ALWAYS_ON_TOP, WINDOW_IS_MAXIMIZED, WINDOW_ZOOM_IN, WINDOW_ZOOM_OUT, WINDOW_MAXIMIZE_STATE, APP_META, APP_CHECK_UPDATE, APP_UPDATE_AVAILABLE } from '../shared/ipc-channels.js'
+import { app, BrowserWindow, Menu, ipcMain, nativeTheme } from 'electron'
+import { WINDOW_MINIMIZE, WINDOW_TOGGLE_MAX, WINDOW_CLOSE, WINDOW_IS_ALWAYS_ON_TOP, WINDOW_SET_THEME, WINDOW_TOGGLE_ALWAYS_ON_TOP, WINDOW_IS_MAXIMIZED, WINDOW_ZOOM_IN, WINDOW_ZOOM_OUT, WINDOW_MAXIMIZE_STATE, APP_META, APP_CHECK_UPDATE, APP_UPDATE_AVAILABLE } from '../shared/ipc-channels.js'
 import { checkForUpdates } from './versioncheck.js'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,9 +25,16 @@ let win = null
 Menu.setApplicationMenu(null)
 
 function createWindow() {
+  // 主题必须在建窗前定下来：loadConfig 是同步读（main/config.js:86），无异步竞态。
+  // nativeTheme 只服务系统文件对话框与 Chromium 内建控件；应用内部配色由渲染层 CSS 变量负责。
+  const rawMode = loadConfig().theme
+  const mode = rawMode === 'light' || rawMode === 'dark' ? rawMode : 'system'
+  nativeTheme.themeSource = mode
   win = new BrowserWindow({
     width: 1280,
     height: 820,
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1f2329' : '#f5f6f8', // 首帧即正确主题，消除启动白闪
+    colorScheme: mode,   // 窗口级原生配色提示，影响滚动条/表单控件
     icon: path.join(getResourcesDir(), 'icon.ico'),  // 开发与打包都用同一份多尺寸图标
     frame: false,        // 去掉原生标题栏，改用菜单栏内自定义窗口控制
     thickFrame: true,     // Windows：保留可拖拽改变窗口大小的边框
@@ -71,6 +78,11 @@ function createWindow() {
   // 置顶：主进程读取窗口真实状态后翻转，返回实际结果供渲染层同步按钮显示。
   // 不用渲染层传目标值，避免界面状态与窗口状态漂移时点一次不生效。
   ipcMain.handle(WINDOW_IS_ALWAYS_ON_TOP, () => win.isAlwaysOnTop())
+  // 主题切换：只改主进程的原生主题源（系统对话框/滚动条），渲染层 CSS 变量由调用方自行同步。
+  ipcMain.handle(WINDOW_SET_THEME, (_e, mode) => {
+    nativeTheme.themeSource = (mode === 'light' || mode === 'dark') ? mode : 'system'
+    return nativeTheme.shouldUseDarkColors
+  })
   ipcMain.handle(WINDOW_TOGGLE_ALWAYS_ON_TOP, () => {
     win.setAlwaysOnTop(!win.isAlwaysOnTop())
     return win.isAlwaysOnTop()

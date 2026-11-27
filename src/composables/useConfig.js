@@ -1,7 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
-import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_COLORS_DARK, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLORS_DARK, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
 import { runTask } from './useTask'
 
@@ -9,6 +9,30 @@ import { runTask } from './useTask'
 const LEGACY_DEFAULT_GROUP = '默认'
 
 function setTab(name) { settingsTab.value = name }
+
+// 日志配色按主题迁移：只替换「仍等于任一主题默认值」的项，用户自定义色一律保留。
+// 这样浅色→深色不会把用户挑的颜色冲掉，深色保存的配置切回浅色也能复原默认。
+function pickThemeLogValues(src, theme, light, dark) {
+  const target = theme === 'dark' ? dark : light
+  const out = {}
+  for (const k of Object.keys(target)) {
+    const v = src && src[k]
+    out[k] = (v === undefined || v === light[k] || v === dark[k]) ? target[k] : v
+  }
+  return out
+}
+
+function resolvedTheme(mode) {
+  if (mode === 'light' || mode === 'dark') return mode
+  return (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'
+}
+
+// 主题解析后同步日志默认色。由 useApp 订阅 useTheme.onThemeResolved 调用（含 system 跟随变化）。
+export function syncLogColorsForTheme(resolved) {
+  const t = resolved === 'dark' ? 'dark' : 'light'
+  Object.assign(logColors, pickThemeLogValues(logColors, t, DEFAULT_LOG_COLORS_LIGHT, DEFAULT_LOG_COLORS_DARK))
+  Object.assign(logBgColors, pickThemeLogValues(logBgColors, t, DEFAULT_LOG_BG_COLORS_LIGHT, DEFAULT_LOG_BG_COLORS_DARK))
+}
 
 // ---------- 过滤历史（Tag / 关键字，各自独立列表；随 cfg 一起持久化） ----------
 // 元素形态 { text, locked }；数组顺序 = 最近操作在前。锁定项：不被清空、不被新记录挤出上限裁剪。
@@ -235,9 +259,10 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   for (const list of [quickCommands.value, keyButtons.value, textButtons.value, tapButtons.value, swipeButtons.value]) {
     for (const item of list) if (item && item.group === LEGACY_DEFAULT_GROUP) item.group = NO_GROUP
   }
-  if (c.logColors) Object.assign(logColors, c.logColors)
+  const themeForLog = resolvedTheme(c.theme)
+  if (c.logColors) Object.assign(logColors, pickThemeLogValues(c.logColors, themeForLog, DEFAULT_LOG_COLORS_LIGHT, DEFAULT_LOG_COLORS_DARK))
   if (c.logColorBold) Object.assign(logColorBold, c.logColorBold)
-  if (c.logBgColors) Object.assign(logBgColors, c.logBgColors)
+  if (c.logBgColors) Object.assign(logBgColors, pickThemeLogValues(c.logBgColors, themeForLog, DEFAULT_LOG_BG_COLORS_LIGHT, DEFAULT_LOG_BG_COLORS_DARK))
   if (c.logBgOn) Object.assign(logBgOn, c.logBgOn)
   if (Array.isArray(c.logColorRules)) {
     logColorRules.value.length = 0
@@ -316,7 +341,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }
@@ -375,6 +400,6 @@ async function browseScreenshotDir() {
 
 export function useConfig() {
 
-  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }
 }
-export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }

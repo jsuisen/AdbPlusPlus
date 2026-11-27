@@ -1,6 +1,7 @@
 <script setup>
 // 模拟按键弹窗（布局仿快捷按钮：分组下拉 + 管理 + 按键按钮）
 import * as State from '@/composables/state'
+import AppSelect from '../AppSelect.vue'
 import { maskClose, saveCfg } from '@/composables/useConfig'
 import { runKey, addKey, removeKey, onKeyColor, cmdTextColor } from '@/composables/useActions'
 import { t } from '@/i18n'
@@ -24,10 +25,8 @@ const {
       <div class="modal-body">
         <div class="qb-head">
           <span class="qb-title">{{ t('action.inputKey') }}</span>
-          <select v-model="keyGroup" class="qb-group">
-            <option :value="State.ALL_GROUPS">{{ t('quickbar.allGroups') }}</option>
-            <option v-for="gp in keyGroups" :key="gp" :value="gp">{{ gp }}</option>
-          </select>
+          <AppSelect v-model="keyGroup" class="qb-group"
+                     :options="[{ value: State.ALL_GROUPS, label: t('quickbar.allGroups') }, ...keyGroups]" />
           <button class="qb-manage" @click="keyManaging = !keyManaging">{{ keyManaging ? t('common.done') : t('common.manage') }}</button>
         </div>
         <div class="qb-buttons">

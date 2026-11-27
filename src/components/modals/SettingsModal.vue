@@ -6,11 +6,13 @@ import zhCN from '@shared/i18n/locales/zh-CN.js'
 import keycodeZh from '@shared/i18n/locales/keycode.zh-CN.js'
 import { t, locale, locales, warnings, missingCount, scanDir, setKeycodeMode } from '@/i18n'
 import { loadI18n } from '@/composables/useApp'
+import { applyTheme } from '@/composables/useTheme'
+import AppSelect from '../AppSelect.vue'
 import * as State from '@/composables/state'
 import {
   maskClose, setTab, resetLogColors, onLogColorChange, onHexInput, onBgInput,
   browseOutDir, onMaxRenderChange, browseConfigPath, exportSettings, importSettings,
-  onFontChange, openFontPicker, pickFont, saveCfg,
+  onFontChange, openFontPicker, pickFont, saveCfg, syncLogColorsForTheme,
   browseCaptureLocalDir, browseOfflineLogLocalDir, browseScreenshotDir,
   addFilterHistory, clearFilterHistory, removeFilterHistory, toggleFilterHistoryLock, onFilterHistoryMaxChange
 } from '@/composables/useConfig'
@@ -45,6 +47,12 @@ async function onLanguageChange() {
 }
 function onKeycodeModeChange() {
   setKeycodeMode(cfg.value.keycodeLangMode || 'follow')
+  saveCfg()
+}
+function onThemeChange() {
+  applyTheme(cfg.value.theme)
+  // applyTheme 已通过 onThemeResolved 通知日志配色同步；这里再兜一次，保证独立调用也生效（幂等）。
+  syncLogColorsForTheme(document.documentElement.dataset.theme)
   saveCfg()
 }
 function reloadLangPacks() {
@@ -175,18 +183,13 @@ async function exportLangTemplate() {
           <div v-if="settingsTab === 'lang'" class="lang-box">
             <div class="outdir-row">
               <span class="outdir-label">{{ t('settings.language') }}</span>
-              <select v-model="cfg.lang" class="lang-select" @change="onLanguageChange">
-                <option v-for="l in locales" :key="l.id" :value="l.id">
-                  {{ l.name }}（{{ l.builtin ? t('settings.builtin') : t('settings.external') }}）
-                </option>
-              </select>
+              <AppSelect v-model="cfg.lang" class="lang-select" @change="onLanguageChange"
+                         :options="locales.map(l => ({ value: l.id, label: l.name + '（' + (l.builtin ? t('settings.builtin') : t('settings.external')) + '）' }))" />
             </div>
             <div class="outdir-row">
               <span class="outdir-label">{{ t('settings.keycodeLang') }}</span>
-              <select v-model="cfg.keycodeLangMode" class="lang-select" @change="onKeycodeModeChange">
-                <option value="follow">{{ t('settings.keycodeFollow') }}</option>
-                <option value="en">{{ t('settings.keycodeEn') }}</option>
-              </select>
+              <AppSelect v-model="cfg.keycodeLangMode" class="lang-select" @change="onKeycodeModeChange"
+                         :options="[{ value: 'follow', label: t('settings.keycodeFollow') }, { value: 'en', label: t('settings.keycodeEn') }]" />
             </div>
             <p class="muted small">{{ t('settings.scanDir', { dir: scanDir }) }}</p>
             <div class="general-io">
@@ -201,6 +204,12 @@ async function exportLangTemplate() {
             </div>
           </div>
           <div v-if="settingsTab === 'general'" class="general-box">
+            <div class="outdir-row">
+              <span class="outdir-label">{{ t('settings.theme') }}</span>
+              <AppSelect v-model="cfg.theme" class="theme-select" @change="onThemeChange"
+                         :options="[{ value: 'system', label: t('settings.themeSystem') }, { value: 'light', label: t('settings.themeLight') }, { value: 'dark', label: t('settings.themeDark') }]" />
+            </div>
+            <p class="muted small">{{ t('settings.themeDesc') }}</p>
             <div class="outdir-row">
               <span class="outdir-label">{{ t('settings.maxRender') }}</span>
               <input class="font-input" type="number" min="1000" max="3000" step="1000" v-model.number="cfg.maxRender" @change="onMaxRenderChange" />

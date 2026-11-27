@@ -2,6 +2,7 @@
 // 连接设备弹窗（adb connect ip:port，可选别名 + 成功历史回填 + 连接中/超时提示）
 import { computed } from 'vue'
 import * as State from '@/composables/state'
+import AppSelect from '../AppSelect.vue'
 import { maskClose } from '@/composables/useConfig'
 import { applyConnectHistory, cancelConnect, confirmConnect } from '@/composables/useDevices'
 import { t } from '@/i18n'
@@ -38,10 +39,8 @@ function onCancelClick() {
         <label class="cf-row"><span>{{ t('connect.port') }}</span><input v-model="connectPort" :disabled="connecting" :placeholder="t('connect.portHint')" /></label>
         <label class="cf-row">
           <span>{{ t('common.history') }}</span>
-          <select v-model="connectHistorySel" :disabled="connecting || !connectHistoryOptions.length" @change="applyConnectHistory">
-            <option value="">{{ connectHistoryOptions.length ? t('connect.selectHistory') : t('connect.noHistory') }}</option>
-            <option v-for="h in connectHistoryOptions" :key="h.value" :value="h.value">{{ h.label }}</option>
-          </select>
+          <AppSelect v-model="connectHistorySel" :disabled="connecting || !connectHistoryOptions.length" @change="applyConnectHistory"
+                     :options="[{ value: '', label: connectHistoryOptions.length ? t('connect.selectHistory') : t('connect.noHistory') }, ...connectHistoryOptions]" />
         </label>
         <label class="cf-row"><span>{{ t('common.alias') }}</span><input v-model="connectAlias" :disabled="connecting" :placeholder="t('connect.aliasHint')" /></label>
         <div v-if="connecting" class="connect-progress"><span class="busy-spinner"></span>{{ t('connect.inProgress', { ip: connectIp, port: connectPort || '5555' }) }}<span class="connect-progress-tip">{{ t('connect.cancelHint') }}</span></div>

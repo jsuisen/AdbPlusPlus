@@ -1,6 +1,8 @@
 <script setup>
 // 日志窗口查找对话框（布局参考 Notepad++「查找」）：浮动面板，可拖动/调宽，关闭即撤销全部高亮
+import { nextTick } from 'vue'
 import * as State from '@/composables/state'
+import AppSelect from './AppSelect.vue'
 import { closeFindWindow, stepFind, countFind, refreshFindScope, startFindDrag, startFindResize, onFindWinMouseDown } from '@/composables/useLogcat'
 import { t } from '@/i18n'
 
@@ -8,6 +10,13 @@ const {
   findOpen, findEl, findTargetInput, findDraft, findHistory, findBox,
   findPatternError, findMatches, findSnap, findWinStyle
 } = State
+
+// 原生 datalist 的提示弹层由系统绘制且无法深色化；改为自绘历史下拉，选中后回填输入框。
+function onFindHistoryPick(v) {
+  if (typeof v !== 'string' || !v) return
+  findDraft.target = v
+  nextTick(() => { if (findTargetInput.value) findTargetInput.value.focus() })
+}
 </script>
 
 <template>
@@ -22,11 +31,10 @@ const {
     <div class="find-body">
       <div class="find-row-target">
         <label class="find-label" for="find-target">{{ t('find.target') }}</label>
-        <input id="find-target" ref="findTargetInput" class="find-input" list="find-history"
+        <input id="find-target" ref="findTargetInput" class="find-input"
                v-model="findDraft.target" :placeholder="t('find.placeholder')" @keydown.enter.prevent="stepFind(1)" />
-        <datalist id="find-history">
-          <option v-for="h in findHistory" :key="h" :value="h"></option>
-        </datalist>
+        <AppSelect class="find-history-select" style="width:72px; flex:none"
+                   :placeholder="t('common.history')" :options="findHistory" @change="onFindHistoryPick" />
         <button class="find-btn find-prev" type="button" @click="stepFind(-1)" :title="t('find.prev')">▲</button>
         <button class="find-btn find-next" type="button" @click="stepFind(1)" :title="t('find.nextEnter')">{{ t('find.nextBtn') }}</button>
       </div>

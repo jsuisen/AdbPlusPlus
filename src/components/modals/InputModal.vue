@@ -1,6 +1,7 @@
 <script setup>
 // 输入类动作弹窗（输入文本 / 模拟点击 / 模拟滑动；值字段按类型不同）
 import * as State from '@/composables/state'
+import AppSelect from '../AppSelect.vue'
 import { maskClose, saveCfg } from '@/composables/useConfig'
 import { runInput, addInput, removeInput, onInputColor, cmdTextColor } from '@/composables/useActions'
 import { t } from '@/i18n'
@@ -22,10 +23,8 @@ const {
       <div class="modal-body">
         <div class="qb-head">
           <span class="qb-title">{{ t(INPUT_TYPES[inputModalType].titleKey) }}</span>
-          <select v-model="inputGroup" class="qb-group">
-            <option :value="State.ALL_GROUPS">{{ t('quickbar.allGroups') }}</option>
-            <option v-for="gp in inputGroups" :key="gp" :value="gp">{{ gp }}</option>
-          </select>
+          <AppSelect v-model="inputGroup" class="qb-group"
+                     :options="[{ value: State.ALL_GROUPS, label: t('quickbar.allGroups') }, ...inputGroups]" />
           <button class="qb-manage" @click="inputManaging = !inputManaging">{{ inputManaging ? t('common.done') : t('common.manage') }}</button>
         </div>
         <div class="qb-buttons">

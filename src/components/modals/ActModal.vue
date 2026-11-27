@@ -1,6 +1,7 @@
 <script setup>
 // 组件调试弹窗：启动 Activity / 启动Service / 停止Service / 发送广播（含 Extra 参数与实时 adb 命令预览）
 import * as State from '@/composables/state'
+import AppSelect from '../AppSelect.vue'
 import { maskClose } from '@/composables/useConfig'
 import {
   addExtra, removeExtra, closeActModal, runActActivity, runActService, runActBroadcast,
@@ -46,9 +47,8 @@ const {
           <div v-for="(e, i) in actExtras" :key="i" class="extras-row">
             <input v-model="e.key" placeholder="key" style="flex:1" />
             <input v-model="e.value" placeholder="value" style="flex:1" />
-            <select v-model="e.type" style="width:108px; flex:none">
-              <option value="es">{{ t('act.es') }}</option><option value="ei">{{ t('act.ei') }}</option><option value="ez">{{ t('act.ez') }}</option><option value="ef">{{ t('act.ef') }}</option><option value="el">{{ t('act.el') }}</option>
-            </select>
+            <AppSelect v-model="e.type" style="width:108px; flex:none"
+                       :options="[{ value: 'es', label: t('act.es') }, { value: 'ei', label: t('act.ei') }, { value: 'ez', label: t('act.ez') }, { value: 'ef', label: t('act.ef') }, { value: 'el', label: t('act.el') }]" />
             <button class="x-btn" @click="removeExtra(i)">×</button>
           </div>
           <button class="link-btn" @click="addExtra">{{ t('act.addExtra') }}</button>
