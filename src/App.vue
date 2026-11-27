@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from './i18n'
-import { ALL_GROUPS } from './composables/state'
+import { ALL_GROUPS, normalizeSidebarWidth } from './composables/state'
 import AppSelect from './components/AppSelect.vue'
 import * as State from './composables/state'
 import { useDevices } from './composables/useDevices'
@@ -65,12 +65,44 @@ function sbtnMode(it) {
   return it.danger ? 'danger' : it.modal ? 'modal' : ''
 }
 
-const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
+const { COLOR_PRESETS, aboutOpen, activeLogSerial, activeMainTab, activityAuto, activityFilter, activityInterval, activityList, activityListFiltered, activityLoading, activityRunning, alwaysOnTop, appPkg, autoscroll, capturing, cmdGroup, cmdGroups, cmdOutput, cfg, collapsedSidebar, colorEditIndex, ctxMenu, currentLogErr, currentRunning, devGroups, deviceAlias, deviceClockActive, deviceClockOk, deviceClockSerial, deviceClockText, deviceInfo, deviceInfoLoading, devices, displayCmds, dumpsysOut, dumpsysService, editingNoteId, filterHistoryOpen, fmtMB, fmtRss, getpropFilter, getpropList, getpropListFiltered, getpropLoading, groupOpen, lastMsg, levelFilter, logEl, logFontStyle, managing, maximized, mergedView, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, processAuto, processFilter, processInterval, processList, processListFiltered, processLoading, processRunning, procs, procsLoading, procFilterByPkg, procOptions, quickCommands, quickbarVisible, recording, regexFilter, runningMap, screenshotting, selectedProc, selectedSerial, serviceAuto, serviceFilter, serviceInterval, serviceList, serviceListFiltered, serviceLoading, serviceRunning, settingsOpen, tagFilter, tagHistory, tagWholeWord, textFilter, textHistory, threadAuto, threadFilter, threadInterval, threadList, threadListFiltered, threadLoading, threadRunning, toastMsg, toastShow, updateInfo, wrapLines } = State
 const { collapseAll, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, reconnectDevice, refreshDevices, runAction, selectDevice, toggleGroup } = useDevices()
 const { saveCfg, addFilterHistory, removeFilterHistory } = useConfig()
 const { parseLocal } = useApk()
 
 const { clearKeywordFilter, clearLogs, browseLogDir, clearTagFilter, closeCtxMenu, commitNote, copySelection, editNote, exportLogs, findSegsFor, formatLogLine, onLogContextMenu, onLogKey, onLogMouseDown, onLogScrollSave, onLogWheel, onNoteInput, onNoteKey, onWheel, openFindFromCtx, openFindWindow, openFmt, openQuickFilter, refreshProcs, scrollToTop, selectAllLogs, toggleLatest, toggleLogcat } = useLogcat()
+
+// 左侧栏宽度：由 cfg.sidebarWidth 驱动，拖右缘改宽度并随配置落盘；折叠时拖条隐藏但宽度值保留。
+// 用 CSS 变量同时驱动 .sidebar 与 .side-scroll，避免两处硬编码 208px 漂移。
+const sidebarStyle = computed(() => ({ '--sidebar-width': normalizeSidebarWidth(cfg.value.sidebarWidth) + 'px' }))
+let sidebarDragCleanup = null
+function onSidebarResizeStart(e) {
+  if (e.button !== 0 || collapsedSidebar.value) return
+  const startX = e.clientX
+  const startW = normalizeSidebarWidth(cfg.value.sidebarWidth)
+  const prevCursor = document.body.style.cursor
+  const prevSelect = document.body.style.userSelect
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  function onMove(ev) {
+    cfg.value.sidebarWidth = normalizeSidebarWidth(startW + ev.clientX - startX)
+    saveCfg()   // 拖拽过程中去抖落盘，中途关窗也不丢宽度
+  }
+  function onUp() {
+    sidebarDragCleanup = null
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+    window.removeEventListener('blur', onUp)
+    document.body.style.cursor = prevCursor
+    document.body.style.userSelect = prevSelect
+    saveCfg(true)  // 松手立即落盘，清掉尚未触发的去抖
+  }
+  if (sidebarDragCleanup) sidebarDragCleanup()
+  sidebarDragCleanup = onUp
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+  window.addEventListener('blur', onUp)
+}
 
 // 过滤框「历史」下拉：同一时刻只展开一个；点选直接写入对应过滤条件的 computed setter。
 function toggleFilterHistoryMenu(kind) {
@@ -163,7 +195,10 @@ function onSelectionChange() {
   syncCaretFromSel()
 }
 onMounted(() => document.addEventListener('selectionchange', onSelectionChange))
-onBeforeUnmount(() => document.removeEventListener('selectionchange', onSelectionChange))
+onBeforeUnmount(() => {
+  document.removeEventListener('selectionchange', onSelectionChange)
+  if (sidebarDragCleanup) sidebarDragCleanup()
+})
 const { addCmd, closeCmdOutput, cmdTextColor, onCmdArgsInput, onCmdColor, removeCmd, runCmd } = useActions()
 const { exportDeviceInfo, exportGetprop, fetchGetprop, manualRefresh, runBugreport, runDumpsys, toggleDetect } = useDeviceinfo()
 const { winClose, winMax, winMin, winTop } = useUi()
@@ -216,7 +251,7 @@ const { openUpdateDialog } = useUpdate()
 
     <div class="body">
       <!-- 侧边栏：设备管理（设备列表，多设备并行） -->
-      <aside class="sidebar" :class="{ collapsed: collapsedSidebar }">
+      <aside class="sidebar" :class="{ collapsed: collapsedSidebar }" :style="sidebarStyle">
         <div class="side-scroll">
           <div class="dev-mgmt">
             <div class="dev-head">
@@ -266,6 +301,8 @@ const { openUpdateDialog } = useUpdate()
           </div>
         </div>
       </aside>
+      <!-- 侧栏右缘拖拽条：独立 flex 项，不压住 .side-scroll 的垂直滚动条；收起时不显示 -->
+      <div v-if="!collapsedSidebar" class="sidebar-resizer" :title="t('sidebar.resizeHint')" @mousedown.prevent="onSidebarResizeStart"></div>
 
       <!-- 功能区：日志窗口（按设备分 tab） -->
       <main class="main">

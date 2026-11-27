@@ -1,7 +1,7 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
-import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_COLORS_DARK, DEFAULT_LOG_BG_COLORS_LIGHT, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLORS_DARK, DEFAULT_LOG_COLORS_LIGHT, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_COLORS_DARK, DEFAULT_LOG_BG_COLORS_LIGHT, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLORS_DARK, DEFAULT_LOG_COLORS_LIGHT, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP, NO_GROUP, normalizeSidebarWidth, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
 import { runTask } from './useTask'
 
@@ -286,6 +286,8 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   if (Object.prototype.hasOwnProperty.call(c, 'wheelDownLockBottom')) cfg.value.wheelDownLockBottom = !!c.wheelDownLockBottom
   // 旧配置缺字段时保持默认倍率 1（系统原生滚动）
   if (Object.prototype.hasOwnProperty.call(c, 'logWheelSpeed')) cfg.value.logWheelSpeed = normalizeWheelSpeed(c.logWheelSpeed)
+  // 侧栏宽度：异常值收敛到 160~480，避免导入文件把日志区挤没
+  if (Object.prototype.hasOwnProperty.call(c, 'sidebarWidth')) cfg.value.sidebarWidth = normalizeSidebarWidth(c.sidebarWidth)
   // 背景配置形状归一化：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
   cfg.value.bgEnabled = !!c.bgEnabled
   cfg.value.bgImage = typeof c.bgImage === 'string' ? c.bgImage : ''
@@ -394,7 +396,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'wheelDownLockBottom', 'logWheelSpeed', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'wheelDownLockBottom', 'logWheelSpeed', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'sidebarWidth', 'bgEnabled', 'bgImage', 'bgZones']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }

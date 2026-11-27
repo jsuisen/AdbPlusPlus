@@ -66,6 +66,7 @@ function normalizeBgZones(raw) {
 const DEFAULT = {
   lang: '',            // 界面语言 id：空 = 首次启动按系统语言探测；外部语言包 id 亦可直接写这里
   theme: 'system',     // 界面主题：'system' 跟随系统 / 'light' 浅色 / 'dark' 深色；非法值在启动时回落 system
+  sidebarWidth: 208,   // 左侧侧边栏宽度（px），拖拽右边缘调整；160~480，与渲染侧 shared.js 同规则
   bgEnabled: false,    // 自定义背景总开关：关闭后背景图与两区背景色/透明度全部失效
   bgImage: '',         // 背景图路径（只存路径；data URL 运行时生成，不落盘）
   bgZones: normalizeBgZones(), // { chrome, log } 各自 enabled / color / alpha
@@ -129,6 +130,10 @@ export function loadConfig() {
   if (!Number.isFinite(retrySec)) retrySec = 5
   merged.autoReconnectInterval = Math.max(1, Math.min(3600, Math.floor(retrySec)))
   merged.wheelDownLockBottom = !!merged.wheelDownLockBottom
+  // 侧栏宽度：旧配置缺字段走默认 208；异常值收敛到 160~480，避免把日志区挤没或撑爆窗口
+  let sidebarWidth = Number(merged.sidebarWidth)
+  if (!Number.isFinite(sidebarWidth)) sidebarWidth = 208
+  merged.sidebarWidth = Math.max(160, Math.min(480, Math.round(sidebarWidth)))
   let wheelSpeed = Number(merged.logWheelSpeed)
   if (!Number.isFinite(wheelSpeed)) wheelSpeed = 1
   merged.logWheelSpeed = Math.max(0.25, Math.min(99, Math.round(wheelSpeed * 100) / 100))

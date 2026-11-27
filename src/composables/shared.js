@@ -41,6 +41,16 @@ export function cmdDetail(r, cmd) {
   return lines.join('\n')
 }
 
+// 侧栏宽度（px）：默认 208，可拖拽范围 160~480。与主进程 main/config.js 的同名归一化同规则。
+export const DEFAULT_SIDEBAR_WIDTH = 208
+export const SIDEBAR_MIN_WIDTH = 160
+export const SIDEBAR_MAX_WIDTH = 480
+export function normalizeSidebarWidth(v) {
+  const n = Number(v)
+  if (!Number.isFinite(n)) return DEFAULT_SIDEBAR_WIDTH
+  return Math.max(SIDEBAR_MIN_WIDTH, Math.min(SIDEBAR_MAX_WIDTH, Math.round(n)))
+}
+
 // 包名排序：android./com.android. 系统类沉底，其余升序（进程包名下拉与已装应用列表共用）
 export function sortPkgs(list) {
   return list.slice().sort((a, b) => {

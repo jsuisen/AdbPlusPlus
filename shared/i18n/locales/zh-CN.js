@@ -73,6 +73,7 @@ export default {
   'sidebar.reconnectHint': '断开后重新连接该设备（仅网络设备）',
   'sidebar.appPackage': '应用包名',
   'sidebar.pkgPlaceholder': '如 com.example.app',
+  'sidebar.resizeHint': '按住并左右拖动可调整侧边栏宽度（自动保存）',
   'action.stopRecord': '停止录屏',
   'action.stopScreenshot': '停止截图',
   'action.stopCapture': '停止抓包',

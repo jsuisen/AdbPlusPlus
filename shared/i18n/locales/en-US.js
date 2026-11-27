@@ -72,6 +72,7 @@ export default {
   'sidebar.reconnectHint': 'Reconnect this device (network devices only)',
   'sidebar.appPackage': 'App package',
   'sidebar.pkgPlaceholder': 'e.g. com.example.app',
+  'sidebar.resizeHint': 'Drag left/right to resize the sidebar (saved automatically)',
   'action.stopRecord': 'Stop recording',
   'action.stopScreenshot': 'Stop screenshots',
   'action.stopCapture': 'Stop capture',
