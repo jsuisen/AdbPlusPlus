@@ -342,7 +342,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .outdir-btn:hover { background: var(--primary-d); border-color: var(--primary-d); }
 
 /* 语言包设置（i18n） */
-.lang-select { flex: 1 1 auto; min-width: 180px; max-width: 420px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 13px; }
+.lang-select { flex: 1 1 auto; min-width: 180px; max-width: 420px; }  /* 边框/底色/内边距由内部 .as-trigger 提供；根 div 再加会双重边框 */
 .lang-warnings { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 5px; background: var(--danger-bg); color: var(--danger); font-size: 12px; line-height: 1.7; max-height: 220px; overflow: auto; }
 .lang-warning { word-break: break-all; }
 
@@ -427,7 +427,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .cf-row { display: flex; align-items: center; gap: 10px; }
 .cf-row > span { width: 40px; font-size: 13px; }
 .cf-row input { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; }
-.cf-row .app-select { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--text); font-size: 13px; }
+.cf-row .app-select { flex: 1; min-width: 0; }  /* 同上：原生 select 的视觉样式已由 .as-trigger 承接 */
 .cf-row .app-select.is-disabled .as-trigger { color: var(--muted); background: var(--surface-alt); }
 .connect-progress { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); color: var(--text); font-size: 13px; }
 .connect-progress-tip { color: var(--muted); font-size: 12px; }
