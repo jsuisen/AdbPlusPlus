@@ -47,7 +47,14 @@ function applyBackground() {
   ]
   for (const [key, varName, fallback] of zones) {
     const z = zone(key)
-    const value = (on && z.enabled) ? hexToRgba(z.color, z.alpha) : null
+    let value = null
+    if (on && z.enabled) {
+      let a = Number(z.alpha)
+      if (!Number.isFinite(a)) a = 100
+      a = Math.max(0, Math.min(100, Math.round(a)))
+      // 空颜色 = 跟随主题 token；带上 alpha 时必须混透明，否则回退成不透明色，透明度看不出效果。
+      value = z.color ? hexToRgba(z.color, a) : `color-mix(in srgb, ${fallback} ${a}%, transparent)`
+    }
     root.style.setProperty(varName, value || fallback)
   }
 }
