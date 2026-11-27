@@ -66,6 +66,14 @@ function normalizeFilterHistoryMax(v) {
   return n > 200 ? 200 : n
 }
 
+// 自动重连间隔（秒）与主进程 loadConfig 同规则：1~3600，缺省 5 秒。
+function normalizeAutoReconnectInterval(v) {
+  let n = Number(v)
+  if (!Number.isFinite(n)) n = 5
+  n = Math.floor(n)
+  return Math.max(1, Math.min(3600, n))
+}
+
 // 兼容旧配置 / 导入文件：忽略非对象、非数组、空文本、重复项，锁定标志强制布尔化。
 function normalizeFilterHistory(fh) {
   const out = { tag: [], text: [] }
@@ -258,6 +266,9 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   // 过滤历史形状归一化：旧配置缺字段 → 空列表；异常形状 → 回落空列表，避免下拉渲染时抛错。
   cfg.value.filterHistory = normalizeFilterHistory(c.filterHistory)
   cfg.value.filterHistoryMax = normalizeFilterHistoryMax(c.filterHistoryMax)
+  // 旧配置/导入文件缺字段时保持当前值，不因导入而悄悄关掉自动重连
+  if (Object.prototype.hasOwnProperty.call(c, 'autoReconnect')) cfg.value.autoReconnect = !!c.autoReconnect
+  if (Object.prototype.hasOwnProperty.call(c, 'autoReconnectInterval')) cfg.value.autoReconnectInterval = normalizeAutoReconnectInterval(c.autoReconnectInterval)
   // 背景配置形状归一化：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
   cfg.value.bgEnabled = !!c.bgEnabled
   cfg.value.bgImage = typeof c.bgImage === 'string' ? c.bgImage : ''
@@ -366,7 +377,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }
@@ -425,6 +436,6 @@ async function browseScreenshotDir() {
 
 export function useConfig() {
 
-  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }
+  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }
 }
-export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }

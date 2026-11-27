@@ -10,7 +10,129 @@ import { openCmdModal, openInputModal, openInstallModal, openUninstallModal, res
 import { clearCaptureStatus, openCaptureManager, refreshCaptures, screenshotToPath, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer } from './useMedia'
 import { clearOfflineLogStatus, openOfflineLogManager, refreshOfflineLogs } from './useOfflineLog'
 import { installApk, parseInstalled, parseLocal } from './useApk'
-import { saveCfg } from './useConfig'
+import { normalizeAutoReconnectInterval, saveCfg } from './useConfig'
+
+// ---------- ADB 断线自动重连 ----------
+// 仅网络设备（serial 形如 ip:port）可用 adb connect 恢复；USB 断线只能重新插拔。
+// 人工关闭 / 断开 / 取消连接一律不重连：持久化来源 cfg.hiddenSerials，会话内来源 manualDisconnect。
+const manualDisconnect = new Set()
+// serial -> { timer, running }：同一设备同一时刻只有一条重试链，避免设备事件风暴叠加连接进程
+const reconnectTimers = new Map()
+// 上一轮在线集合：区分「曾经在线后断线」与「首次刷新就离线」，避免启动时把历史设备全连一遍
+let lastOnlineSerials = new Set()
+
+function stopAutoReconnect(serial) {
+  const st = reconnectTimers.get(serial)
+  if (!st) return
+  if (st.timer) clearTimeout(st.timer)
+  reconnectTimers.delete(serial)
+}
+
+function stopAllAutoReconnect() {
+  for (const s of [...reconnectTimers.keys()]) stopAutoReconnect(s)
+}
+
+function markManualDisconnect(serial) {
+  if (!serial) return
+  manualDisconnect.add(serial)
+  stopAutoReconnect(serial)
+}
+
+function isManualDisconnect(serial) {
+  if (!serial || manualDisconnect.has(serial)) return true
+  const hidden = cfg.value.hiddenSerials
+  return Array.isArray(hidden) && hidden.includes(serial)
+}
+
+function retryDelayMs() {
+  return normalizeAutoReconnectInterval(cfg.value.autoReconnectInterval) * 1000
+}
+
+function armRetry(serial, state) {
+  state.running = false
+  state.timer = setTimeout(() => {
+    state.timer = null
+    state.running = true
+    tryAutoReconnect(serial, state)
+  }, retryDelayMs())
+}
+
+async function isDeviceOnline(serial) {
+  try {
+    const all = await api.invoke('adb:devices')
+    return Array.isArray(all) && all.some((d) => d.serial === serial && d.status === 'device')
+  } catch { return false }
+}
+
+// 带看门狗的 adb connect：挂起时按 runId 强杀子进程，避免一次重试卡死整个界面
+async function runConnectWithWatchdog(serial) {
+  const runId = 'autoreconnect-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10)
+  let timer = null
+  const watchdog = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('CONNECT_TIMEOUT')), CONNECT_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([
+      api.invoke('adb:run', ['connect', serial], runId),
+      watchdog
+    ])
+  } catch (e) {
+    if (e && e.message === 'CONNECT_TIMEOUT') {
+      try { await api.invoke('adb:runCancel', runId) } catch {}
+    }
+    return null
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+async function tryAutoReconnect(serial, state) {
+  if (reconnectTimers.get(serial) !== state) return   // 期间被人工操作取消
+  if (!cfg.value.autoReconnect || isManualDisconnect(serial)) { stopAutoReconnect(serial); return }
+  // 设备可能已自行恢复：直接收尾，不再发 connect
+  if (await isDeviceOnline(serial)) { await finishAutoReconnect(serial); return }
+  try {
+    const r = await runConnectWithWatchdog(serial)
+    // adb connect 对已连接设备也返回 0（already connected）：以 adb:devices 的真实状态判定成功
+    if (r && r.code === 0 && await isDeviceOnline(serial)) { await finishAutoReconnect(serial); return }
+  } catch { /* 失败不弹对话框，按间隔继续重试 */ }
+  // 设置可能在等待期间被关闭，重新核对再排下一轮
+  if (reconnectTimers.get(serial) === state && cfg.value.autoReconnect && !isManualDisconnect(serial)) {
+    armRetry(serial, state)
+  }
+}
+
+async function finishAutoReconnect(serial) {
+  stopAutoReconnect(serial)
+  manualDisconnect.delete(serial)
+  clearHiddenSerial(serial)
+  await refreshDevices()
+  toast(t('toast.autoReconnected') + serial)
+}
+
+function scheduleAutoReconnect(serial) {
+  if (!serial || !serial.includes(':') || !cfg.value.autoReconnect) return
+  if (isManualDisconnect(serial) || reconnectTimers.has(serial)) return
+  const state = { timer: null, running: false }
+  reconnectTimers.set(serial, state)
+  armRetry(serial, state)
+}
+
+// 设置面板改动：关闭立即停掉所有重试链；改间隔只重置等待中的定时器，不打断正在进行的 connect
+function onAutoReconnectChange() {
+  cfg.value.autoReconnectInterval = normalizeAutoReconnectInterval(cfg.value.autoReconnectInterval)
+  if (!cfg.value.autoReconnect) {
+    stopAllAutoReconnect()
+    saveCfg()
+    return
+  }
+  for (const [serial, state] of reconnectTimers) {
+    if (state.running) continue
+    if (state.timer) clearTimeout(state.timer)
+    armRetry(serial, state)
+  }
+  saveCfg()
+}
 
 // 设备移除时统一回收该 serial 的会话状态。
 // 旧实现有两份拷贝且只删 6 个字典，本函数补齐运行态缓存。
@@ -32,6 +154,11 @@ async function refreshDevices() {
   refreshing.value = true
   try {
     const all = await api.invoke('adb:devices')
+    // 断线检测：以上一轮在线集合为基准；设备消失或变成 offline/unauthorized 都视为断线。
+    // 只处理网络设备且非人工断开者；hiddenSerials 的过滤不影响此处的判定。
+    const online = new Set(all.filter((d) => d.status === 'device').map((d) => d.serial))
+    for (const s of lastOnlineSerials) if (!online.has(s)) scheduleAutoReconnect(s)
+    lastOnlineSerials = online
     // 用户点过「关闭」的设备即使被 adb server 重新列出也不再进入侧栏
     const hidden = new Set(Array.isArray(cfg.value.hiddenSerials) ? cfg.value.hiddenSerials : [])
     const list = all.filter((d) => !hidden.has(d.serial))
@@ -89,13 +216,16 @@ function removeDeviceFromView(serial) {
 
 // 连接/重连成功后解除隐藏，避免设备永远回不到侧栏
 function clearHiddenSerial(serial) {
-  if (!serial || !Array.isArray(cfg.value.hiddenSerials)) return
+  if (!serial) return
+  manualDisconnect.delete(serial)   // 用户再次连上：允许后续非人工断线时自动重连
+  if (!Array.isArray(cfg.value.hiddenSerials)) return
   cfg.value.hiddenSerials = cfg.value.hiddenSerials.filter((s) => s !== serial)
   saveCfg()
 }
 
 async function disconnectDevice(serial) {
   if (!serial) return
+  markManualDisconnect(serial)   // 用户点「关闭」：本设备永不自动重连
   const isNet = serial.includes(':')
   if (!isNet) toast(t('toast.usbRemoved'))
   removeDeviceFromView(serial)
@@ -137,6 +267,7 @@ function autoStartLogcatOnConnect(serial) {
 async function reconnectDevice(serial) {
   if (!serial) return
   if (!serial.includes(':')) { toast(t('err.usbReconnect')); return }
+  markManualDisconnect(serial)   // 手动重连会先 disconnect，期间不要让自动链抢跑；成功后 clearHiddenSerial 解除标记
   toast(t('toast.reconnecting') + serial)
   try {
     const disc = await api.invoke('adb:run', ['disconnect', serial])
@@ -183,6 +314,8 @@ async function adbDevices() {
 }
 
 async function adbDisconnectAll() {
+  // 「adb disconnect」是显式人工断开：当前所有网络设备都打标记，不让自动重连把它们拉回来
+  for (const d of devices.value) if (d.serial && d.serial.includes(':')) markManualDisconnect(d.serial)
   try {
     const r = await api.invoke('adb:run', ['disconnect'])
     toast((r.code === 0 ? t('toast.allDisconnected') : t('toast.disconnectFailed')) + (r.out || r.err || r.code))
@@ -191,6 +324,8 @@ async function adbDisconnectAll() {
 }
 
 async function adbKillServer() {
+  // 停 adb server 同样是人工操作：不自动把之前连过的网络设备重新连上
+  for (const d of devices.value) if (d.serial && d.serial.includes(':')) markManualDisconnect(d.serial)
   try {
     const r = await api.invoke('adb:run', ['kill-server'])
     toast(r.code === 0 ? t('toast.adbServerStopped') : t('toast.stopFailed') + (r.out || r.err || r.code))
@@ -320,6 +455,7 @@ let activeConnect = null
 // 强杀底层 adb 子进程 + 显式 disconnect。
 // adb 连接状态由 adb server 维护，仅杀 CLI 进程不会断连，必须再发 disconnect 清理。
 async function abortConnect(runId, target, silent) {
+  markManualDisconnect(target)   // 取消 / 超时后显式 disconnect 的目标不自动重连
   if (runId) {
     try { await api.invoke('adb:runCancel', runId) } catch {}
   }
@@ -475,6 +611,6 @@ function confirmRenameDevice() {
 
 export function useDevices() {
 
-  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+  return { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, onAutoReconnectChange, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
 }
-export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }
+export { adbDevices, adbDisconnectAll, adbKillServer, applyConnectHistory, cancelConnect, closeDeviceCtxMenu, collapseAll, confirmConnect, confirmRenameDevice, ctxRenameDevice, ctxSaveDevice, devInvoke, disconnectDevice, displayName, expandAll, onAutoReconnectChange, openConnectModal, openDeviceMenu, parseSerial, reconnectDevice, refreshDevices, removeDeviceFromView, runAction, selectDevice, toggleDeviceLogcat, toggleGroup }

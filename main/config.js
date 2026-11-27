@@ -104,6 +104,8 @@ const DEFAULT = {
   lastConnectIp: '',   // 连接设备弹窗上次填写的 IP（连接动作即保存，含失败尝试）
   lastConnectPort: '5555', // 连接设备弹窗上次填写的端口
   connectHistory: [],  // [{ ip, port, alias }] 连接成功过的设备，最近在前；alias 可为空
+  autoReconnect: true,       // 网络设备非人工断开后是否自动重连（默认开启）
+  autoReconnectInterval: 5,  // 自动重连间隔（秒），1~3600
   checkUpdateOnStartup: true, // 启动后是否异步检测一次版本升级（默认开启）
   updateDismissedDate: ''     // 本日已「取消提醒」的日期（YYYY-MM-DD），当天不再弹升级对话框
 }
@@ -119,6 +121,11 @@ export function loadConfig() {
   merged.bgEnabled = !!merged.bgEnabled
   merged.bgImage = typeof merged.bgImage === 'string' ? merged.bgImage : ''
   merged.bgZones = normalizeBgZones(raw.bgZones)
+  // 自动重连：旧配置缺字段走默认；异常值收敛到 1~3600 秒，避免 0 间隔把 adb 打爆
+  merged.autoReconnect = !!merged.autoReconnect
+  let retrySec = Number(merged.autoReconnectInterval)
+  if (!Number.isFinite(retrySec)) retrySec = 5
+  merged.autoReconnectInterval = Math.max(1, Math.min(3600, Math.floor(retrySec)))
   // outDir 为空时落到 exe 所在目录，保证自动日志/导出有可写落点
   if (!merged.outDir) merged.outDir = defaultOutDir()
   // appLogDir 为空时同样落到 exe 所在目录

@@ -18,6 +18,7 @@ import {
   addFilterHistory, clearFilterHistory, removeFilterHistory, toggleFilterHistoryLock, onFilterHistoryMaxChange
 } from '@/composables/useConfig'
 import { onAutoLogChange, onAppLogChange, browseAppLogDir } from '@/composables/useLogcat'
+import { onAutoReconnectChange } from '@/composables/useDevices'
 import { openAddColorRule } from '@/composables/useColorrules'
 import ColorRulesTable from '../ColorRulesTable.vue'
 
@@ -237,6 +238,16 @@ async function exportLangTemplate() {
               <input type="checkbox" v-model="cfg.checkUpdateOnStartup" @change="saveCfg" />
               <span>{{ t('settings.checkUpdate') }}</span>
             </label>
+            <label class="switch-row">
+              <input type="checkbox" v-model="cfg.autoReconnect" @change="onAutoReconnectChange" />
+              <span>{{ t('settings.autoReconnect') }}</span>
+            </label>
+            <p class="muted small">{{ t('settings.autoReconnectHint') }}</p>
+            <div v-if="cfg.autoReconnect" class="outdir-row">
+              <span class="outdir-label">{{ t('settings.autoReconnectInterval') }}</span>
+              <input class="font-input" type="number" min="1" max="3600" step="1" v-model.number="cfg.autoReconnectInterval" @change="onAutoReconnectChange" />
+              <span class="muted small">{{ t('settings.autoReconnectIntervalHint') }}</span>
+            </div>
             <div class="outdir-row">
               <span class="outdir-label">{{ t('settings.configPath') }}</span>
               <input class="outdir-input" :value="cfg.configPath || t('settings.defaultConfigPath')" readonly />
