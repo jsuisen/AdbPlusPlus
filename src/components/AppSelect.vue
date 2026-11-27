@@ -86,17 +86,27 @@ function onDocDown(e) {
   if (menuEl.value && menuEl.value.contains(e.target)) return
   open.value = false
 }
-function closeOnScroll() { if (open.value) open.value = false }
+// 滚动时重新定位，而不是关闭：window 的 capture scroll 会收到页面内任意容器（.logview /
+// .settings-content）的滚动，日志区持续滚动会把刚打开的下拉立刻关掉。只有 trigger 自身
+// 滚出视口才关闭。
+function reposition() {
+  if (!open.value || !rootEl.value) return
+  const r = rootEl.value.getBoundingClientRect()
+  if (r.bottom < 0 || r.top > window.innerHeight) { open.value = false; return }
+  const h = menuEl.value ? menuEl.value.offsetHeight : 0
+  const top = (h && r.bottom + 2 + h > window.innerHeight - 8) ? Math.max(8, r.top - h - 2) : r.bottom + 2
+  pos.value = { left: r.left, top, minWidth: r.width }
+}
 
 onMounted(() => {
   document.addEventListener('mousedown', onDocDown, true)
-  window.addEventListener('resize', closeOnScroll)
-  window.addEventListener('scroll', closeOnScroll, true)
+  window.addEventListener('resize', reposition)
+  window.addEventListener('scroll', reposition, true)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', onDocDown, true)
-  window.removeEventListener('resize', closeOnScroll)
-  window.removeEventListener('scroll', closeOnScroll, true)
+  window.removeEventListener('resize', reposition)
+  window.removeEventListener('scroll', reposition, true)
 })
 </script>
 
