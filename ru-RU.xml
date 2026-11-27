@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Русский — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- Русский — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="ru-RU" name="Русский" fallback="en-US">
   <string name="about.checkUpdate">Проверить обновления</string>
   <string name="about.desc">ADB++ — десктопный инструмент ADB</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">Перезапустить приложение</string>
   <string name="action.appStart">Запустить приложение</string>
   <string name="action.appStop">Принудительно остановить приложение</string>
-  <string name="action.captureManager">Менеджер захвата</string>
+  <string name="action.captureManager">Захват сетевых пакетов</string>
   <string name="action.captureToggle">Начать захват</string>
   <string name="action.clearDeviceCache">Очистить кэш устройства</string>
   <string name="action.grant">Выдать разрешение (Beta)</string>
@@ -220,7 +220,7 @@
   <string name="group.file">Операции с файлами</string>
   <string name="group.input">Операции ввода</string>
   <string name="group.media">Медиаоперации</string>
-  <string name="group.netcap">Захват сетевого трафика</string>
+  <string name="group.netcap">Захват</string>
   <string name="group.other">Операции с устройством</string>
   <string name="group.perm">Операции с разрешениями</string>
   <string name="group.pkgops">Операции с пакетами</string>
@@ -435,7 +435,7 @@
   <string name="settings.captureLocalDir">Локальный каталог сохранения</string>
   <string name="settings.captureLocalDirDesc">Скачанные pcap-файлы сохраняются сюда; если поле пусто, используется {dir}/captures.</string>
   <string name="settings.captureRoot">Запускать tcpdump от root (su -c)</string>
-  <string name="settings.captureRootDesc">По умолчанию выключено: tcpdump работает в обычном shell. На устройствах, где adbd не root и tcpdump не хватает прав для захвата (ошибка permission), включите эту опцию, чтобы повысить права только для tcpdump через su -c (без перезапуска adbd). Требуется устройство с root и su.</string>
+  <string name="settings.captureRootDesc">По умолчанию выключено; tcpdump запускается в обычной оболочке. При ошибке «Operation not permitted» приложение обнаружит su и автоматически повторит запуск от root. Включите, чтобы пропустить первую неудачу и всегда запускать tcpdump через su -c (без перезапуска adbd). Требуется root и su.</string>
   <string name="settings.checkUpdate">Проверять обновления при запуске (включено по умолчанию)</string>
   <string name="settings.closeOnOuter">Разрешить закрытие диалогов щелчком вне окна (по умолчанию выключено)</string>
   <string name="settings.closeOnOuterDesc">Если включено, щелчок по затемнённой области вне диалога закрывает его. Если выключено — только кнопка «Отмена» или «×».</string>
@@ -642,4 +642,36 @@
   <string name="win.pin">Поверх всех окон</string>
   <string name="win.restore">Восстановить</string>
   <string name="win.unpin">Отключить «поверх всех»</string>
+  <string name="action.offlineLog">Захват пакетов журнала</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">Файл PID отсутствует; остановка через pkill (могут быть остановлены другие tcpdump)</string>
+  <string name="capture.offlineHint">Фоновая запись идёт в {dir} на устройстве. Отключение adb или закрытие приложения не прерывает её; состояние восстанавливается при перезапуске. Не забудьте остановить, чтобы не заполнить память устройства.</string>
+  <string name="offlinelog.title">Управление автономным журналом ({s})</string>
+  <string name="offlinelog.start">Начать запись журнала</string>
+  <string name="offlinelog.stop">Остановить запись журнала</string>
+  <string name="offlinelog.dump">Экспортировать текущий буфер</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">PID необязателен; пусто — все процессы</string>
+  <string name="offlinelog.hint">logcat работает в фоне через nohup. Отключение adb или закрытие приложения не прерывает запись; файлы остаются на устройстве.</string>
+  <string name="offlinelog.noFilesFull">В каталоге {dir} нет .log-файлов. Сначала нажмите «Начать запись журнала».</string>
+  <string name="offlinelog.dumpEmpty">Буфер logcat пуст; файл не записан</string>
+  <string name="status.offlineLogStarted">Автономный журнал запущен:</string>
+  <string name="toast.offlineLogStarted">Фоновый logcat запущен (adb можно отключить)</string>
+  <string name="toast.offlineLogStopped">Фоновый logcat остановлен (файлы остаются на устройстве)</string>
+  <string name="toast.offlineLogStartFailed">Ошибка запуска автономного журнала:</string>
+  <string name="toast.offlineLogStopFailed">Ошибка остановки автономного журнала:</string>
+  <string name="toast.offlineLogListFailed">Ошибка получения списка автономных журналов:</string>
+  <string name="toast.offlineLogPidLost">Файл PID отсутствует; остановка через pkill (могут быть остановлены другие logcat)</string>
+  <string name="toast.offlineLogDumped">Текущий буфер сохранён в:</string>
+  <string name="busy.offlineLogPull">Загрузка файла журнала…</string>
+  <string name="busy.offlineLogDump">Экспорт буфера logcat…</string>
+  <string name="settings.offlineLog">Настройки автономного журнала</string>
+  <string name="settings.logcatArgs">Аргументы logcat</string>
+  <string name="settings.logcatArgsDesc">По умолчанию -v threadtime. Можно добавить фильтры, например *:V или Tag:D. Метасимволы оболочки запрещены.</string>
+  <string name="settings.offlineLogDeviceDir">Каталог журналов на устройстве</string>
+  <string name="settings.offlineLogDeviceDirDesc">Фоновые журналы пишутся сюда (по умолчанию /sdcard/adbpp_logs/).</string>
+  <string name="settings.offlineLogLocalDir">Локальный каталог сохранения</string>
+  <string name="settings.offlineLogLocalDirDesc">Загруженные логи сохраняются здесь; если пусто — {dir}/offline-logs.</string>
+  <string name="settings.offlineLogRoot">Запускать logcat от root</string>
+  <string name="settings.offlineLogRootDesc">Включите, если обычная оболочка не может читать/писать защищённые каталоги; su -c повышает права только для logcat.</string>
 </resources>

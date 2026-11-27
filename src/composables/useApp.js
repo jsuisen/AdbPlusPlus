@@ -1,15 +1,16 @@
 // 由 split_app2.cjs 自动拆分生成（app）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {activeLogSerial, api, alwaysOnTop, capturing, logErrMap, maximized, procsMap, refreshing, runningMap} from './state'
-import { APP_UPDATE_AVAILABLE, I18N_CATALOG, I18N_LOAD } from '@shared/ipc-channels.js'
+import {activeLogSerial, api, alwaysOnTop, logErrMap, maximized, procsMap, refreshing, runningMap} from './state'
+import { APP_UPDATE_AVAILABLE, I18N_CATALOG, I18N_LOAD, OFFLINELOG_STARTED, OFFLINELOG_STOPPED } from '@shared/ipc-channels.js'
 import { setLocale, setKeycodeMode, t } from '@/i18n'
 import { onUpdateAvailable } from './useUpdate'
 import { applyConfig, loadSystemFonts, onDocMouseDown, saveCfg } from './useConfig'
-import { onNetcapError, onNetcapStarted, onNetcapStopped } from './useMedia'
+import { onNetcapError, onNetcapStarted, onNetcapStopped, refreshCaptures } from './useMedia'
+import { onOfflineLogStarted, onOfflineLogStopped, refreshOfflineLogs } from './useOfflineLog'
 import { onData, onFindWinFocusChange, onGlobalKey, refreshProcs, stopAutoLogFlush } from './useLogcat'
 import { refreshDevices } from './useDevices'
 
-let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offUpdate
+let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offOfflineLogStarted, offOfflineLogStopped, offUpdate
 let startupProcTimer = null
 
 // 语言包加载：先取目录信息（首次触发主进程懒扫盘），再按 id 取合并词条。
@@ -62,10 +63,17 @@ onMounted(async () => {
   offNetcapStarted = api.on('netcap:started', onNetcapStarted)
   offNetcapStopped = api.on('netcap:stopped', onNetcapStopped)
   offNetcapError = api.on('netcap:error', onNetcapError)
+  // 离线日志事件订阅：设备端 nohup logcat 的启停状态
+  offOfflineLogStarted = api.on(OFFLINELOG_STARTED, onOfflineLogStarted)
+  offOfflineLogStopped = api.on(OFFLINELOG_STOPPED, onOfflineLogStopped)
   // 版本升级检测：订阅主进程推送的「有更新」通知
   offUpdate = api.on(APP_UPDATE_AVAILABLE, onUpdateAvailable)
 
   await refreshDevices()
+  // 离线抓包 / 离线日志在应用关闭后仍由设备端 nohup 进程写盘；
+  // 启动后按设备目录 current.pid 探活，还原状态栏与按钮状态。
+  refreshCaptures()
+  refreshOfflineLogs()
   loadSystemFonts()   // 异步填充「日志字体」下拉为系统已安装字体（失败则保留兜底选项）
   // 启动补拉：冷启动瞬间 adb server 未就绪会让首轮 ps 失败，3 秒后若仍无列表再试一次。
   // refreshProcs 内部有按 serial 去重和超时，重复触发不会叠加 adb 子进程。
@@ -76,14 +84,13 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   offData && offData(); offErr && offErr(); offStderr && offStderr(); offClosed && offClosed(); offMax && offMax(); offDevicesChanged && offDevicesChanged(); offProcChanged && offProcChanged()
-  offNetcapStarted && offNetcapStarted(); offNetcapStopped && offNetcapStopped(); offNetcapError && offNetcapError(); offUpdate && offUpdate()
+  offNetcapStarted && offNetcapStarted(); offNetcapStopped && offNetcapStopped(); offNetcapError && offNetcapError(); offOfflineLogStarted && offOfflineLogStarted(); offOfflineLogStopped && offOfflineLogStopped(); offUpdate && offUpdate()
   document.removeEventListener('mousedown', onDocMouseDown)
   document.removeEventListener('keydown', onGlobalKey)
   document.removeEventListener('focusin', onFindWinFocusChange)
   if (startupProcTimer) { clearTimeout(startupProcTimer); startupProcTimer = null }
   stopAutoLogFlush()
-  // 窗口关闭时停掉所有仍在跑的抓包，避免设备端 tcpdump 残留
-  for (const s of Object.keys(capturing)) { if (capturing[s]) { try { api.invoke('netcap:stop', s) } catch {} } }
+  // 离线抓包 / 离线日志刻意不停：设备端 nohup 进程继续写盘，重开软件后按 PID 文件恢复状态
   saveCfg(true)   // 退出必须立即落盘，去抖的 200ms 等不到窗口销毁
 })
 

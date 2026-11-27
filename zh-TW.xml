@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 繁體中文 — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- 繁體中文 — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="zh-TW" name="繁體中文" fallback="en-US">
   <string name="about.checkUpdate">版本檢測</string>
   <string name="about.desc">ADB++，工程級ADB桌面工具</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">重啟應用</string>
   <string name="action.appStart">啟動應用</string>
   <string name="action.appStop">停止應用</string>
-  <string name="action.captureManager">抓包管理</string>
+  <string name="action.captureManager">抓網路包</string>
   <string name="action.captureToggle">開始抓包</string>
   <string name="action.clearDeviceCache">清除設備緩存</string>
   <string name="action.grant">授予權限(Beta)</string>
@@ -220,7 +220,7 @@
   <string name="group.file">檔案操作</string>
   <string name="group.input">輸入操作</string>
   <string name="group.media">媒體操作</string>
-  <string name="group.netcap">網路封包擷取</string>
+  <string name="group.netcap">抓包</string>
   <string name="group.other">裝置操作</string>
   <string name="group.perm">權限操作</string>
   <string name="group.pkgops">套件名稱操作</string>
@@ -435,7 +435,7 @@
   <string name="settings.captureLocalDir">本機保存目錄</string>
   <string name="settings.captureLocalDirDesc">點「下載」時 pcap 拉到本機該目錄；為空則落到 {dir}/captures。</string>
   <string name="settings.captureRoot">以 root 運行 tcpdump（su -c 提權）</string>
-  <string name="settings.captureRootDesc">預設關閉，tcpdump 以普通 shell 身份運行。部分設備 adbd 非 root、tcpdump 無權限抓包（報 permission 錯誤）時，開啟此項用 su -c 僅給 tcpdump 提權（不重啟整個 adbd）。前提是設備已 root 且存在 su。</string>
+  <string name="settings.captureRootDesc">預設關閉，tcpdump 以一般 shell 啟動；若出現 Operation not permitted，程式會偵測到 su 後自動以 root 重試。提前勾選可跳過第一次失敗，一律用 su -c 僅給 tcpdump 提權（不重啟 adbd），前提是裝置已 root 且存在 su。</string>
   <string name="settings.checkUpdate">啟動時檢測版本升級（預設開啟）</string>
   <string name="settings.closeOnOuter">允許點擊視窗外部關閉彈窗（預設不允許）</string>
   <string name="settings.closeOnOuterDesc">開啟後，鼠標點擊彈窗遮罩空白處會關閉彈窗；關閉時點擊外部不生效，只能點「取消」或「×」關閉。</string>
@@ -642,4 +642,36 @@
   <string name="win.pin">視窗置頂</string>
   <string name="win.restore">還原</string>
   <string name="win.unpin">取消置頂</string>
+  <string name="action.offlineLog">抓日誌包</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">PID 檔案遺失，已用 pkill 兜底停止（可能同時停止其他 tcpdump）</string>
+  <string name="capture.offlineHint">背景抓包寫入裝置 {dir}，中斷 adb 或關閉程式都不會中斷；重新開啟後會自動還原抓包狀態。請記得停止，以免佔滿裝置儲存空間。</string>
+  <string name="offlinelog.title">離線日誌管理（{s}）</string>
+  <string name="offlinelog.start">開始抓日誌</string>
+  <string name="offlinelog.stop">停止抓日誌</string>
+  <string name="offlinelog.dump">匯出目前緩衝區</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">可填 PID，留空則抓全部</string>
+  <string name="offlinelog.hint">裝置端以 nohup logcat 在背景執行，中斷 adb 或結束程式都不會中斷；停止後檔案會保留在裝置端。</string>
+  <string name="offlinelog.noFilesFull">目錄 {dir} 中尚無 .log 檔案，請先點「開始抓日誌」。</string>
+  <string name="offlinelog.dumpEmpty">logcat 緩衝區為空，未寫出檔案</string>
+  <string name="status.offlineLogStarted">離線日誌已開始：</string>
+  <string name="toast.offlineLogStarted">已啟動裝置端背景 logcat（可中斷 adb）</string>
+  <string name="toast.offlineLogStopped">已停止裝置端背景 logcat（檔案保留在裝置端）</string>
+  <string name="toast.offlineLogStartFailed">離線日誌啟動失敗：</string>
+  <string name="toast.offlineLogStopFailed">離線日誌停止失敗：</string>
+  <string name="toast.offlineLogListFailed">取得離線日誌清單失敗：</string>
+  <string name="toast.offlineLogPidLost">PID 檔案遺失，已用 pkill 兜底停止（可能同時停止其他 logcat）</string>
+  <string name="toast.offlineLogDumped">目前緩衝區日誌已儲存至：</string>
+  <string name="busy.offlineLogPull">正在下載離線日誌檔案…</string>
+  <string name="busy.offlineLogDump">正在匯出目前緩衝區日誌…</string>
+  <string name="settings.offlineLog">離線日誌設定</string>
+  <string name="settings.logcatArgs">logcat 參數</string>
+  <string name="settings.logcatArgsDesc">預設 -v threadtime；可附加篩選條件如 *:V、Tag:D，參數不接受 shell 特殊字元。</string>
+  <string name="settings.offlineLogDeviceDir">裝置日誌目錄</string>
+  <string name="settings.offlineLogDeviceDirDesc">裝置端背景日誌寫入此目錄（預設 /sdcard/adbpp_logs/）。</string>
+  <string name="settings.offlineLogLocalDir">本機儲存目錄</string>
+  <string name="settings.offlineLogLocalDirDesc">點「下載」時 log 會拉到此本機目錄；留空則存到 {dir}/offline-logs。</string>
+  <string name="settings.offlineLogRoot">以 root 執行 logcat</string>
+  <string name="settings.offlineLogRootDesc">一般 shell 無權讀寫受保護目錄時勾選；透過 su -c 僅給 logcat 提權。</string>
 </resources>

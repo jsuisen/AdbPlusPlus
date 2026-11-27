@@ -25,6 +25,7 @@ import ContentColorWindow from './components/modals/ContentColorWindow.vue'
 import CmdOutputModal from './components/modals/CmdOutputModal.vue'
 import SettingsModal from './components/modals/SettingsModal.vue'
 import CaptureManagerModal from './components/modals/CaptureManagerModal.vue'
+import OfflineLogModal from './components/modals/OfflineLogModal.vue'
 import ConnectModal from './components/modals/ConnectModal.vue'
 import DeviceCtxMenu from './components/DeviceCtxMenu.vue'
 import RenameModal from './components/modals/RenameModal.vue'
@@ -630,6 +631,9 @@ const { openUpdateDialog } = useUpdate()
 
     <!-- 抓包管理弹窗 -->
     <CaptureManagerModal />
+
+    <!-- 离线日志管理弹窗 -->
+    <OfflineLogModal />
 
     <!-- 连接设备弹窗 -->
     <ConnectModal />

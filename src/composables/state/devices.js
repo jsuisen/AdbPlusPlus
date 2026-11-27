@@ -48,8 +48,8 @@ export const devGroups = [
     { labelKey: 'action.recordStart', act: 'recordStart', icon: 'video' }
   ]},
   { key: 'netcap', titleKey: 'group.netcap', items: [
-    { labelKey: 'action.captureToggle', act: 'captureToggle', icon: 'antenna' },
-    { labelKey: 'action.captureManager', act: 'captureManager', modal: true, icon: 'list' }
+    { labelKey: 'action.captureManager', act: 'captureManager', modal: true, icon: 'list' },
+    { labelKey: 'action.offlineLog', act: 'offlineLogManager', modal: true, icon: 'list' }
   ]},
   { key: 'input', titleKey: 'group.input', items: [
     { labelKey: 'action.inputText', act: 'inputText', modal: true, icon: 'pencil' },

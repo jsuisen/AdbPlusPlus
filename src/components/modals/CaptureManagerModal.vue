@@ -18,6 +18,7 @@ const { captureOpen, capturing, captureList, cfg, selectedSerial } = State
           <button v-else class="primary" @click="stopCapture">{{ t('capture.stop') }}</button>
           <button @click="refreshCaptures">{{ t('common.refreshList') }}</button>
         </div>
+        <p class="muted small">{{ t('capture.offlineHint', { dir: cfg.captureDeviceDir }) }}</p>
         <div v-if="!(captureList[selectedSerial] && captureList[selectedSerial].length)" class="muted small">{{ t('capture.noFilesFull', { dir: cfg.captureDeviceDir }) }}</div>
         <table v-else class="capture-table">
           <thead><tr><th>{{ t('capture.filename') }}</th><th>{{ t('capture.size') }}</th><th>{{ t('capture.time') }}</th><th>{{ t('common.operation') }}</th></tr></thead>

@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url'
 import { registerAdbIpc } from './adb.js'
 import { registerLogcatIpc, stopAllLogcatSessions } from './logcat.js'
 import { registerMediaIpc } from './media.js'
-import { registerNetcapIpc, stopAllCaptureSessions } from './netcap.js'
+import { registerNetcapIpc } from './netcap.js'
+import { registerOfflineLogIpc } from './offlinelog.js'
 import { registerApkIpc } from './apk.js'
 import { registerConfigIpc, loadConfig } from './config.js'
 import { registerFileIpc } from './file.js'
@@ -51,6 +52,7 @@ function createWindow() {
   registerAdbIpc()
   registerMediaIpc()
   registerNetcapIpc(win)   // 网络抓包：设备端 tcpdump 常驻 + 停止刷盘 + 按需 pull（需 win 推送事件）
+  registerOfflineLogIpc(win) // 离线日志：设备端 nohup logcat 后台落盘，adbd 断开也不中断
   registerApkIpc()
   registerConfigIpc()
   registerI18nIpc()
@@ -123,7 +125,8 @@ app.whenReady().then(() => {
   }
 })
 // 退出清理：渲染进程的 useApp.onBeforeUnmount 在关窗时不会执行（Electron 直接销毁渲染进程），
-// 长驻 adb 子进程、设备端 tcpdump 必须由主进程在退出前统一收掉。
+// 长驻 adb 子进程（logcat / 设备跟踪）必须由主进程在退出前统一收掉。
+// 离线抓包 / 离线日志刻意不在退出时停止：设备端 nohup 进程继续写盘，重开软件按 PID 文件恢复状态。
 // 设备端 pkill 走 adb 可能挂起，加 3 秒兜底超时，不让清理卡住退出。
 let quitting = false
 app.on('before-quit', (e) => {
@@ -131,7 +134,6 @@ app.on('before-quit', (e) => {
   quitting = true
   e.preventDefault()
   const cleanup = (async () => {
-    await stopAllCaptureSessions()   // 先停设备端 tcpdump，避免继续写盘
     stopAllLogcatSessions()
     stopDeviceTracker()
   })()

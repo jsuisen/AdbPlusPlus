@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Français — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- Français — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="fr-FR" name="Français" fallback="en-US">
   <string name="about.checkUpdate">Vérifier les mises à jour</string>
   <string name="about.desc">ADB++, un outil ADB de bureau</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">Redémarrer l'application</string>
   <string name="action.appStart">Lancer l'application</string>
   <string name="action.appStop">Arrêter de force l'application</string>
-  <string name="action.captureManager">Gestionnaire de capture</string>
+  <string name="action.captureManager">Capturer les paquets réseau</string>
   <string name="action.captureToggle">Démarrer la capture</string>
   <string name="action.clearDeviceCache">Vider le cache de l'appareil</string>
   <string name="action.grant">Accorder une permission (Bêta)</string>
@@ -220,7 +220,7 @@ Fichier : </string>
   <string name="group.file">Opérations sur les fichiers</string>
   <string name="group.input">Opérations de saisie</string>
   <string name="group.media">Opérations multimédia</string>
-  <string name="group.netcap">Capture réseau</string>
+  <string name="group.netcap">Capture</string>
   <string name="group.other">Opérations sur l’appareil</string>
   <string name="group.perm">Opérations sur les permissions</string>
   <string name="group.pkgops">Opérations sur les packages</string>
@@ -435,7 +435,7 @@ Fichier : </string>
   <string name="settings.captureLocalDir">Répertoire de sauvegarde local</string>
   <string name="settings.captureLocalDirDesc">Les pcaps téléchargés sont placés ici ; si vide, {dir}/captures est utilisé.</string>
   <string name="settings.captureRoot">Exécuter tcpdump en root (su -c)</string>
-  <string name="settings.captureRootDesc">Désactivé par défaut ; tcpdump s'exécute dans un shell normal. Sur les appareils où adbd n'est pas root et où tcpdump manque de permissions (erreur de permission), activez cette option pour n'élever que tcpdump via su -c (sans redémarrer adbd). Nécessite un appareil rooté disposant de su.</string>
+  <string name="settings.captureRootDesc">Désactivé par défaut ; tcpdump démarre dans le shell normal. Si une erreur « Operation not permitted » survient, l’application détecte su et relance automatiquement en root. Cochez cette option pour éviter le premier échec et toujours exécuter tcpdump via su -c (sans redémarrer adbd). Nécessite un appareil rooté avec su.</string>
   <string name="settings.checkUpdate">Vérifier les mises à jour au démarrage (activé par défaut)</string>
   <string name="settings.closeOnOuter">Autoriser la fermeture des fenêtres en cliquant à l'extérieur (désactivé par défaut)</string>
   <string name="settings.closeOnOuterDesc">Si activé, un clic sur le masque à l'extérieur d'une fenêtre la ferme. Sinon, utilisez Annuler ou ×.</string>
@@ -642,4 +642,36 @@ Fichier : </string>
   <string name="win.pin">Épingler la fenêtre</string>
   <string name="win.restore">Restaurer</string>
   <string name="win.unpin">Désépingler la fenêtre</string>
+  <string name="action.offlineLog">Capturer les paquets de journal</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">Fichier PID manquant ; arrêt de secours par pkill (d’autres tcpdump peuvent être arrêtés)</string>
+  <string name="capture.offlineHint">La capture en arrière-plan écrit dans {dir} sur l’appareil. Débrancher adb ou fermer l’application ne l’arrête pas ; l’état est restauré au redémarrage. Pensez à l’arrêter pour ne pas remplir le stockage.</string>
+  <string name="offlinelog.title">Gestion du journal hors ligne ({s})</string>
+  <string name="offlinelog.start">Démarrer la capture du journal</string>
+  <string name="offlinelog.stop">Arrêter la capture du journal</string>
+  <string name="offlinelog.dump">Exporter le tampon actuel</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">PID facultatif ; vide = tous les processus</string>
+  <string name="offlinelog.hint">logcat tourne en arrière-plan avec nohup. Débrancher adb ou fermer l’application ne l’arrête pas ; les fichiers restent sur l’appareil.</string>
+  <string name="offlinelog.noFilesFull">Aucun fichier .log dans {dir}. Cliquez d’abord sur « Démarrer la capture du journal ».</string>
+  <string name="offlinelog.dumpEmpty">Le tampon logcat est vide ; aucun fichier écrit</string>
+  <string name="status.offlineLogStarted">Journal hors ligne démarré :</string>
+  <string name="toast.offlineLogStarted">logcat en arrière-plan démarré (adb peut être débranché)</string>
+  <string name="toast.offlineLogStopped">logcat en arrière-plan arrêté (fichiers conservés sur l’appareil)</string>
+  <string name="toast.offlineLogStartFailed">Échec du démarrage du journal hors ligne :</string>
+  <string name="toast.offlineLogStopFailed">Échec de l’arrêt du journal hors ligne :</string>
+  <string name="toast.offlineLogListFailed">Échec de la liste des journaux hors ligne :</string>
+  <string name="toast.offlineLogPidLost">Fichier PID manquant ; arrêt de secours par pkill (d’autres logcat peuvent être arrêtés)</string>
+  <string name="toast.offlineLogDumped">Tampon actuel enregistré dans :</string>
+  <string name="busy.offlineLogPull">Téléchargement du fichier journal…</string>
+  <string name="busy.offlineLogDump">Export du tampon logcat…</string>
+  <string name="settings.offlineLog">Paramètres du journal hors ligne</string>
+  <string name="settings.logcatArgs">Arguments logcat</string>
+  <string name="settings.logcatArgsDesc">Par défaut -v threadtime. Vous pouvez ajouter des filtres comme *:V ou Tag:D. Les métacaractères shell sont refusés.</string>
+  <string name="settings.offlineLogDeviceDir">Répertoire des journaux sur l’appareil</string>
+  <string name="settings.offlineLogDeviceDirDesc">Les journaux en arrière-plan sont écrits ici (par défaut /sdcard/adbpp_logs/).</string>
+  <string name="settings.offlineLogLocalDir">Répertoire local d’enregistrement</string>
+  <string name="settings.offlineLogLocalDirDesc">Les fichiers téléchargés vont ici ; sinon {dir}/offline-logs.</string>
+  <string name="settings.offlineLogRoot">Exécuter logcat en root</string>
+  <string name="settings.offlineLogRootDesc">Cochez si le shell normal ne peut pas lire/écrire les répertoires protégés ; su -c n’élève que logcat.</string>
 </resources>

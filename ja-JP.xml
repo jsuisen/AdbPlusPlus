@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 日本語 — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- 日本語 — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="ja-JP" name="日本語" fallback="en-US">
   <string name="about.checkUpdate">バージョン確認</string>
   <string name="about.desc">ADB++、プロジェクト向け ADB デスクトップツール</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">アプリを再起動</string>
   <string name="action.appStart">アプリを起動</string>
   <string name="action.appStop">アプリを強制停止</string>
-  <string name="action.captureManager">キャプチャ管理</string>
+  <string name="action.captureManager">ネットワークパケットを取得</string>
   <string name="action.captureToggle">キャプチャ開始</string>
   <string name="action.clearDeviceCache">デバイスキャッシュをクリア</string>
   <string name="action.grant">権限を付与 (Beta)</string>
@@ -217,7 +217,7 @@
   <string name="group.file">ファイル操作</string>
   <string name="group.input">入力操作</string>
   <string name="group.media">メディア操作</string>
-  <string name="group.netcap">ネットワークキャプチャ</string>
+  <string name="group.netcap">キャプチャ</string>
   <string name="group.other">デバイス操作</string>
   <string name="group.perm">権限操作</string>
   <string name="group.pkgops">パッケージ操作</string>
@@ -432,7 +432,7 @@
   <string name="settings.captureLocalDir">ローカル保存先</string>
   <string name="settings.captureLocalDirDesc">「ダウンロード」を押すと pcap がこのディレクトリへ保存されます。空なら {dir}/captures を使用します。</string>
   <string name="settings.captureRoot">tcpdump を root で実行（su -c で権限昇格）</string>
-  <string name="settings.captureRootDesc">既定はオフで tcpdump は通常シェルで動作します。adbd が root でなく tcpdump に権限がない場合（permission エラー）、これをオンにすると su -c で tcpdump のみ権限昇格します（adbd 全体は再起動しません）。デバイスが root 化され su が存在する必要があります。</string>
+  <string name="settings.captureRootDesc">既定はオフで、tcpdump は通常シェルで起動します。「Operation not permitted」が出た場合、su を検出して自動的に root で再試行します。最初の失敗を飛ばす場合はチェックしてください。su -c で tcpdump のみ権限昇格します（adbd は再起動しません）。要 root 化と su。</string>
   <string name="settings.checkUpdate">起動時にバージョンを確認（既定は有効）</string>
   <string name="settings.closeOnOuter">ウィンドウ外クリックでダイアログを閉じる（既定は不可）</string>
   <string name="settings.closeOnOuterDesc">有効にするとダイアログ外の空白クリックで閉じられます。無効の場合は外側クリックは効かず、「キャンセル」か「×」で閉じてください。</string>
@@ -639,4 +639,36 @@
   <string name="win.pin">ウィンドウを最前面に</string>
   <string name="win.restore">元に戻す</string>
   <string name="win.unpin">ピン留めを解除</string>
+  <string name="action.offlineLog">ログパケットを取得</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">PID ファイルがありません。pkill で代替停止しました（他の tcpdump も停止する可能性があります）</string>
+  <string name="capture.offlineHint">バックグラウンドキャプチャは端末の {dir} に書き込まれます。adb 切断やアプリ終了でも停止しません。再起動時に状態を復元します。ストレージ枯渇を避けるため必ず停止してください。</string>
+  <string name="offlinelog.title">オフラインログ管理（{s}）</string>
+  <string name="offlinelog.start">ログ取得開始</string>
+  <string name="offlinelog.stop">ログ取得停止</string>
+  <string name="offlinelog.dump">現在のバッファを書き出し</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">PID 任意、空欄なら全プロセス</string>
+  <string name="offlinelog.hint">nohup logcat が端末でバックグラウンド動作します。adb 切断やアプリ終了でも停止せず、停止後もファイルは端末に残ります。</string>
+  <string name="offlinelog.noFilesFull">{dir} に .log ファイルがありません。先に「ログ取得開始」を押してください。</string>
+  <string name="offlinelog.dumpEmpty">logcat バッファが空のためファイルを書き出しませんでした</string>
+  <string name="status.offlineLogStarted">オフラインログ開始：</string>
+  <string name="toast.offlineLogStarted">端末でバックグラウンド logcat を開始しました（adb 切断可）</string>
+  <string name="toast.offlineLogStopped">バックグラウンド logcat を停止しました（ファイルは端末に残ります）</string>
+  <string name="toast.offlineLogStartFailed">オフラインログの開始に失敗：</string>
+  <string name="toast.offlineLogStopFailed">オフラインログの停止に失敗：</string>
+  <string name="toast.offlineLogListFailed">オフラインログ一覧の取得に失敗：</string>
+  <string name="toast.offlineLogPidLost">PID ファイルがありません。pkill で代替停止しました（他の logcat も停止する可能性があります）</string>
+  <string name="toast.offlineLogDumped">現在のバッファを保存しました：</string>
+  <string name="busy.offlineLogPull">オフラインログをダウンロード中…</string>
+  <string name="busy.offlineLogDump">現在のバッファを書き出し中…</string>
+  <string name="settings.offlineLog">オフラインログ設定</string>
+  <string name="settings.logcatArgs">logcat 引数</string>
+  <string name="settings.logcatArgsDesc">既定は -v threadtime。*:V や Tag:D などのフィルタを追加できます。シェルメタ文字は使用できません。</string>
+  <string name="settings.offlineLogDeviceDir">端末側ログディレクトリ</string>
+  <string name="settings.offlineLogDeviceDirDesc">バックグラウンドログはこのディレクトリに書き込まれます（既定 /sdcard/adbpp_logs/）。</string>
+  <string name="settings.offlineLogLocalDir">ローカル保存ディレクトリ</string>
+  <string name="settings.offlineLogLocalDirDesc">「ダウンロード」でここに保存します。空欄なら {dir}/offline-logs。</string>
+  <string name="settings.offlineLogRoot">logcat を root で実行</string>
+  <string name="settings.offlineLogRootDesc">通常シェルで保護ディレクトリを読み書きできない場合にチェック。su -c で logcat のみ権限昇格します。</string>
 </resources>

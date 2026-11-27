@@ -7,11 +7,34 @@ import { toast } from './useUi'
 
 // 网络抓包事件（useApp 订阅）：started 是「进行中」状态，只写状态栏提示，不弹结果窗；
 // stopped 后刷新设备端文件列表。
-function onNetcapStarted(p) { if (p && p.serial) { capturing[p.serial] = true; lastMsg.value = t('status.captureStarted') + p.serial } }
+// 状态栏只有一行 lastMsg：记住「抓包已开始」是谁写的，停止/异常/设备移除时只清这一条，
+// 不误伤别的进行中提示（如录屏 / 连拍）。
+let captureMsgSerial = ''
+function setCaptureStatus(serial) {
+  captureMsgSerial = serial
+  lastMsg.value = t('status.captureStarted') + serial
+}
+function clearCaptureStatus(serial) {
+  if (!serial || captureMsgSerial !== serial) return
+  captureMsgSerial = ''
+  if (lastMsg.value === t('status.captureStarted') + serial) lastMsg.value = ''
+}
 
-function onNetcapStopped(p) { if (p && p.serial) { capturing[p.serial] = false; if (captureOpen.value) refreshCaptures() } }
+function onNetcapStarted(p) { if (p && p.serial) { capturing[p.serial] = true; setCaptureStatus(p.serial) } }
 
-function onNetcapError(p) { if (p && p.serial) toast(t('toast.captureError') + (p.text || '')) }
+function onNetcapStopped(p) {
+  if (!p || !p.serial) return
+  capturing[p.serial] = false
+  clearCaptureStatus(p.serial)
+  if (captureOpen.value) refreshCaptures()
+  if (p.fallback) toast(t('toast.capturePidLost'))
+}
+
+function onNetcapError(p) {
+  if (!p || !p.serial) return
+  clearCaptureStatus(p.serial)
+  toast(t('toast.captureError') + (p.text || ''))
+}
 
 async function takeScreenshot() {
   if (!selectedSerial.value) { showResult(t('action.screenshot'), t('err.noDevice'), false); return }
@@ -116,8 +139,9 @@ async function stopCapture() {
   const s = selectedSerial.value
   if (!s) return
   try {
-    await api.invoke('netcap:stop', s)
+    await api.invoke('netcap:stop', { serial: s, deviceDir: cfg.value.captureDeviceDir, asRoot: cfg.value.captureAsRoot })
     capturing[s] = false
+    clearCaptureStatus(s)   // 事件推送已清过则为空操作；若事件丢失也必须让状态栏复位
     toast(t('toast.captureStopped'))
   } catch (e) { toast(t('toast.captureStopFailed') + e.message) }
 }
@@ -132,7 +156,15 @@ async function refreshCaptures() {
   if (!selectedSerial.value) return
   try {
     const r = await api.invoke('netcap:list', { serial: selectedSerial.value, deviceDir: cfg.value.captureDeviceDir, asRoot: cfg.value.captureAsRoot })
-    captureList[selectedSerial.value] = r.items || []
+    const s = selectedSerial.value
+    captureList[s] = r.items || []
+    // 重启 / 切设备 / 重连后按设备端 current.pid 还原「抓包中」状态；
+    // 只有明确拿到 running 字段才改状态，IPC 失败时保留原样。
+    if (typeof r.running === 'boolean') {
+      capturing[s] = r.running
+      if (r.running) setCaptureStatus(s)
+      else clearCaptureStatus(s)
+    }
   } catch (e) { toast(t('toast.captureListFailed') + e.message) }
 }
 
@@ -160,6 +192,6 @@ async function copyCapturePath(item) {
 let screenshotTimer = null
 export function useMedia() {
 
-  return { copyCapturePath, deleteCapture, doScreenshotToDir, onNetcapError, onNetcapStarted, onNetcapStopped, openCaptureManager, pullCapture, refreshCaptures, screenshotToPath, shotName, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer }
+  return { clearCaptureStatus, copyCapturePath, deleteCapture, doScreenshotToDir, onNetcapError, onNetcapStarted, onNetcapStopped, openCaptureManager, pullCapture, refreshCaptures, screenshotToPath, shotName, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer }
 }
-export { copyCapturePath, deleteCapture, doScreenshotToDir, onNetcapError, onNetcapStarted, onNetcapStopped, openCaptureManager, pullCapture, refreshCaptures, screenshotToPath, shotName, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer }
+export { clearCaptureStatus, copyCapturePath, deleteCapture, doScreenshotToDir, onNetcapError, onNetcapStarted, onNetcapStopped, openCaptureManager, pullCapture, refreshCaptures, screenshotToPath, shotName, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer }

@@ -1,12 +1,13 @@
 // 由 split_app2.cjs 自动拆分生成（devices）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, cfg, colorSessionMap, connectAlias, connectHistorySel, connectIp, connectOpen, connectPort, connecting, connectTimedOut, CONNECT_TIMEOUT_MS, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
+import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, captureList, cfg, colorSessionMap, connectAlias, offlineLogCapturing, offlineLogList, connectHistorySel, connectIp, connectOpen, connectPort, connecting, connectTimedOut, CONNECT_TIMEOUT_MS, devGroups, devInvoke, deviceAlias, deviceCtxMenu, devices, fileModalMode, fileModalOpen, groupOpen, keyModalOpen, logErrMap, logsMap, monkeyModalOpen, permModalOpen, permMode, procsMap, quickCommands, rebootModalOpen, recording, refreshing, renameOpen, renameSerial, renameValue, runningMap, screenshotting, selectedProc, selectedSerial, cmdDetail, showResult} from './state'
 import { t } from '@/i18n'
 import { enableAutoscroll, ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
 import { openActModal } from './useDeviceinfo'
 import { openCmdModal, openInputModal, openInstallModal, openUninstallModal, resetFileForm } from './useActions'
-import { openCaptureManager, screenshotToPath, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer } from './useMedia'
+import { clearCaptureStatus, openCaptureManager, refreshCaptures, screenshotToPath, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer } from './useMedia'
+import { clearOfflineLogStatus, openOfflineLogManager, refreshOfflineLogs } from './useOfflineLog'
 import { installApk, parseInstalled, parseLocal } from './useApk'
 import { saveCfg } from './useConfig'
 
@@ -21,6 +22,8 @@ function purgeDeviceSession(serial) {
   delete logsMap[serial]; delete runningMap[serial]; delete logErrMap[serial]
   delete procsMap[serial]; delete autoLogBufMap[serial]; delete autoLogMeta[serial]
   delete colorSessionMap[serial]; delete captureList[serial]; delete capturing[serial]
+  clearCaptureStatus(serial)  // 设备被移除时清掉该设备写进状态栏的「抓包已开始」
+  delete offlineLogList[serial]; offlineLogCapturing[serial] = false; clearOfflineLogStatus(serial)
 }
 
 async function refreshDevices() {
@@ -59,6 +62,14 @@ function selectDevice(serial) {
   activeLogSerial.value = serial
   ensureLogFilter(serial)
   refreshProcs(serial)
+  syncOfflineStatus(serial)
+}
+
+// 切设备 / 重连 / 启动时按设备端 PID 文件还原离线抓包与离线日志状态
+function syncOfflineStatus(serial) {
+  if (!serial) return
+  refreshCaptures()
+  refreshOfflineLogs()
 }
 
 function toggleDeviceLogcat(serial) {
@@ -113,6 +124,7 @@ function autoStartLogcatOnConnect(serial) {
   activeLogSerial.value = serial
   ensureLogFilter(serial)
   if (!runningMap[serial]) startLogcat(serial)
+  syncOfflineStatus(serial)
   // 底部跟随自动激活：新日志始终停在最新一行
   enableAutoscroll()
 }
@@ -255,6 +267,7 @@ async function runAction(item) {
     case 'remount': return devInvoke('remount', 'adb:remount', {})
     case 'captureToggle': return capturing[selectedSerial.value] ? stopCapture() : startCapture()
     case 'captureManager': return openCaptureManager()
+    case 'offlineLogManager': return openOfflineLogManager()
     case 'adbDevices': return adbDevices()
     case 'adbDisconnectAll': return adbDisconnectAll()
     case 'adbKillServer': return adbKillServer()

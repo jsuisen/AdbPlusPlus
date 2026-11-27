@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- اردو — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- اردو — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="ur-PK" name="اردو" fallback="en-US">
   <string name="about.checkUpdate">اپ ڈیٹس چیک کریں</string>
   <string name="about.desc">ADB++، ایک ڈیسک ٹاپ ADB ٹول</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">ایپ ری اسٹارٹ کریں</string>
   <string name="action.appStart">ایپ لانچ کریں</string>
   <string name="action.appStop">ایپ کو زبردستی روکیں</string>
-  <string name="action.captureManager">کیپچر مینیجر</string>
+  <string name="action.captureManager">نیٹ ورک پیکٹ کیپچر کریں</string>
   <string name="action.captureToggle">کیپچر شروع کریں</string>
   <string name="action.clearDeviceCache">ڈیوائس کا کیش صاف کریں</string>
   <string name="action.grant">اجازت دیں (Beta)</string>
@@ -220,7 +220,7 @@
   <string name="group.file">فائل آپریشنز</string>
   <string name="group.input">ان پٹ آپریشنز</string>
   <string name="group.media">میڈیا آپریشنز</string>
-  <string name="group.netcap">نیٹ ورک کیپچر</string>
+  <string name="group.netcap">کیپچر</string>
   <string name="group.other">آلہ آپریشنز</string>
   <string name="group.perm">اجازت آپریشنز</string>
   <string name="group.pkgops">پیکج آپریشنز</string>
@@ -435,7 +435,7 @@
   <string name="settings.captureLocalDir">مقامی محفوظ کرنے کی ڈائریکٹری</string>
   <string name="settings.captureLocalDirDesc">ڈاؤن لوڈ کیے گئے pcap یہاں محفوظ ہوتے ہیں؛ خالی چھوڑیں تو {dir}/captures استعمال ہوگا۔</string>
   <string name="settings.captureRoot">tcpdump کو root کے طور پر چلائیں (su -c)</string>
-  <string name="settings.captureRootDesc">پہلے سے طے شدہ طور پر بند ہے؛ tcpdump عام shell کے طور پر چلتا ہے۔ جن ڈیوائسز پر adbd root نہیں اور tcpdump کو کیپچر کی اجازت نہیں (permission کی غلطی)، یہ اپشن فعال کریں تو صرف tcpdump کو su -c کے ذریعے بلند اجازت دی جاتی ہے (پورا adbd دوبارہ شروع نہیں کیا جاتا)۔ شرط: ڈیوائس root شدہ ہو اور su موجود ہو۔</string>
+  <string name="settings.captureRootDesc">پہلے سے بند ہے؛ tcpdump عام شیل میں شروع ہوتا ہے۔ &quot;Operation not permitted&quot; آنے پر ایپ su دریافت کر کے خود بخود root سے دوبارہ کوشش کرتی ہے۔ پہلی ناکامی چھوڑنے کے لیے نشان لگائیں؛ su -c صرف tcpdump کو بلند کرتا ہے (adbd ری اسٹارٹ نہیں)۔ روٹڈ ڈیوائس اور su ضروری ہے۔</string>
   <string name="settings.checkUpdate">شروع ہوتے وقت اپ ڈیٹ چیک کریں (پہلے سے طے شدہ: آن)</string>
   <string name="settings.closeOnOuter">باہر کلک کر کے ڈائیلاگ بند کرنے کی اجازت (پہلے سے طے شدہ: آف)</string>
   <string name="settings.closeOnOuterDesc">فعال ہونے پر ڈائیلاگ کے باہر ماسک پر کلک کرنے سے ڈائیلاگ بند ہو جاتا ہے؛ بند ہونے پر باہر کلک کام نہیں کرتا، صرف «منسوخ» یا «×» سے بند کریں۔</string>
@@ -642,4 +642,36 @@
   <string name="win.pin">ونڈو ہمیشہ اوپر رکھیں</string>
   <string name="win.restore">بحال کریں</string>
   <string name="win.unpin">ونڈو اوپر رہنے سے ہٹائیں</string>
+  <string name="action.offlineLog">لاگ پیکٹ کیپچر کریں</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">PID فائل موجود نہیں؛ pkill سے بیک اپ اسٹاپ کیا گیا (دیگر tcpdump بھی رک سکتے ہیں)</string>
+  <string name="capture.offlineHint">پس منظر کیپچر ڈیوائس کے {dir} میں لکھی جاتی ہے۔ adb منقطع کرنے یا ایپ بند کرنے سے یہ نہیں رکتی؛ دوبارہ کھولنے پر حالت بحال ہو جاتی ہے۔ اسٹوریج بھرنے سے بچنے کے لیے اسے روکنا یاد رکھیں۔</string>
+  <string name="offlinelog.title">آف لائن لاگ مینجمنٹ ({s})</string>
+  <string name="offlinelog.start">لاگ کیپچر شروع کریں</string>
+  <string name="offlinelog.stop">لاگ کیپچر روکیں</string>
+  <string name="offlinelog.dump">موجودہ بفر برآمد کریں</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">PID اختیاری، خالی چھوڑیں تو تمام عمل</string>
+  <string name="offlinelog.hint">nohup logcat ڈیوائس پر پس منظر میں چلتا ہے۔ adb منقطع یا ایپ بند کرنے سے یہ نہیں رکتا؛ روکنے کے بعد فائل ڈیوائس پر رہتی ہے۔</string>
+  <string name="offlinelog.noFilesFull">{dir} میں ابھی .log فائل نہیں ہے، پہلے &quot;لاگ کیپچر شروع کریں&quot; دبائیں۔</string>
+  <string name="offlinelog.dumpEmpty">logcat بفر خالی ہے، کوئی فائل نہیں لکھی گئی</string>
+  <string name="status.offlineLogStarted">آف لائن لاگ شروع ہو گئی:</string>
+  <string name="toast.offlineLogStarted">ڈیوائس پر پس منظر logcat شروع ہو گیا (adb منقطع کر سکتے ہیں)</string>
+  <string name="toast.offlineLogStopped">پس منظر logcat روک دی گئی (فائل ڈیوائس پر رہتی ہے)</string>
+  <string name="toast.offlineLogStartFailed">آف لائن لاگ شروع کرنے میں ناکامی:</string>
+  <string name="toast.offlineLogStopFailed">آف لائن لاگ روکنے میں ناکامی:</string>
+  <string name="toast.offlineLogListFailed">آف لائن لاگ فہرست حاصل کرنے میں ناکامی:</string>
+  <string name="toast.offlineLogPidLost">PID فائل موجود نہیں؛ pkill سے بیک اپ اسٹاپ کیا گیا (دیگر logcat بھی رک سکتے ہیں)</string>
+  <string name="toast.offlineLogDumped">موجودہ بفر لاگ یہاں محفوظ ہو گئی:</string>
+  <string name="busy.offlineLogPull">آف لائن لاگ فائل ڈاؤن لوڈ ہو رہی ہے…</string>
+  <string name="busy.offlineLogDump">موجودہ logcat بفر برآمد ہو رہا ہے…</string>
+  <string name="settings.offlineLog">آف لائن لاگ ترتیبات</string>
+  <string name="settings.logcatArgs">logcat دلائل</string>
+  <string name="settings.logcatArgsDesc">طے شدہ -v threadtime ہے؛ *:V یا Tag:D جیسے فلٹر شامل کر سکتے ہیں۔ شیل میٹا کریکٹرز قبول نہیں۔</string>
+  <string name="settings.offlineLogDeviceDir">ڈیوائس لاگ فولڈر</string>
+  <string name="settings.offlineLogDeviceDirDesc">پس منظر لاگ اسی فولڈر میں لکھی جاتی ہے (طے شدہ /sdcard/adbpp_logs/)۔</string>
+  <string name="settings.offlineLogLocalDir">مقامی محفوظ فولڈر</string>
+  <string name="settings.offlineLogLocalDirDesc">&quot;ڈاؤن لوڈ&quot; پر لاگ یہاں آتی ہے؛ خالی ہو تو {dir}/offline-logs۔</string>
+  <string name="settings.offlineLogRoot">logcat کو root سے چلائیں</string>
+  <string name="settings.offlineLogRootDesc">جب عام شیل محفوظ فولڈرز پڑھ/لکھ نہ سکے تو نشان لگائیں؛ su -c صرف logcat کو بلند کرتا ہے۔</string>
 </resources>

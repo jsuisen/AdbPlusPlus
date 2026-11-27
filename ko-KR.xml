@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 한국어 — 完整词条（638 条）；占位符与内置基准一致。 -->
+<!-- 한국어 — 完整词条（669 条）；占位符与内置基准一致。 -->
 <resources locale="ko-KR" name="한국어" fallback="en-US">
   <string name="about.checkUpdate">업데이트 확인</string>
   <string name="about.desc">ADB++, 데스크톱 ADB 도구</string>
@@ -32,7 +32,7 @@
   <string name="action.appRestart">앱 재시작</string>
   <string name="action.appStart">앱 실행</string>
   <string name="action.appStop">앱 강제 종료</string>
-  <string name="action.captureManager">패킷 캡처 관리</string>
+  <string name="action.captureManager">네트워크 패킷 캡처</string>
   <string name="action.captureToggle">캡처 시작</string>
   <string name="action.clearDeviceCache">기기 캐시 지우기</string>
   <string name="action.grant">권한 허용 (Beta)</string>
@@ -220,7 +220,7 @@
   <string name="group.file">파일 작업</string>
   <string name="group.input">입력 작업</string>
   <string name="group.media">미디어 작업</string>
-  <string name="group.netcap">네트워크 캡처</string>
+  <string name="group.netcap">캡처</string>
   <string name="group.other">기기 작업</string>
   <string name="group.perm">권한 작업</string>
   <string name="group.pkgops">패키지 작업</string>
@@ -435,7 +435,7 @@
   <string name="settings.captureLocalDir">로컬 저장 디렉터리</string>
   <string name="settings.captureLocalDirDesc">다운로드한 pcap이 이 곳에 저장됩니다. 비워 두면 {dir}/captures가 사용됩니다.</string>
   <string name="settings.captureRoot">root로 tcpdump 실행 (su -c)</string>
-  <string name="settings.captureRootDesc">기본적으로 꺼져 있으며 tcpdump가 일반 shell로 실행됩니다. adbd가 root가 아니거나 tcpdump에 권한이 없어 캡처가 실패하는 기기(permission 오류)에서는 이 옵션을 켜면 tcpdump만 su -c로 권한을 높여 실행합니다(adbd 전체 재시작 없음). su가 있는 루팅된 기기가 필요합니다.</string>
+  <string name="settings.captureRootDesc">기본값은 꺼짐이며 tcpdump는 일반 셸로 시작합니다. &quot;Operation not permitted&quot; 오류가 나면 su를 감지해 자동으로 root로 재시도합니다. 첫 실패를 건너뛰려면 체크하세요. su -c로 tcpdump만 권한 상승하며 adbd는 재시작하지 않습니다. 루팅 및 su 필요.</string>
   <string name="settings.checkUpdate">시작 시 업데이트 확인 (기본 켜짐)</string>
   <string name="settings.closeOnOuter">바깥 영역 클릭으로 대화상자 닫기 허용 (기본 꺼짐)</string>
   <string name="settings.closeOnOuterDesc">켜면 대화상자 바깥 마스크 영역을 클릭해 닫을 수 있습니다. 끄면 바깥 클릭이 동작하지 않으며 "취소" 또는 "×"로만 닫습니다.</string>
@@ -642,4 +642,36 @@
   <string name="win.pin">창 고정</string>
   <string name="win.restore">복원</string>
   <string name="win.unpin">창 고정 해제</string>
+  <string name="action.offlineLog">로그 패킷 캡처</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="toast.capturePidLost">PID 파일이 없습니다. pkill로 대체 중지했습니다(다른 tcpdump도 중지될 수 있음)</string>
+  <string name="capture.offlineHint">백그라운드 캡처는 기기의 {dir}에 기록됩니다. adb 연결이 끊기거나 앱을 닫아도 중지되지 않으며, 다시 열면 상태가 복원됩니다. 저장 공간이 차지 않도록 반드시 중지하세요.</string>
+  <string name="offlinelog.title">오프라인 로그 관리({s})</string>
+  <string name="offlinelog.start">로그 캡처 시작</string>
+  <string name="offlinelog.stop">로그 캡처 중지</string>
+  <string name="offlinelog.dump">현재 버퍼 내보내기</string>
+  <string name="offlinelog.pid">PID</string>
+  <string name="offlinelog.pidPlaceholder">PID 선택 사항, 비우면 전체 프로세스</string>
+  <string name="offlinelog.hint">nohup logcat이 기기에서 백그라운드로 실행됩니다. adb 연결이 끊기거나 앱을 종료해도 계속되며, 중지 후에도 파일은 기기에 남습니다.</string>
+  <string name="offlinelog.noFilesFull">{dir}에 .log 파일이 없습니다. 먼저 &quot;로그 캡처 시작&quot;을 누르세요.</string>
+  <string name="offlinelog.dumpEmpty">logcat 버퍼가 비어 있어 파일을 기록하지 않았습니다</string>
+  <string name="status.offlineLogStarted">오프라인 로그 시작됨:</string>
+  <string name="toast.offlineLogStarted">기기 백그라운드 logcat 시작됨(adb 연결 해제 가능)</string>
+  <string name="toast.offlineLogStopped">백그라운드 logcat 중지됨(파일은 기기에 남음)</string>
+  <string name="toast.offlineLogStartFailed">오프라인 로그 시작 실패:</string>
+  <string name="toast.offlineLogStopFailed">오프라인 로그 중지 실패:</string>
+  <string name="toast.offlineLogListFailed">오프라인 로그 목록 가져오기 실패:</string>
+  <string name="toast.offlineLogPidLost">PID 파일이 없습니다. pkill로 대체 중지했습니다(다른 logcat도 중지될 수 있음)</string>
+  <string name="toast.offlineLogDumped">현재 버퍼 로그 저장 위치:</string>
+  <string name="busy.offlineLogPull">오프라인 로그 파일 다운로드 중…</string>
+  <string name="busy.offlineLogDump">현재 logcat 버퍼 내보내는 중…</string>
+  <string name="settings.offlineLog">오프라인 로그 설정</string>
+  <string name="settings.logcatArgs">logcat 인자</string>
+  <string name="settings.logcatArgsDesc">기본값은 -v threadtime입니다. *:V, Tag:D 같은 필터를 추가할 수 있습니다. 셸 메타문자는 허용되지 않습니다.</string>
+  <string name="settings.offlineLogDeviceDir">기기 로그 디렉터리</string>
+  <string name="settings.offlineLogDeviceDirDesc">백그라운드 로그가 이 디렉터리에 기록됩니다(기본 /sdcard/adbpp_logs/).</string>
+  <string name="settings.offlineLogLocalDir">로컬 저장 디렉터리</string>
+  <string name="settings.offlineLogLocalDirDesc">&quot;다운로드&quot; 시 로그가 여기에 저장됩니다. 비었으면 {dir}/offline-logs.</string>
+  <string name="settings.offlineLogRoot">logcat을 root로 실행</string>
+  <string name="settings.offlineLogRootDesc">일반 셸로 보호 디렉터리를 읽거나 쓸 수 없을 때 체크하세요. su -c로 logcat만 권한 상승합니다.</string>
 </resources>
