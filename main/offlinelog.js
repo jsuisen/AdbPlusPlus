@@ -114,15 +114,17 @@ export function registerOfflineLogIpc(win) {
     return { items, running, pid: running ? p : '' }
   })
 
-  ipcMain.handle(OFFLINELOG_PULL, async (_e, { serial, devicePath, localDir, asRoot }) => {
-    if (!serial || !devicePath || !localDir) throw new Error('serial / devicePath / localDir 必填')
+  // localPath 由用户在保存对话框里选定；未传时退回 localDir + 设备文件名（兼容旧调用）
+  ipcMain.handle(OFFLINELOG_PULL, async (_e, { serial, devicePath, localDir, localPath, asRoot }) => {
+    if (!serial || !devicePath) throw new Error('serial / devicePath 必填')
     const p = safeDevicePath(devicePath)
     if (asRoot) await run('adb.exe', ['-s', serial, 'shell', ...suWrap('chmod 644 ' + sq(p))]).catch(() => {})
-    fs.mkdirSync(localDir, { recursive: true })
-    const localPath = path.join(localDir, path.basename(p))
-    const r = await run('adb.exe', ['-s', serial, 'pull', p, localPath])
+    const target = localPath || (localDir ? path.join(localDir, path.basename(p)) : '')
+    if (!target) throw new Error('localPath / localDir 必填')
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    const r = await run('adb.exe', ['-s', serial, 'pull', p, target])
     if (r.code !== 0) throw new Error('pull 失败：' + (r.err || r.code))
-    return { localPath }
+    return { localPath: target }
   })
 
   ipcMain.handle(OFFLINELOG_RM, async (_e, { serial, devicePath, asRoot }) => {

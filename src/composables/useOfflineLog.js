@@ -6,8 +6,8 @@ import {
   OFFLINELOG_STARTED, OFFLINELOG_STOPPED
 } from '@shared/ipc-channels.js'
 import {
-  api, cfg, lastMsg, offlineLogCapturing, offlineLogList, offlineLogOpen, offlineLogPid,
-  selectedSerial, showResult, ymdhms
+  api, cfg, lastMsg, offlineLogBusy, offlineLogCapturing, offlineLogLastDownload,
+  offlineLogList, offlineLogOpen, offlineLogPid, selectedSerial, showResult, ymdhms
 } from './state'
 import { sanitizeSerial } from './shared'
 import { toast } from './useUi'
@@ -41,6 +41,7 @@ function onOfflineLogStopped(p) {
 function openOfflineLogManager() {
   if (!selectedSerial.value) { toast(t('err.selectDeviceShort')); return }
   offlineLogOpen.value = true
+  offlineLogLastDownload.value = ''
   refreshOfflineLogs()
 }
 
@@ -92,19 +93,31 @@ async function stopOfflineLog() {
 }
 
 async function pullOfflineLog(item) {
-  if (!selectedSerial.value) return
-  const localDir = cfg.value.offlineLogLocalDir || (cfg.value.outDir + '/offline-logs')
-  await runTask({
-    key: 'offlinelog:pull:' + selectedSerial.value + ':' + item.path,
-    label: t('common.download'),
-    busyText: t('busy.offlineLogPull'),
-    task: async () => {
-      const r = await api.invoke(OFFLINELOG_PULL, {
-        serial: selectedSerial.value, devicePath: item.path, localDir, asRoot: cfg.value.offlineLogAsRoot
-      })
-      return { ok: true, text: t('toast.downloaded') + r.localPath, level: 'toast' }
-    }
-  })
+  if (!selectedSerial.value || offlineLogBusy.value) return
+  offlineLogBusy.value = true   // 弹窗置灰，阻止重复点击 / 关闭
+  offlineLogLastDownload.value = ''
+  try {
+    // 默认目录 = 日志保存目录（cfg.outDir），用户可在系统对话框里改路径
+    const localPath = await api.invoke('file:pickSave', {
+      defaultPath: (cfg.value.outDir || '') + '/' + item.name,
+      filters: [{ name: 'LOG', extensions: ['log', 'txt'] }]
+    })
+    if (!localPath) return
+    const r = await api.invoke(OFFLINELOG_PULL, {
+      serial: selectedSerial.value, devicePath: item.path, localPath, asRoot: cfg.value.offlineLogAsRoot
+    })
+    offlineLogLastDownload.value = r.localPath
+    toast(t('toast.downloaded') + r.localPath)
+  } catch (e) { toast(t('toast.downloadFailed') + e.message) }
+  finally { offlineLogBusy.value = false }
+}
+
+async function copyDownloadPath() {
+  if (!offlineLogLastDownload.value) return
+  try {
+    await api.invoke('clipboard:write', { text: offlineLogLastDownload.value })
+    toast(t('toast.pathCopied') + offlineLogLastDownload.value)
+  } catch { toast(t('toast.copyFailed')) }
 }
 
 async function deleteOfflineLog(item) {
@@ -148,11 +161,11 @@ async function dumpOfflineLog() {
 
 export function useOfflineLog() {
   return {
-    clearOfflineLogStatus, copyOfflineLogPath, deleteOfflineLog, dumpOfflineLog, onOfflineLogStarted,
+    clearOfflineLogStatus, copyDownloadPath, copyOfflineLogPath, deleteOfflineLog, dumpOfflineLog, onOfflineLogStarted,
     onOfflineLogStopped, openOfflineLogManager, pullOfflineLog, refreshOfflineLogs, startOfflineLog, stopOfflineLog
   }
 }
 export {
-  clearOfflineLogStatus, copyOfflineLogPath, deleteOfflineLog, dumpOfflineLog, onOfflineLogStarted,
+  clearOfflineLogStatus, copyDownloadPath, copyOfflineLogPath, deleteOfflineLog, dumpOfflineLog, onOfflineLogStarted,
   onOfflineLogStopped, openOfflineLogManager, pullOfflineLog, refreshOfflineLogs, startOfflineLog, stopOfflineLog
 }

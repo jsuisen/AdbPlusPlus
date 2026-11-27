@@ -4,16 +4,16 @@ import * as State from '@/composables/state'
 import { maskClose } from '@/composables/useConfig'
 import {
   startOfflineLog, stopOfflineLog, refreshOfflineLogs, pullOfflineLog,
-  copyOfflineLogPath, deleteOfflineLog, dumpOfflineLog
+  copyOfflineLogPath, copyDownloadPath, deleteOfflineLog, dumpOfflineLog
 } from '@/composables/useOfflineLog'
 import { t } from '@/i18n'
 
-const { offlineLogOpen, offlineLogCapturing, offlineLogList, offlineLogPid, cfg, selectedSerial } = State
+const { offlineLogOpen, offlineLogBusy, offlineLogCapturing, offlineLogLastDownload, offlineLogList, offlineLogPid, cfg, selectedSerial } = State
 </script>
 
 <template>
-  <div v-if="offlineLogOpen" class="modal-mask" @click.self="maskClose(() => offlineLogOpen = false)">
-    <div class="modal capture-modal">
+  <div v-if="offlineLogOpen" class="modal-mask" @click.self="maskClose(() => { if (!offlineLogBusy) offlineLogOpen = false })">
+    <div class="modal capture-modal offline-log-modal">
       <div class="modal-head">{{ t('offlinelog.title', { s: selectedSerial }) }}<button class="modal-x" @click="offlineLogOpen = false">×</button></div>
       <div class="modal-body capture-body">
         <div class="capture-actions">
@@ -42,13 +42,21 @@ const { offlineLogOpen, offlineLogCapturing, offlineLogList, offlineLogPid, cfg,
             </tr>
           </tbody>
         </table>
+        <div v-if="offlineLogLastDownload" class="offline-download-path" :title="t('offlinelog.copyPathHint')" @click="copyDownloadPath">{{ offlineLogLastDownload }}</div>
       </div>
       <div class="modal-foot"><button class="primary" @click="offlineLogOpen = false">{{ t('common.close') }}</button></div>
+      <div v-if="offlineLogBusy" class="offline-download-mask">
+        <div class="busy-spinner"></div>
+        <span>{{ t('offlinelog.downloading') }}</span>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.offline-log-modal { position: relative; }
 .offline-pid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
 .offline-pid input { width: 110px; }
+.offline-download-mask { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,.68); border-radius: 8px; color: var(--muted); font-size: 13px; cursor: not-allowed; }
+.offline-download-path { margin-top: 10px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: #f7f8fa; color: #185FA5; font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; line-height: 1.5; word-break: break-all; user-select: text; cursor: pointer; }
 </style>

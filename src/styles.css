@@ -351,6 +351,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .modal-mask.color-modal-mask { z-index: 60; }   /* 日志窗口「颜色」弹窗：高于设置弹窗（50） */
 .modal-mask.color-rule-mask { z-index: 70; }    /* 新增/修改规则弹窗：可能从设置页或「颜色」弹窗内打开，需高于两者（50/60） */
 .modal { background: #fff; border-radius: 8px; width: 560px; max-width: 92vw; max-height: 82vh; display: flex; flex-direction: column; box-shadow: 0 8px 30px rgba(0,0,0,.25); }
+/* 离线日志管理表格列多：宽度在常规弹窗 560px 基础上加 50% → 840px（双类提权防被 .modal 覆盖） */
+.modal.offline-log-modal { width: 840px; }
 .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); font-weight: 600; }
 .modal-x { border: none; background: none; font-size: 18px; line-height: 1; cursor: pointer; color: var(--muted); }
 .modal-body { padding: 12px 14px; overflow: auto; }
