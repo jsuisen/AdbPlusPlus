@@ -40,6 +40,7 @@ function onCancelClick() {
         <label class="cf-row">
           <span>{{ t('common.history') }}</span>
           <AppSelect v-model="connectHistorySel" :disabled="connecting || !connectHistoryOptions.length" @change="applyConnectHistory"
+                     :placeholder="connectHistoryOptions.length ? t('connect.selectHistory') : t('connect.noHistory')"
                      :options="[{ value: '', label: connectHistoryOptions.length ? t('connect.selectHistory') : t('connect.noHistory') }, ...connectHistoryOptions]" />
         </label>
         <label class="cf-row"><span>{{ t('common.alias') }}</span><input v-model="connectAlias" :disabled="connecting" :placeholder="t('connect.aliasHint')" /></label>

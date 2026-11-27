@@ -25,7 +25,14 @@ const items = computed(() => props.options.map((o) => {
   }
   return { value: o, label: String(o), disabled: false }
 }))
+// 空值 + 显式 placeholder = 未选择态，文字用 muted；有具体值时正常显示。
+// 注意：RebootModal 的 value='' 是「正常重启」有效值，它没传 placeholder，不会被误判。
+const isPlaceholder = computed(() => {
+  if (!props.placeholder) return false
+  return props.modelValue === '' || props.modelValue === null || props.modelValue === undefined
+})
 const currentLabel = computed(() => {
+  if (isPlaceholder.value) return props.placeholder
   const hit = items.value.find((o) => o.value === props.modelValue)
   return hit ? hit.label : (props.placeholder || '')
 })
@@ -114,7 +121,7 @@ onBeforeUnmount(() => {
   <div ref="rootEl" class="app-select" :class="{ 'is-disabled': disabled }">
     <button type="button" class="as-trigger" :disabled="disabled" :title="title"
             :aria-expanded="open ? 'true' : 'false'" @click="toggle" @keydown="onKey">
-      <span class="as-label">{{ currentLabel }}</span><span class="as-arrow">▾</span>
+      <span class="as-label" :class="{ 'is-placeholder': isPlaceholder }">{{ currentLabel }}</span><span class="as-arrow">▾</span>
     </button>
     <Teleport to="body">
       <div v-if="open" ref="menuEl" class="as-menu"
@@ -142,6 +149,7 @@ onBeforeUnmount(() => {
 .as-trigger:disabled { opacity: .5; cursor: not-allowed; }
 .app-select.is-disabled { cursor: not-allowed; }
 .as-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.as-label.is-placeholder { color: var(--muted); }
 .as-arrow { flex: 0 0 auto; font-size: 10px; color: var(--muted); }
 .as-menu {
   position: fixed; z-index: 1200; max-height: 260px; overflow-y: auto;

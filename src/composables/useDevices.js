@@ -282,13 +282,17 @@ function openConnectModal(prefill) {
     connectIp.value = prefill.ip || ''
     connectPort.value = prefill.port || '5555'
     connectAlias.value = prefill.alias || ''
+    connectHistorySel.value = ''   // 预填来自外部入口，不是历史选择，避免下拉与 IP 不一致
   } else {
     // 常规入口：回填上次连接过的 IP/端口；别名不跨连接继承，避免误覆盖新设备
     connectIp.value = cfg.value.lastConnectIp || ''
     connectPort.value = cfg.value.lastConnectPort || '5555'
     connectAlias.value = ''
+    // 保留上次的历史选择；该项若已从历史里删除则回落 placeholder
+    const hist = Array.isArray(cfg.value.connectHistory) ? cfg.value.connectHistory : []
+    const stillExists = hist.some((h) => `${h.ip}:${h.port || '5555'}` === connectHistorySel.value)
+    if (!stillExists) connectHistorySel.value = ''
   }
-  connectHistorySel.value = ''
   connecting.value = false
   connectTimedOut.value = false
   connectOpen.value = true
@@ -301,7 +305,7 @@ function applyConnectHistory() {
   if (!key) return
   const hist = Array.isArray(cfg.value.connectHistory) ? cfg.value.connectHistory : []
   const hit = hist.find((h) => `${h.ip}:${h.port}` === key)
-  connectHistorySel.value = ''
+  // 选择后保留值，让下拉显示上次的选择；清空会让弹窗立刻跳回 placeholder。
   if (!hit) return
   connectIp.value = hit.ip || ''
   connectPort.value = hit.port || '5555'
