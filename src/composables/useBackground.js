@@ -1,5 +1,5 @@
 // 自定义背景：配置 -> CSS 变量 + 单个 img 节点。图片只在启动/选择时解码一次，日志热路径不参与。
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { api, cfg } from './state'
 import { toast } from './useUi'
 import { t } from '@/i18n'
@@ -7,6 +7,8 @@ import { t } from '@/i18n'
 // data URL 有 2MB 量级；Chromium 会静默拒绝把它写进 CSS 自定义属性，
 // 但 <img src> 能正常解码。因此图片走 img 节点，区背景仍走 CSS 变量。
 export const bgImageSrc = ref('')
+// 总开关关闭时只隐藏节点，不清空缓存的 data URL；再次开启无需重新读盘解码。
+export const bgVisible = computed(() => !!cfg.value.bgEnabled && !!bgImageSrc.value)
 let loadSeq = 0
 
 function zone(key) {
@@ -134,7 +136,7 @@ function resetBackground() {
 
 function useBackground() {
   return {
-    bgImageSrc, applyBackground, browseBackgroundImage, clearBackgroundImage, loadImage,
+    bgImageSrc, bgVisible, applyBackground, browseBackgroundImage, clearBackgroundImage, loadImage,
     resetBackground, restoreBackground, setZoneAlpha, setZoneColor
   }
 }

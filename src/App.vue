@@ -169,13 +169,13 @@ const { exportDeviceInfo, exportGetprop, fetchGetprop, manualRefresh, runBugrepo
 const { winClose, winMax, winMin, winTop } = useUi()
 const { logLineStyle, openColorWin } = useColorrules()
 useApp()
-const { bgImageSrc } = useBackground()
+const { bgImageSrc, bgVisible } = useBackground()
 const { refreshDeviceClock } = useDeviceClock()
 const { openUpdateDialog } = useUpdate()
 </script>
 
 <template>
-  <div class="app-bg" aria-hidden="true"><img v-if="bgImageSrc" class="app-bg-img" :src="bgImageSrc" alt="" /></div>
+  <div class="app-bg" aria-hidden="true"><img v-if="bgVisible" class="app-bg-img" :src="bgImageSrc" alt="" /></div>
   <div class="app-root" @wheel="onWheel">
     <!-- 菜单栏（已合并自定义标题栏：左侧 收起/关于，右侧 窗口控制） -->
     <div class="menubar">
