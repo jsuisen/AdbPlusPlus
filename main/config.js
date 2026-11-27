@@ -107,7 +107,7 @@ const DEFAULT = {
   autoReconnect: true,       // 网络设备非人工断开后是否自动重连（默认开启）
   autoReconnectInterval: 5,  // 自动重连间隔（秒），1~3600
   wheelDownLockBottom: true, // 日志已滚到底时再向下滚轮是否重新锁定底部跟随（默认开启）
-  logWheelSpeed: 1,    // 日志区滚轮滚动速度倍率，0.25~3，1=系统默认
+  logWheelSpeed: 1,    // 日志区滚轮滚动速度倍率，0.25~99，1=系统默认
   checkUpdateOnStartup: true, // 启动后是否异步检测一次版本升级（默认开启）
   updateDismissedDate: ''     // 本日已「取消提醒」的日期（YYYY-MM-DD），当天不再弹升级对话框
 }
@@ -131,7 +131,7 @@ export function loadConfig() {
   merged.wheelDownLockBottom = !!merged.wheelDownLockBottom
   let wheelSpeed = Number(merged.logWheelSpeed)
   if (!Number.isFinite(wheelSpeed)) wheelSpeed = 1
-  merged.logWheelSpeed = Math.max(0.25, Math.min(3, Math.round(wheelSpeed * 100) / 100))
+  merged.logWheelSpeed = Math.max(0.25, Math.min(99, Math.round(wheelSpeed * 100) / 100))
   // outDir 为空时落到 exe 所在目录，保证自动日志/导出有可写落点
   if (!merged.outDir) merged.outDir = defaultOutDir()
   // appLogDir 为空时同样落到 exe 所在目录

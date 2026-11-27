@@ -307,7 +307,7 @@ async function exportLangTemplate() {
           <div v-if="settingsTab === 'logscroll'" class="logscroll-box">
             <label class="switch-row">
               <span>{{ t('settings.wheelSpeed') }}</span>
-              <input type="number" min="0.25" max="3" step="0.25" v-model.number="cfg.logWheelSpeed" @change="onWheelSpeedChange" />
+              <input type="number" min="0.25" max="99" step="0.25" v-model.number="cfg.logWheelSpeed" @change="onWheelSpeedChange" />
               <span class="muted small">{{ t('settings.wheelSpeedHint') }}</span>
             </label>
             <label class="switch-row">

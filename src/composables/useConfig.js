@@ -74,12 +74,12 @@ function normalizeAutoReconnectInterval(v) {
   return Math.max(1, Math.min(3600, n))
 }
 
-// 日志区滚轮速度倍率：0.25~3，1=系统默认；异常值回落 1。
+// 日志区滚轮速度倍率：0.25~99，1=系统默认；异常值回落 1。
 function normalizeWheelSpeed(v) {
   let n = Number(v)
   if (!Number.isFinite(n)) n = 1
   n = Math.round(n * 100) / 100
-  return Math.max(0.25, Math.min(3, n))
+  return Math.max(0.25, Math.min(99, n))
 }
 
 // 兼容旧配置 / 导入文件：忽略非对象、非数组、空文本、重复项，锁定标志强制布尔化。
