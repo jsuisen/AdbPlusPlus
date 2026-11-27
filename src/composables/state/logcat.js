@@ -9,7 +9,10 @@ import { escapeRegExp, sortPkgs } from '../shared.js'
 export const MAX_BUFFER = 50000
 
 // 渲染层最多绘制的行（过滤后取尾部）；可被配置 maxRender 覆盖（见设置-通用）
-export const DEFAULT_MAX_RENDER = 20000
+export const DEFAULT_MAX_RENDER = 3000
+// 渲染硬上限：主进程每 200ms 推一批日志，DOM 行数超过这个量级会让渲染主线程持续满载。
+// 配置值再大也只绘制这么多行；完整日志仍在 MAX_BUFFER 内存缓冲与自动落盘文件里。
+export const MAX_RENDER_HARD_CAP = 3000
 
 // 多设备并行：日志/运行状态/进程列表全部按 serial 分桶
 export const logsMap = reactive({})   // serial -> 设备日志行数组
@@ -118,43 +121,78 @@ const textFilterRe = computed(() => {
   try { return new RegExp(txt, 'i') } catch { return null }
 })
 
+// 单行过滤判定，供增量路径与整表重建共用。语义与旧版逐条 filter 完全一致。
+function matchLogLine(l, c) {
+  if (c.hasLvl && !((LEVEL_PRI[l.level] ?? 0) >= c.lvlPri)) return false
+  // logcat threadtime 会把 Tag 左对齐填充空格（解析出的 tag 形如 "ps      "），parseLine 未 trim；
+  // 输入侧 tagFilter 已 trim，这里必须同步 trim，否则「全词匹配」严格相等 (lt === tag) 恒不命中。
+  if (c.tag) {
+    const lt = (l.tag || '').trim().toLowerCase()
+    if (c.tagWhole ? lt !== c.tag : !lt.includes(c.tag)) return false
+  }
+  if (c.txt) {
+    // 正则同时匹配消息与标签（标签作为独立字段），保持「快筛」按 Tag 生成正则的原有语义
+    if (c.re) { if (!c.re.test(l.msg || '') && !c.re.test(l.tag || '')) return false }
+    else if (!(l.msg || '').toLowerCase().includes(c.txt)) return false
+  }
+  if (c.pkg) {
+    const p = c.pidMap[String(l.pid)] || ''
+    if (c.byPkg ? p.split(':')[0] !== c.pkg : p !== c.pkg) return false
+  }
+  return true
+}
+
+// displayLogs 增量过滤缓存：源数组每 200ms 追加一批，对 50000 行全量 filter 会打满渲染主线程。
+// 按「上一批最后一行 id」从尾部定位新行，只过滤增量；过滤条件 / 设备 / 进程映射变化时整表重建。
+// 缓存是普通对象，不进 Vue 依赖；响应式追踪仍落在 logsMap / 过滤 ref / cfg 上。
+const displayCache = { serial: '', key: '', pidMapRef: null, lastId: '', rows: [] }
+
 export const displayLogs = computed(() => {
+  const serial = activeLogSerial.value
+  const arr = logsMap[serial] || []
   const lvl = levelFilter.value
   const tag = tagFilter.value.trim().toLowerCase()
+  const tagWhole = tagWholeWord.value
   const txt = textFilter.value.trim()
-  let arr = logsMap[activeLogSerial.value] || []
-  if (lvl) arr = arr.filter((l) => (LEVEL_PRI[l.level] ?? 0) >= LEVEL_PRI[lvl])
-  if (tag) arr = arr.filter((l) => {
-    // logcat threadtime 会把 Tag 左对齐填充空格（解析出的 tag 形如 "ps      "），parseLine 未 trim；
-    // 输入侧 tagFilter 已 trim，这里必须同步 trim，否则「全词匹配」严格相等 (lt === tag) 恒不命中。
-    const lt = (l.tag || '').trim().toLowerCase()
-    return tagWholeWord.value ? lt === tag : lt.includes(tag)
-  })
-  if (txt) {
-    if (regexFilter.value) {
-      // 同时匹配 消息内容 与 标签（标签作为独立字段），以便「快筛」按 Tag 生成的正则能正确过滤
-      const re = textFilterRe.value
-      if (re) arr = arr.filter((l) => re.test(l.msg || '') || re.test(l.tag || ''))
-    } else {
-      const t = txt.toLowerCase()
-      arr = arr.filter((l) => (l.msg || '').toLowerCase().includes(t))
-    }
-  }
-  // 进程/包名过滤：按当前模式决定匹配方式
-  // - 进程名模式（默认）：精确匹配所选完整进程名（含 :suffix），仅显示该单一进程
-  // - 包名模式（勾选「按包名过滤」）：按基础包名匹配（去冒号后缀），命中某 App 的全部进程（含 :remote 等私有进程）
+  const regex = regexFilter.value
   const pkg = selectedProc.value
-  if (pkg) {
-    const m = pidPkgMap.value
-    if (procFilterByPkg.value) {
-      arr = arr.filter((l) => (m[String(l.pid)] || '').split(':')[0] === pkg)
-    } else {
-      arr = arr.filter((l) => m[String(l.pid)] === pkg)
+  const byPkg = procFilterByPkg.value
+  const pidMap = pkg ? pidPkgMap.value : null
+  const maxRender = Math.min(cfg.value.maxRender ?? DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP)
+  const key = [lvl, tag, tagWhole ? '1' : '0', txt, regex ? '1' : '0', pkg, byPkg ? '1' : '0'].join('\u0000')
+  const ctx = {
+    hasLvl: !!lvl, lvlPri: LEVEL_PRI[lvl],
+    tag, tagWhole: !!tagWhole,
+    txt: txt.toLowerCase(), re: regex ? textFilterRe.value : null,
+    pkg, byPkg: !!byPkg, pidMap
+  }
+
+  // 从尾部向前找上一批最后一行：新增行都追加在尾部，正常只需走一个 batch 的长度。
+  // 找不到即视为换设备 / 清空 / 条件变化，走整表重建。
+  let start = -1
+  if (displayCache.serial === serial && displayCache.key === key && displayCache.pidMapRef === pidMap) {
+    const last = displayCache.lastId
+    if (!last && !arr.length) start = 0
+    else if (last) {
+      for (let i = arr.length - 1; i >= 0; i--) { if (arr[i].id === last) { start = i + 1; break } }
     }
   }
-  const maxRender = cfg.value.maxRender ?? DEFAULT_MAX_RENDER
-  if (arr.length > maxRender) arr = arr.slice(arr.length - maxRender)
-  return arr
+  if (start < 0) {
+    const rows = []
+    for (let i = 0; i < arr.length; i++) if (matchLogLine(arr[i], ctx)) rows.push(arr[i])
+    displayCache.serial = serial
+    displayCache.key = key
+    displayCache.pidMapRef = pidMap
+    displayCache.lastId = arr.length ? arr[arr.length - 1].id : ''
+    displayCache.rows = rows
+  } else if (start < arr.length) {
+    for (let i = start; i < arr.length; i++) if (matchLogLine(arr[i], ctx)) displayCache.rows.push(arr[i])
+    displayCache.lastId = arr[arr.length - 1].id
+  }
+  // rows 只增不减会无界增长：按内存缓冲上限裁掉旧行，不影响尾部 maxRender 窗口
+  if (displayCache.rows.length > MAX_BUFFER) displayCache.rows.splice(0, displayCache.rows.length - MAX_BUFFER)
+  const rows = displayCache.rows
+  return rows.length > maxRender ? rows.slice(rows.length - maxRender) : rows
 })
 
 export const mergedView = computed(() => {

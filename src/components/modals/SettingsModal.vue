@@ -11,7 +11,7 @@ import {
   maskClose, setTab, resetLogColors, onLogColorChange, onHexInput, onBgInput,
   browseOutDir, onMaxRenderChange, browseConfigPath, exportSettings, importSettings,
   onFontChange, openFontPicker, pickFont, saveCfg,
-  browseCaptureLocalDir, browseScreenshotDir,
+  browseCaptureLocalDir, browseOfflineLogLocalDir, browseScreenshotDir,
   addFilterHistory, clearFilterHistory, removeFilterHistory, toggleFilterHistoryLock, onFilterHistoryMaxChange
 } from '@/composables/useConfig'
 import { onAutoLogChange, onAppLogChange, browseAppLogDir } from '@/composables/useLogcat'
@@ -101,6 +101,7 @@ async function exportLangTemplate() {
           <button :class="{ active: settingsTab === 'autolog' }" @click="setTab('autolog')">{{ t('settings.autoLog') }}</button>
           <button :class="{ active: settingsTab === 'filterhistory' }" @click="setTab('filterhistory')">{{ t('settings.filterHistory') }}</button>
           <button :class="{ active: settingsTab === 'capture' }" @click="setTab('capture')">{{ t('settings.capture') }}</button>
+          <button :class="{ active: settingsTab === 'offlinelog' }" @click="setTab('offlinelog')">{{ t('settings.offlineLog') }}</button>
           <button :class="{ active: settingsTab === 'shot' }" @click="setTab('shot')">{{ t('settings.screenshot') }}</button>
         </div>
         <div class="settings-content">
@@ -202,7 +203,7 @@ async function exportLangTemplate() {
           <div v-if="settingsTab === 'general'" class="general-box">
             <div class="outdir-row">
               <span class="outdir-label">{{ t('settings.maxRender') }}</span>
-              <input class="font-input" type="number" min="1000" max="200000" step="1000" v-model.number="cfg.maxRender" @change="onMaxRenderChange" />
+              <input class="font-input" type="number" min="1000" max="3000" step="1000" v-model.number="cfg.maxRender" @change="onMaxRenderChange" />
             </div>
             <p class="muted small">{{ t('settings.maxRenderDesc') }}</p>
             <label class="switch-row">
@@ -298,6 +299,29 @@ async function exportLangTemplate() {
               <button class="outdir-btn" @click="browseCaptureLocalDir">{{ t('common.browse') }}</button>
             </div>
             <p class="muted small">{{ t('settings.captureLocalDirDesc', { dir: cfg.outDir }) }}</p>
+          </div>
+          <div v-if="settingsTab === 'offlinelog'" class="capture-box">
+            <div class="outdir-row">
+              <span class="outdir-label">{{ t('settings.logcatArgs') }}</span>
+              <input class="outdir-input" v-model="cfg.offlineLogArgs" @change="saveCfg" spellcheck="false" />
+            </div>
+            <p class="muted small">{{ t('settings.logcatArgsDesc') }}</p>
+            <label class="switch-row">
+              <input type="checkbox" v-model="cfg.offlineLogAsRoot" @change="saveCfg" />
+              <span>{{ t('settings.offlineLogRoot') }}</span>
+            </label>
+            <p class="muted small">{{ t('settings.offlineLogRootDesc') }}</p>
+            <div class="outdir-row">
+              <span class="outdir-label">{{ t('settings.offlineLogDeviceDir') }}</span>
+              <input class="outdir-input" v-model="cfg.offlineLogDeviceDir" @change="saveCfg" spellcheck="false" />
+            </div>
+            <p class="muted small">{{ t('settings.offlineLogDeviceDirDesc') }}</p>
+            <div class="outdir-row">
+              <span class="outdir-label">{{ t('settings.offlineLogLocalDir') }}</span>
+              <input class="outdir-input" :value="cfg.offlineLogLocalDir" readonly />
+              <button class="outdir-btn" @click="browseOfflineLogLocalDir">{{ t('common.browse') }}</button>
+            </div>
+            <p class="muted small">{{ t('settings.offlineLogLocalDirDesc', { dir: cfg.outDir }) }}</p>
           </div>
           <div v-if="settingsTab === 'shot'" class="shot-box">
             <div class="outdir-row">

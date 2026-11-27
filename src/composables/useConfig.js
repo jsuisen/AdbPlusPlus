@@ -1,8 +1,9 @@
 // 由 split_app2.cjs 自动拆分生成（config）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t } from '@/i18n'
-import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
+import {DEFAULT_FILTER_HISTORY_MAX, DEFAULT_LOG_BG_COLORS, DEFAULT_LOG_BG_ON, DEFAULT_LOG_COLORS, DEFAULT_LOG_COLOR_BOLD, DEFAULT_MAX_RENDER, MAX_RENDER_HARD_CAP, NO_GROUP, activeLogSerial, api, appLogEnabled, appPkg, autoLog, autoLogMeta, cfg, currentFontLabel, deviceAlias, filterHistoryOpen, fontNames, fontPickerOpen, fontQuery, keyButtons, levelFilter, logBgColors, logBgOn, logColorBold, logColorRules, logColors, logFont, quickCommands, selectedSerial, settingsTab, swipeButtons, tagFilter, tapButtons, textButtons, textFilter, showResult} from './state'
 import { toast } from './useUi'
+import { runTask } from './useTask'
 
 // 旧配置里的中文默认分组名。单独常量，避免门禁把迁移用的必要比较当成中文哨兵。
 const LEGACY_DEFAULT_GROUP = '默认'
@@ -143,7 +144,7 @@ function onFontChange() { saveCfg() }
 function onMaxRenderChange() {
   let v = Number(cfg.value.maxRender)
   if (!Number.isFinite(v) || v < 1000) v = DEFAULT_MAX_RENDER
-  if (v > 200000) v = 200000
+  if (v > MAX_RENDER_HARD_CAP) v = MAX_RENDER_HARD_CAP
   cfg.value.maxRender = v
   saveCfg()
 }
@@ -273,32 +274,51 @@ async function exportSettings() {
   cfg.value.logBgOn = { ...logBgOn }
   cfg.value.logColorRules = logColorRules.value.map(r => ({ ...r }))
   const snapshot = JSON.parse(JSON.stringify(cfg.value))
-  const p = await api.invoke('file:saveText', {
-    content: JSON.stringify(snapshot, null, 2),
-    defaultPath: 'adbplusplus-settings.json',
-    filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
+  await runTask({
+    key: 'export:settings',
+    label: t('settings.exportSettings'),
+    busyText: t('busy.export'),
+    task: async () => {
+      const p = await api.invoke('file:saveText', {
+        content: JSON.stringify(snapshot, null, 2),
+        defaultPath: 'adbplusplus-settings.json',
+        filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
+      })
+      return p ? { ok: true, text: t('toast.settingsExported') + p } : { ok: true, text: '' }
+    }
   })
-  if (p) showResult(t('settings.exportSettings'), t('toast.settingsExported') + p, true)
 }
 
 async function importSettings() {
   const p = await api.invoke('file:openFile', { filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }] })
   if (!p) return
+  await runTask({
+    key: 'import:settings',
+    label: t('settings.importSettings'),
+    busyText: t('busy.save'),
+    task: async () => {
+      return await doImportSettings(p)
+    }
+  })
+}
+
+// 实际导入逻辑，返回统一结果对象交给 runTask 通知；白名单校验保持不变。
+async function doImportSettings(p) {
   let raw
   try {
     raw = await api.invoke('file:readText', { path: p })
-  } catch (e) { showResult(t('settings.importSettings'), t('toast.readFileFailed') + e.message + t('common.fileLine') + p, false); return }
+  } catch (e) { return { ok: false, text: t('toast.readFileFailed') + e.message + t('common.fileLine') + p } }
   let data
   try {
     data = JSON.parse(raw)
-  } catch (e) { showResult(t('settings.importSettings'), t('toast.invalidJson') + e.message + t('common.fileLine') + p, false); return }
+  } catch (e) { return { ok: false, text: t('toast.invalidJson') + e.message + t('common.fileLine') + p } }
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    showResult(t('settings.importSettings'), t('toast.invalidConfig') + t('common.fileLine') + p, false); return
+    return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
   const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll']
   if (!known.some(k => k in data)) {
-    showResult(t('settings.importSettings'), t('toast.noConfigItems') + t('common.fileLine') + p, false); return
+    return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }
   // 只保留已知键：旧实现用 {...data} 浅合并，任意 JSON 都能往 cfg 里塞未知键，
   // 再经 saveCfg 落盘、被 netcap 读取，形成「外部配置 -> 设备端 root 命令」的注入链。
@@ -311,7 +331,7 @@ async function importSettings() {
   }
   applyConfig(safe, { applyDeviceState: false })
   saveCfg()
-  showResult(t('settings.importSettings'), t('toast.settingsImported') + p, true)
+  return { ok: true, text: t('toast.settingsImported') + p }
 }
 
 async function browseOutDir() {
@@ -339,6 +359,13 @@ async function browseCaptureLocalDir() {
   saveCfg()
 }
 
+async function browseOfflineLogLocalDir() {
+  const dir = await api.invoke('file:pickDir', { defaultPath: cfg.value.offlineLogLocalDir || cfg.value.outDir || undefined })
+  if (!dir) return
+  cfg.value.offlineLogLocalDir = dir
+  saveCfg()
+}
+
 async function browseScreenshotDir() {
   const dir = await api.invoke('file:pickDir', { defaultPath: cfg.value.screenshotDir || cfg.value.outDir || undefined })
   if (!dir) return
@@ -348,6 +375,6 @@ async function browseScreenshotDir() {
 
 export function useConfig() {
 
-  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
 }
-export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }

@@ -221,7 +221,9 @@ function onDataAutoLog(batch, serial) {
   if (!autoLog.value) return
   let b = autoLogBufMap[serial]
   if (!b) { b = []; autoLogBufMap[serial] = b }
-  for (const l of batch) b.push(fmtLineOf(l, pidMapFor(serial)))
+  // pidMapFor 原来写在循环体内：每行日志都重建一次 pid→pkg 映射。提到循环外，一批只建一次。
+  const pidMap = pidMapFor(serial)
+  for (const l of batch) b.push(fmtLineOf(l, pidMap))
 }
 
 function pidMapFor(serial) {
@@ -915,6 +917,9 @@ let suppressScrollCancel = false
 // 切换「换行」会改变日志区高度并派发一次 scroll，不能把它当作用户手动上滚而取消底部跟随
 let suppressWrapScrollCancel = false
 let wrapScrollTimer = null
+// 日志每 200ms 推一批：逐批 nextTick 贴底会把布局重算堆在渲染主线程上。
+// 合并到每帧最多一次，视觉上仍是实时跟随，且不改变「上滚取消跟随」的判定。
+let scrollRaf = 0
 export function useLogcat() {
 watch(() => {
   const arr = logsMap[activeLogSerial.value]
@@ -922,11 +927,14 @@ watch(() => {
 }, () => {
   // 注释行现在都锚定在日志底部（回车新增），编辑期间也继续跟随，使新日志始终打印在注释行之后且可见；
   // 仅在自动滚动关闭时不滚底
-  if (autoscroll.value && logEl.value) {
+  if (!autoscroll.value || !logEl.value) return
+  if (!scrollRaf) {
     suppressScrollCancel = true
-    nextTick(() => {
-      if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
-      suppressScrollCancel = false
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0
+      if (!autoscroll.value || !logEl.value) { suppressScrollCancel = false; return }
+      logEl.value.scrollTop = logEl.value.scrollHeight
+      nextTick(() => { suppressScrollCancel = false })
     })
   }
 })

@@ -67,9 +67,13 @@ const DEFAULT = {
   captureDeviceDir: '/sdcard/adbpp_captures/', // 设备端抓包落盘目录（设置 tab「生成包文件路径」，可改）
   captureLocalDir: '',  // 本机保存目录：空 → cfg.outDir + '/captures'
   captureAsRoot: false, // 是否以 root 运行 tcpdump（su -c 仅给 tcpdump 提权，默认关，延续「默认 shell」决定）
+  offlineLogArgs: '-v threadtime', // 离线日志 logcat 参数（*:V 等过滤表达式可在后面追加）
+  offlineLogDeviceDir: '/sdcard/adbpp_logs/', // 设备端离线日志落盘目录
+  offlineLogLocalDir: '',  // 本机保存目录：空 → cfg.outDir + '/offline-logs'
+  offlineLogAsRoot: false, // 是否以 root 运行设备端 logcat / 读写 .pid 文件
   screenshotDir: '',    // 截图保存目录：空 → 落到 exe 所在目录
   screenshotInterval: 1000, // “开始截图”连续截图间隔（毫秒），默认 1000（每秒 1 张）
-  maxRender: 20000,        // 日志窗口渲染上限（过滤后截取尾部行数）；日志刷得快的设大些可看更久历史
+  maxRender: 3000,         // 日志窗口渲染上限（过滤后截取尾部行数，硬上限 3000）；更早日志仍在内存缓冲与自动落盘文件中
   filterHistoryMax: 20,    // 过滤历史每条（Tag / 关键字）最多保存条数；锁定项不占上限、不被裁剪/清空
   filterHistory: { tag: [], text: [] }, // [{ text, locked }]：tag=Tag 过滤，text=关键字过滤；数组顺序=最近在前
   lastConnectIp: '',   // 连接设备弹窗上次填写的 IP（连接动作即保存，含失败尝试）
