@@ -70,9 +70,18 @@
 /* 悬停目标视觉色 #5A5A5A：Chromium 157 / Electron 37 在 hover 时会把 thumb 混合并提高下限，
    实测直接写 #5A5A5A 只会画成 #838383；写 #333333 反而精确画成 #5A5A5A（见 .workbuddy/tmp 截图探针）。 */
 .scrollbar-hot { scrollbar-color: #333333 transparent; }
+/* 侧栏滚动条：鼠标不在侧栏内时透明（仍占位，不是 display:none / 宽度归零）；
+   进入侧栏区域恢复默认灰，落在滚动条带上再由 .scrollbar-hot 切悬停色。 */
+.side-scroll { scrollbar-color: transparent transparent; }
+.sidebar:hover .side-scroll { scrollbar-color: #CCCCCC transparent; }
+.sidebar:hover .side-scroll.scrollbar-hot { scrollbar-color: #333333 transparent; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: #CCCCCC; border-radius: 4px; }
 *:hover::-webkit-scrollbar-thumb { background: #5A5A5A; }
+/* 旧引擎兜底：侧栏同样按「侧栏区域 hover」显隐，而不是按滚动条自身 hover */
+.side-scroll::-webkit-scrollbar-thumb { background: transparent; }
+.sidebar:hover .side-scroll::-webkit-scrollbar-thumb { background: #CCCCCC; }
+.sidebar:hover .side-scroll.scrollbar-hot::-webkit-scrollbar-thumb { background: #333333; }
 *::-webkit-scrollbar-corner { background: transparent; }
 
 html, body {
