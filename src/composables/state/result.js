@@ -5,11 +5,26 @@
 import { ref } from 'vue'
 import { t } from '@/i18n'
 
-// ---- 结果弹窗 ----
+// ---- 结果弹窗（队列） ----
+// resultOpen/Title/Text/Ok 是「当前显示项」，ResultModal 只读这四个 ref。
+// 并发任务同时完成时，后完成的结果不再覆盖前一个，而是入队；关闭当前后依次弹出。
 export const resultOpen = ref(false)
 export const resultTitle = ref('')
 export const resultText = ref('')
 export const resultOk = ref(true)
+
+// 普通数组即可：仅由 showResult/closeResult 同步读写，不进模板。
+const resultQueue = []
+
+function pumpResult() {
+  if (resultOpen.value) return
+  const next = resultQueue.shift()
+  if (!next) return
+  resultTitle.value = next.title
+  resultText.value = next.text
+  resultOk.value = next.ok
+  resultOpen.value = true
+}
 
 // 轮询型任务（service/process/thread/activity/getprop）失败会每几秒重复一次，
 // 若每次都弹窗会不断抢占焦点。按 dedupe key + 文本去重，冷却期内只弹一次。
@@ -30,13 +45,17 @@ export function showResult(title, text, ok = true, opts = {}) {
     if (now - (lastShown.get(key) || 0) < (opts.cooldownMs || 15000)) return
     lastShown.set(key, now)
   }
-  resultTitle.value = String(title || t('result.title'))
-  resultText.value = body
-  resultOk.value = ok !== false
-  resultOpen.value = true
+  resultQueue.push({ title: String(title || t('result.title')), text: body, ok: ok !== false })
+  pumpResult()
 }
 
-export function closeResult() { resultOpen.value = false }
+export function closeResult() {
+  resultOpen.value = false
+  pumpResult()   // 关闭当前后立即弹出下一条；队列空则保持关闭
+}
+
+// 供诊断/测试读取待显示数量，渲染层无需响应式（仅控制台与单测用）
+export function pendingResultCount() { return resultQueue.length }
 
 // ---- 非阻断式「进行中」指示器 ----
 // 该浮层 CSS 为 pointer-events:none，不使用 modal-mask，不拦截/遮挡任何后台元素。

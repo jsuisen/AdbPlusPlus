@@ -1,9 +1,10 @@
 // 由 split_app2.cjs 自动拆分生成（actions）
 import { ref, reactive, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { t, tKeycode } from '@/i18n'
-import {INPUT_TYPES, INPUT_VALUE_FIELDS, NO_GROUP, api, appPkg, cfg, cmdModal, cmdModalOpen, cmdOutput, fileLocal, fileModalMode, fileModalOpen, fileRemote, filteredKeycodes, inputButtons, inputModalOpen, inputModalType, installModalOpen, installOpts, keyButtons, monkeyCount, monkeyModalOpen, monkeyPkg, monkeySeed, monkeyThrottle, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, newInputGroup, newInputName, newInputVal, newKeyGroup, newKeyName, newKeyValue, permModalOpen, permMode, permName, permPkg, devInvoke, quickCommands, rebootModalOpen, rebootMode, selectedSerial, swipeButtons, tapButtons, textButtons, uninstallKeep, uninstallModalOpen, beginBusy, cmdDetail, endBusy, showResult} from './state'
+import {INPUT_TYPES, INPUT_VALUE_FIELDS, NO_GROUP, api, appPkg, cfg, cmdModal, cmdModalOpen, cmdOutput, fileLocal, fileModalMode, fileModalOpen, fileRemote, filteredKeycodes, inputButtons, inputModalOpen, inputModalType, installModalOpen, installOpts, keyButtons, monkeyCount, monkeyModalOpen, monkeyPkg, monkeySeed, monkeyThrottle, newCmdArgs, newCmdGroup, newCmdIgnore, newCmdName, newInputGroup, newInputName, newInputVal, newKeyGroup, newKeyName, newKeyValue, permModalOpen, permMode, permName, permPkg, devInvoke, quickCommands, rebootModalOpen, rebootMode, selectedSerial, swipeButtons, tapButtons, textButtons, uninstallKeep, uninstallModalOpen, cmdDetail, showResult} from './state'
 import { saveCfg } from './useConfig'
 import { toast } from './useUi'
+import { runTask } from './useTask'
 
 
 function addCmd() {
@@ -71,12 +72,19 @@ async function copyCmdOutput() {
 }
 
 async function saveCmdOutput() {
-  const path = await api.invoke('file:saveText', {
-    content: cmdModal.full,
-    defaultPath: (cfg.value.outDir || '') + '/cmd_output.log',
-    filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
+  await runTask({
+    key: 'cmd:saveOutput',
+    label: t('common.save'),
+    busyText: t('busy.save'),
+    task: async () => {
+      const path = await api.invoke('file:saveText', {
+        content: cmdModal.full,
+        defaultPath: (cfg.value.outDir || '') + '/cmd_output.log',
+        filters: [{ name: 'Log', extensions: ['log', 'txt'] }]
+      })
+      return path ? { ok: true, text: t('toast.saved') + path, level: 'toast' } : { ok: true, text: '' }
+    }
   })
-  if (path) toast(t('toast.saved') + path)
 }
 
 function addKey() {
@@ -162,24 +170,38 @@ async function choosePushFile() {
 
 async function runFile() {
   if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
-  try {
-    let title, ok, text
-    if (fileModalMode.value === 'push') {
-      if (!fileLocal.value || !fileRemote.value.trim()) { toast(t('err.selectLocalAndPath')); return }
-      const r = await api.invoke('adb:push', { serial: selectedSerial.value, local: fileLocal.value, remote: fileRemote.value.trim() })
-      ok = r.code === 0; title = t('file.push')
-      text = (ok ? t('toast.pushDone') + fileRemote.value.trim() : t('toast.pushFailed') + (r.err || r.code)) + '\n' + cmdDetail(r)
-    } else {
-      if (!fileRemote.value.trim()) { toast(t('err.inputDevicePath')); return }
-      const local = await api.invoke('file:pickSave', { defaultPath: (cfg.value.outDir || '') + '/pull.bin', filters: [{ name: 'All', extensions: ['*'] }] })
-      if (!local) return
-      const r = await api.invoke('adb:pull', { serial: selectedSerial.value, remote: fileRemote.value.trim(), local })
-      ok = r.code === 0; title = t('file.pull')
-      text = (ok ? t('toast.pullDone') + local : t('toast.pullFailed') + (r.err || r.code)) + '\n' + cmdDetail(r)
-    }
-    fileModalOpen.value = false
-    showResult(title, text, ok)
-  } catch (e) { showResult(t('modal.fileTransfer'), t('toast.fileTransferError') + e.message, false) }
+  const serial = selectedSerial.value
+  // 文件对话框在前、busy 在后；拿到路径后才进入 runTask
+  if (fileModalMode.value === 'push') {
+    if (!fileLocal.value || !fileRemote.value.trim()) { toast(t('err.selectLocalAndPath')); return }
+    const remote = fileRemote.value.trim()
+    await runTask({
+      key: 'file:push:' + serial + ':' + remote,
+      label: t('file.push'),
+      busyText: t('busy.pushFile'),
+      task: async () => {
+        const r = await api.invoke('adb:push', { serial, local: fileLocal.value, remote })
+        const ok = r.code === 0
+        return { ok, text: (ok ? t('toast.pushDone') + remote : t('toast.pushFailed') + (r.err || r.code)) + '\n' + cmdDetail(r) }
+      }
+    })
+  } else {
+    if (!fileRemote.value.trim()) { toast(t('err.inputDevicePath')); return }
+    const local = await api.invoke('file:pickSave', { defaultPath: (cfg.value.outDir || '') + '/pull.bin', filters: [{ name: 'All', extensions: ['*'] }] })
+    if (!local) return
+    const remote = fileRemote.value.trim()
+    await runTask({
+      key: 'file:pull:' + serial + ':' + remote,
+      label: t('file.pull'),
+      busyText: t('busy.pullFile'),
+      task: async () => {
+        const r = await api.invoke('adb:pull', { serial, remote, local })
+        const ok = r.code === 0
+        return { ok, text: (ok ? t('toast.pullDone') + local : t('toast.pullFailed') + (r.err || r.code)) + '\n' + cmdDetail(r) }
+      }
+    })
+  }
+  fileModalOpen.value = false
 }
 
 function closeRebootModal() { rebootModalOpen.value = false }
@@ -211,19 +233,23 @@ async function confirmInstall() {
   const args = ['-s', selectedSerial.value, 'install', '-r', ...opts, apkPath]
   const cmd = 'adb ' + args.join(' ')
   // 先关配置弹窗、再起后台安装：安装期间不存在 modal-mask，其余界面元素始终可点击/滚动。
-  // 进度只由 BusyIndicator 的 pointer-events:none 小浮层呈现。
+  // 进度由 runTask 的 BusyIndicator 小浮层呈现（pointer-events:none），同 key 防连点重复安装。
   installModalOpen.value = false
-  beginBusy(t('busy.installing'))
-  try {
-    const r = await api.invoke('adb:run', args)
-    const ok = r.code === 0
-    const text = (ok ? t('toast.installDone') + apkPath : t('toast.installFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, cmd)
-    showResult(t('install.title'), text, ok)
-  } catch (e) {
-    showResult(t('install.title'), t('toast.installError') + e.message + '\n$ ' + cmd, false)
-  } finally {
-    endBusy()
-  }
+  await runTask({
+    key: 'install:' + serialAtInstall(apkPath),
+    label: t('install.title'),
+    busyText: t('busy.installing'),
+    task: async () => {
+      const r = await api.invoke('adb:run', args)
+      const ok = r.code === 0
+      return { ok, text: (ok ? t('toast.installDone') + apkPath : t('toast.installFailed') + (r.err || r.code)) + '\n' + cmdDetail(r, cmd) }
+    }
+  })
+}
+
+// 安装防重键：同一设备 + 同一路径视为同一任务（args 里已含 serial，这里只取可读片段）
+function serialAtInstall(apkPath) {
+  return (selectedSerial.value || '') + ':' + apkPath
 }
 
 function openUninstallModal() { uninstallModalOpen.value = true }

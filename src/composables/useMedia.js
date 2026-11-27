@@ -4,6 +4,7 @@ import { t } from '@/i18n'
 import {api, captureList, captureOpen, capturing, cfg, lastMsg, recording, screenshotting, selectedSerial, showResult, ymdhms} from './state'
 import { sanitizeSerial } from './shared'
 import { toast } from './useUi'
+import { runTask } from './useTask'
 
 // 网络抓包事件（useApp 订阅）：started 是「进行中」状态，只写状态栏提示，不弹结果窗；
 // stopped 后刷新设备端文件列表。
@@ -43,10 +44,16 @@ async function takeScreenshot() {
     filters: [{ name: 'PNG', extensions: ['png'] }]
   })
   if (!outPath) return
-  try {
-    const p = await api.invoke('media:screenshot', { serial: selectedSerial.value, outPath })
-    showResult(t('action.screenshot'), t('toast.screenshotSaved') + p, true)
-  } catch (e) { showResult(t('action.screenshot'), t('toast.screenshotFailed') + e.message, false) }
+  // 保存对话框在前、busy 在后：用户选路径期间不该显示「正在截图」
+  await runTask({
+    key: 'media:screenshot:' + selectedSerial.value,
+    label: t('action.screenshot'),
+    busyText: t('busy.screenshot'),
+    task: async () => {
+      const p = await api.invoke('media:screenshot', { serial: selectedSerial.value, outPath })
+      return { ok: true, text: t('toast.screenshotSaved') + p }
+    }
+  })
 }
 
 async function startRec() {
@@ -65,12 +72,18 @@ async function stopRec() {
     filters: [{ name: 'MP4', extensions: ['mp4'] }]
   })
   if (!outPath) return
-  try {
-    const p = await api.invoke('media:recordStop', { outPath })
-    recording.value = false
-    lastMsg.value = ''
-    showResult(t('modal.record'), t('toast.recordSaved') + p, true)
-  } catch (e) { showResult(t('modal.record'), t('toast.recordStopFailed') + e.message, false) }
+  const serialAtStop = selectedSerial.value
+  await runTask({
+    key: 'media:recordStop:' + serialAtStop,
+    label: t('modal.record'),
+    busyText: t('busy.recordStop'),
+    task: async () => {
+      const p = await api.invoke('media:recordStop', { outPath })
+      recording.value = false
+      lastMsg.value = ''
+      return { ok: true, text: t('toast.recordSaved') + p }
+    }
+  })
 }
 
 function shotName() {
@@ -84,17 +97,21 @@ async function doScreenshotToDir(dir, quiet = false) {
     showResult(t('action.screenshot'), t('err.noDevice'), false, { dedupe: 'screenshotNoDevice' })
     return false
   }
+  const serial = selectedSerial.value
   const name = shotName()
-  try {
-    const p = await api.invoke('media:screenshotToDir', { serial: selectedSerial.value, dir, name })
-    if (quiet) lastMsg.value = t('status.shotSaved') + p
-    else showResult(t('action.screenshot'), t('toast.screenshotSaved') + p, true)
-    return true
-  } catch (e) {
-    if (quiet) lastMsg.value = t('status.shotFailed') + e.message
-    else showResult(t('action.screenshot'), t('toast.screenshotFailed') + e.message, false)
-    return false
-  }
+  // 连拍（quiet）：高频定时流，上 busy 会让 spinner 常亮闪烁、上 key 防重会丢帧；
+  // 保持 status 级反馈，仅走统一包装的异常兜底。单张才上 busy + 防重 + modal。
+  const ok = await runTask({
+    key: quiet ? null : 'media:screenshotDir:' + serial,
+    label: t('action.screenshot'),
+    busyText: t('busy.screenshot'),
+    busy: !quiet,
+    task: async () => {
+      const p = await api.invoke('media:screenshotToDir', { serial, dir, name })
+      return { ok: true, text: (quiet ? t('status.shotSaved') : t('toast.screenshotSaved')) + p, level: quiet ? 'status' : 'modal' }
+    }
+  })
+  return ok !== false
 }
 
 async function screenshotToPath() {
@@ -170,11 +187,16 @@ async function refreshCaptures() {
 
 async function pullCapture(item) {
   if (!selectedSerial.value) return
-  try {
-    const localDir = cfg.value.captureLocalDir || (cfg.value.outDir + '/captures')
-    const r = await api.invoke('netcap:pull', { serial: selectedSerial.value, devicePath: item.path, localDir, asRoot: cfg.value.captureAsRoot })
-    toast(t('toast.downloaded') + r.localPath)
-  } catch (e) { toast(t('toast.downloadFailed') + e.message) }
+  const localDir = cfg.value.captureLocalDir || (cfg.value.outDir + '/captures')
+  await runTask({
+    key: 'netcap:pull:' + selectedSerial.value + ':' + item.path,
+    label: t('common.download'),
+    busyText: t('busy.capturePull'),
+    task: async () => {
+      const r = await api.invoke('netcap:pull', { serial: selectedSerial.value, devicePath: item.path, localDir, asRoot: cfg.value.captureAsRoot })
+      return { ok: true, text: t('toast.downloaded') + r.localPath, level: 'toast' }
+    }
+  })
 }
 
 async function deleteCapture(item) {

@@ -5,6 +5,7 @@ import {actAction, actActivity, actCmdPreview, actComponent, actExtras, actFlags
 import { createPollingList } from './createPollingList'
 
 import { toast } from './useUi'
+import { runTask } from './useTask'
 
 
 async function fetchDeviceInfo() {
@@ -44,8 +45,15 @@ async function exportDeviceInfo() {
   const content = lines.join('\n')
   const ts = exportTs()
   const defaultPath = (cfg.value.outDir || '') + '/deviceinfo_' + deviceLabel(serial) + '_' + ts + '.txt'
-  const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) showResult(t('info.exportTitle'), t('toast.exported') + path, true)
+  await runTask({
+    key: 'export:deviceinfo:' + serial,
+    label: t('info.exportTitle'),
+    busyText: t('busy.export'),
+    task: async () => {
+      const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
+      return path ? { ok: true, text: t('toast.exported') + path } : { ok: true, text: '' }
+    }
+  })
 }
 
 async function fetchServices(silent = false) {
@@ -137,8 +145,15 @@ async function exportGetprop() {
   const ts = exportTs()
   const serial = selectedSerial.value || 'unknown'
   const defaultPath = (cfg.value.outDir || '') + '/getprop_' + deviceLabel(serial) + '_' + ts + '.txt'
-  const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
-  if (path) showResult(t('getprop.exportTitle'), t('toast.exported') + path, true)
+  await runTask({
+    key: 'export:getprop:' + serial,
+    label: t('getprop.exportTitle'),
+    busyText: t('busy.export'),
+    task: async () => {
+      const path = await api.invoke('file:saveText', { content, defaultPath, filters: [{ name: 'Text', extensions: ['txt'] }] })
+      return path ? { ok: true, text: t('toast.exported') + path } : { ok: true, text: '' }
+    }
+  })
 }
 
 async function runDumpsys() {
@@ -153,11 +168,17 @@ async function runBugreport() {
   if (!selectedSerial.value) { toast(t('err.selectDevice')); return }
   const dir = await api.invoke('file:pickDir', { defaultPath: cfg.value.outDir || undefined })
   if (!dir) return
-  try {
-    const r = await api.invoke('adb:bugreport', { serial: selectedSerial.value, outDir: dir })
-    const ok = r.code === 0
-    showResult('bugreport', (ok ? t('toast.bugreportSaved') + (r.path || dir) : t('toast.bugreportFailed') + (r.err || r.code)) + t('common.dirLine') + dir, ok)
-  } catch (e) { showResult('bugreport', t('toast.bugreportError') + e.message, false) }
+  const serial = selectedSerial.value
+  await runTask({
+    key: 'bugreport:' + serial,
+    label: 'bugreport',
+    busyText: t('busy.bugreport'),
+    task: async () => {
+      const r = await api.invoke('adb:bugreport', { serial, outDir: dir })
+      const ok = r.code === 0
+      return { ok, text: (ok ? t('toast.bugreportSaved') + (r.path || dir) : t('toast.bugreportFailed') + (r.err || r.code)) + t('common.dirLine') + dir }
+    }
+  })
 }
 
 // 四个轮询列表：状态 ref 在 state 层，启停/刷新/自动刷新定时器由工厂统一接线
@@ -257,15 +278,20 @@ async function saveActCfg() {
     actComponent: actComponent.value, actFlags: actFlags.value,
     actExtras: JSON.parse(JSON.stringify(actExtras.value))
   }
-  try {
-    const p = await api.invoke('file:saveText', {
-      content: JSON.stringify(data, null, 2),
-      defaultPath: `${t('modal.componentConfigPrefix')}${actModalType.value}.json`,
-      filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
-    })
-    if (!p) { toast(t('toast.saveCancelled')); return }
-    toast(t('toast.saved') + p)
-  } catch (e) { toast(t('toast.saveFailed') + e.message) }
+  await runTask({
+    key: 'save:actCfg:' + actModalType.value,
+    label: t('common.save'),
+    busyText: t('busy.save'),
+    task: async () => {
+      const p = await api.invoke('file:saveText', {
+        content: JSON.stringify(data, null, 2),
+        defaultPath: `${t('modal.componentConfigPrefix')}${actModalType.value}.json`,
+        filters: [{ name: t('common.jsonConfig'), extensions: ['json'] }]
+      })
+      if (!p) return { ok: true, text: t('toast.saveCancelled'), level: 'toast' }
+      return { ok: true, text: t('toast.saved') + p, level: 'toast' }
+    }
+  })
 }
 
 async function loadActCfg() {

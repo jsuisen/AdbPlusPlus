@@ -4,6 +4,7 @@ import {activeLogSerial, api, appPkg, autoLogBufMap, autoLogMeta, capturing, cap
 import { t } from '@/i18n'
 import { enableAutoscroll, ensureLogFilter, loadProcToPkg, refreshProcs, startLogcat, stopLogcat } from './useLogcat'
 import { toast } from './useUi'
+import { runTask } from './useTask'
 import { openActModal } from './useDeviceinfo'
 import { openCmdModal, openInputModal, openInstallModal, openUninstallModal, resetFileForm } from './useActions'
 import { clearCaptureStatus, openCaptureManager, refreshCaptures, screenshotToPath, startCapture, startRec, stopCapture, stopRec, takeScreenshot, toggleScreenshotTimer } from './useMedia'
@@ -442,10 +443,15 @@ async function ctxSaveDevice() {
   if (!serial) return
   const { ip, port } = parseSerial(serial)
   const content = JSON.stringify({ ip, port, name: displayName(serial), alias: deviceAlias[serial] || '' }, null, 2)
-  try {
-    const p = await api.invoke('file:saveText', { content, defaultPath: 'device-connection.json', filters: [{ name: t('modal.deviceConnection'), extensions: ['json'] }] })
-    if (p) toast(t('toast.connectionSaved') + p)
-  } catch (e) { toast(t('toast.saveFailed') + e.message) }
+  await runTask({
+    key: 'save:device:' + serial,
+    label: t('common.save'),
+    busyText: t('busy.save'),
+    task: async () => {
+      const p = await api.invoke('file:saveText', { content, defaultPath: 'device-connection.json', filters: [{ name: t('modal.deviceConnection'), extensions: ['json'] }] })
+      return p ? { ok: true, text: t('toast.connectionSaved') + p, level: 'toast' } : { ok: true, text: '' }
+    }
+  })
 }
 
 function ctxRenameDevice() {
