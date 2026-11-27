@@ -414,6 +414,8 @@ export default {
   'settings.appLogHint': 'Write app debug logs to the directory below',
   'settings.maxRender': 'Log render limit (lines)',
   'settings.cursorNoScroll': 'Move caret without scrolling the log window (on by default)',
+  'settings.wheelDownLockBottom': 'Lock to bottom on wheel-down at the log end (on by default)',
+  'settings.wheelDownLockBottomHint': 'When the log is already at the bottom and not following, one more scroll down locks to bottom and resumes auto-follow.',
   'settings.checkUpdate': 'Check for updates on startup (on by default)',
   'settings.autoReconnect': 'Auto-reconnect on ADB disconnect (on by default)',
   'settings.autoReconnectHint': 'Network devices are reconnected automatically after an unexpected disconnect, until online again. Manual close / disconnect / cancel is never auto-reconnected. USB devices require replugging.',

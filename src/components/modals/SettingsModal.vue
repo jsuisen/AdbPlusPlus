@@ -235,6 +235,11 @@ async function exportLangTemplate() {
             </label>
             <p class="muted small">{{ t('settings.cursorDesc') }}</p>
             <label class="switch-row">
+              <input type="checkbox" v-model="cfg.wheelDownLockBottom" @change="saveCfg" />
+              <span>{{ t('settings.wheelDownLockBottom') }}</span>
+            </label>
+            <p class="muted small">{{ t('settings.wheelDownLockBottomHint') }}</p>
+            <label class="switch-row">
               <input type="checkbox" v-model="cfg.checkUpdateOnStartup" @change="saveCfg" />
               <span>{{ t('settings.checkUpdate') }}</span>
             </label>

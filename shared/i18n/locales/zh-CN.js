@@ -415,6 +415,8 @@ export default {
   'settings.appLogHint': '是否写入程序日志（开启后程序自身的运行 / 调试日志落盘到下方目录）',
   'settings.maxRender': '日志渲染上限（行）',
   'settings.cursorNoScroll': '光标移动不滚动日志区窗口（默认开启）',
+  'settings.wheelDownLockBottom': '日志滚到底后再向下滚轮自动锁定底部（默认开启）',
+  'settings.wheelDownLockBottomHint': '日志已贴底且未跟随时，再向下滚动一下即可锁定底部，后续日志继续自动跟随。',
   'settings.checkUpdate': '启动时检测版本升级（默认开启）',
   'settings.autoReconnect': 'ADB 断线自动重连（默认开启）',
   'settings.autoReconnectHint': '网络设备非人工断开时自动重连，直到恢复；手动关闭、断开、取消连接不会被重连。USB 设备无法用 adb 重连，需重新插拔。',

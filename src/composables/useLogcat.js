@@ -760,13 +760,21 @@ function onWheel(e) {
 // 日志窗口 Ctrl+滚轮：动态增减日志字体大小（与 设置-日志字体-字体大小 等效，范围 8~32px）。
 // 仅作用于日志窗口内；stopPropagation 阻止冒泡到 app-root 的 onWheel（后者 Ctrl+滚轮为整窗缩放）。
 function onLogWheel(e) {
-  if (!e.ctrlKey) return   // 非 Ctrl+滚轮：放行，由 app-root 的 onWheel 处理（普通滚动 / 上滚取消跟随）
-  e.preventDefault()
-  e.stopPropagation()
-  const cur = logFont.size || 12
-  const next = (e.deltaY < 0 ? cur + 1 : cur - 1)
-  logFont.size = Math.min(32, Math.max(8, next))
-  saveCfg()
+  if (e.ctrlKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    const cur = logFont.size || 12
+    const next = (e.deltaY < 0 ? cur + 1 : cur - 1)
+    logFont.size = Math.min(32, Math.max(8, next))
+    saveCfg()
+    return
+  }
+  // 底部再下滚锁定：日志已贴底但未跟随时，再向下滚一次即重新开启底部跟随（等同点「底部」按钮）。
+  // 贴底阈值与 onLogScrollSave 保持一致（4px），兼容浏览器小数滚动量；上滚取消跟随仍由 app-root 的 onWheel 处理。
+  if (e.deltaY > 0 && cfg.value.wheelDownLockBottom && !autoscroll.value) {
+    const el = logEl.value
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight <= 4) enableAutoscroll()
+  }
 }
 
 function insertNote(anchorId, ev) {

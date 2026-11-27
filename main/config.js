@@ -106,6 +106,7 @@ const DEFAULT = {
   connectHistory: [],  // [{ ip, port, alias }] 连接成功过的设备，最近在前；alias 可为空
   autoReconnect: true,       // 网络设备非人工断开后是否自动重连（默认开启）
   autoReconnectInterval: 5,  // 自动重连间隔（秒），1~3600
+  wheelDownLockBottom: true, // 日志已滚到底时再向下滚轮是否重新锁定底部跟随（默认开启）
   checkUpdateOnStartup: true, // 启动后是否异步检测一次版本升级（默认开启）
   updateDismissedDate: ''     // 本日已「取消提醒」的日期（YYYY-MM-DD），当天不再弹升级对话框
 }
@@ -126,6 +127,7 @@ export function loadConfig() {
   let retrySec = Number(merged.autoReconnectInterval)
   if (!Number.isFinite(retrySec)) retrySec = 5
   merged.autoReconnectInterval = Math.max(1, Math.min(3600, Math.floor(retrySec)))
+  merged.wheelDownLockBottom = !!merged.wheelDownLockBottom
   // outDir 为空时落到 exe 所在目录，保证自动日志/导出有可写落点
   if (!merged.outDir) merged.outDir = defaultOutDir()
   // appLogDir 为空时同样落到 exe 所在目录

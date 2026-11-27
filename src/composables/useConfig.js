@@ -269,6 +269,8 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   // 旧配置/导入文件缺字段时保持当前值，不因导入而悄悄关掉自动重连
   if (Object.prototype.hasOwnProperty.call(c, 'autoReconnect')) cfg.value.autoReconnect = !!c.autoReconnect
   if (Object.prototype.hasOwnProperty.call(c, 'autoReconnectInterval')) cfg.value.autoReconnectInterval = normalizeAutoReconnectInterval(c.autoReconnectInterval)
+  // 旧配置缺字段时保持默认开启：只有明确关闭过才关掉「底部再下滚锁定」
+  if (Object.prototype.hasOwnProperty.call(c, 'wheelDownLockBottom')) cfg.value.wheelDownLockBottom = !!c.wheelDownLockBottom
   // 背景配置形状归一化：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
   cfg.value.bgEnabled = !!c.bgEnabled
   cfg.value.bgImage = typeof c.bgImage === 'string' ? c.bgImage : ''
@@ -377,7 +379,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'wheelDownLockBottom', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }
