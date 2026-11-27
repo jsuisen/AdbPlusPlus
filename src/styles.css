@@ -310,19 +310,21 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .settings-tabs button { text-align: left; border: 1px solid var(--border); background: var(--surface); }
 .settings-tabs button.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .settings-content { flex: 1; min-width: 0; }
-/* 窗口属性 tab */
-.win-box { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+/* 所有设置 tab 统一容器内边距；原先 autolog/font 自带 6px 2px，比通用 tab 多 2px 左缩进 */
+.settings-content > div { padding: 4px 0; }
+/* 窗口属性 tab：行距统一由 .outdir-row / .switch-row / .muted.small 的 10px 上边距提供 */
+.win-box { display: flex; flex-direction: column; gap: 0; padding: 4px 0; }
 .color-grid { display: flex; flex-direction: column; gap: 10px; }
 .color-row { display: flex; align-items: center; gap: 10px; }
 .color-name { width: 72px; font-size: 13px; }
 .color-row input[type="color"] { width: 44px; height: 28px; padding: 2px; }
-.color-hex-input { width: 92px; font-family: monospace; font-size: 12px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); text-transform: uppercase; }
+.color-hex-input { width: 92px; font-family: monospace; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); text-transform: uppercase; }
 .color-hex-input:focus { outline: none; border-color: var(--accent); }
 /* 用 .modal.settings-modal 双类提高优先级：.modal{width:560px} 在本文件中位置更靠后，同优先级会盖掉 .settings-modal 的宽度 */
 .modal.settings-modal { width: 1120px; }
-.autolog-box { padding: 6px 2px; }
-.font-box { padding: 6px 2px; }
-.font-box .switch-row { margin-bottom: 16px; min-width: 0; }
+.autolog-box { padding: 4px 0; }
+.font-box { padding: 4px 0; }
+.font-box .switch-row { min-width: 0; }
 .font-box .switch-row > span:first-child { width: 72px; flex: 0 0 72px; }
 .font-box input[type="number"] { width: 72px; }
 /* 字体类型自研下拉：基准宽 360px 且允许收缩（min-width:0），宽度始终受设置弹窗约束，不撑破边框 */
@@ -334,15 +336,22 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .font-opt.active { background: var(--primary); color: var(--on-primary); }
 .font-empty { padding: 8px 10px; color: var(--muted); font-size: 12px; }
 .font-preview { margin-top: 4px; border: 1px dashed var(--border); border-radius: 6px; padding: 10px; background: var(--bg); white-space: pre-wrap; word-break: break-all; line-height: 1.5; }
-.switch-row { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+/* 复选框行与「界面主题」标签(.outdir-label)同为 13px；原先 14px 是设置页字体忽大忽小的来源 */
+.switch-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 /* 只约束复选框；若不限定 type，会把 .switch-row 内的文本输入框也压成 16px（字体类型输入框曾因此塌成小方块） */
 .switch-row input[type="checkbox"] { width: 16px; height: 16px; }
+/* 设置页行距统一 10px：与 .outdir-row / .muted.small 一致。
+   行内说明（「px（8~32）」「1~3600 秒…」等）沿用 12px 说明样式，但不吃 10px 上边距。 */
+.settings-modal .switch-row { margin: 10px 0 0; }
+.settings-modal .switch-row .muted.small,
+.settings-modal .outdir-row .muted.small { margin: 0; }
 .muted.small { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 10px 0 0; }
 .autolog-box code { font-family: monospace; background: var(--panel); padding: 1px 5px; border-radius: 3px; color: var(--text); }
 .outdir-row { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; }
-.general-io { display: flex; gap: 8px; margin: 14px 0 0; }
+.general-io { display: flex; gap: 8px; margin: 10px 0 0; }
 .outdir-label { flex: 0 0 auto; font-size: 13px; color: var(--text); }
-.outdir-input { flex: 1 1 auto; min-width: 0; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 12px; }
+/* 输入框与「界面主题」下拉（13px）同字号；原先 12px 显小 */
+.outdir-input { flex: 1 1 auto; min-width: 0; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); color: var(--text); font-size: 13px; }
 .outdir-btn { flex: 0 0 auto; height: 28px; padding: 0 14px; border: 1px solid var(--primary); border-radius: 5px; background: var(--primary); color: var(--on-primary); font-size: 13px; }
 .outdir-btn:hover { background: var(--primary-d); border-color: var(--primary-d); }
 
@@ -543,6 +552,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .cmd-preview .info-label { display: flex; align-items: center; justify-content: space-between; }
 .cmd-text { width: 100%; box-sizing: border-box; margin-top: 4px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-alt); color: var(--fg); font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; line-height: 1.5; resize: vertical; }
 .chk { display: flex; align-items: center; gap: 6px; font-size: 13px; margin: 8px 0; }
+/* 卸载弹窗「保留数据与缓存(-k)」：下方 .modal-body label / label input 会把复选框撑成整行、
+   文字掉到下一行。仅提权直接子级 .chk，不影响 InstallModal 中嵌在 .chk-row 内的同类复选框。 */
+.modal-body > label.chk { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; }
+.modal-body > label.chk input[type="checkbox"] { flex: 0 0 auto; width: 16px; height: 16px; margin: 0; padding: 0; }
 .chk-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
 .ghost { border: 1px solid var(--border); background: var(--surface); border-radius: 4px; padding: 6px 14px; cursor: pointer; }
 
@@ -721,5 +734,5 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* 设置-窗口属性：自定义背景分区 */
 .bg-section { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
 .bg-zone { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
-.bg-zone .outdir-row { margin-bottom: 6px; }
+.bg-zone .outdir-row { margin-bottom: 0; }
 .bg-zone input[type="range"] { flex: 1 1 auto; min-width: 0; height: 20px; padding: 0; border: none; background: transparent; }
