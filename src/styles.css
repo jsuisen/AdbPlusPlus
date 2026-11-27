@@ -73,12 +73,10 @@ html, body {
 
 #app { height: 100vh; display: flex; flex-direction: column; }
 
-/* 自定义背景层：固定整窗、不接收事件，永远在内容层之下。 */
-.app-bg {
-  position: fixed; inset: 0; z-index: 0; pointer-events: none;
-  background-image: var(--app-bg-image, none);
-  background-size: cover; background-position: center; background-repeat: no-repeat;
-}
+/* 自定义背景层：固定整窗、不接收事件，永远在内容层之下。
+   图片走 img 节点（大 data URL 写 CSS 自定义属性会被 Chromium 静默丢弃）。 */
+.app-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.app-bg-img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center; }
 
 select, input, button {
   font-family: inherit; font-size: 13px;

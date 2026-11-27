@@ -14,6 +14,7 @@ import { useDeviceinfo } from './composables/useDeviceinfo'
 import { useUi } from './composables/useUi'
 import { useColorrules } from './composables/useColorrules'
 import { useApp } from './composables/useApp'
+import { useBackground } from './composables/useBackground'
 import { useUpdate } from './composables/useUpdate'
 import { useDeviceClock } from './composables/useDeviceClock'
 import PollingListTab from './components/PollingListTab.vue'
@@ -168,12 +169,13 @@ const { exportDeviceInfo, exportGetprop, fetchGetprop, manualRefresh, runBugrepo
 const { winClose, winMax, winMin, winTop } = useUi()
 const { logLineStyle, openColorWin } = useColorrules()
 useApp()
+const { bgImageSrc } = useBackground()
 const { refreshDeviceClock } = useDeviceClock()
 const { openUpdateDialog } = useUpdate()
 </script>
 
 <template>
-  <div class="app-bg" aria-hidden="true"></div>
+  <div class="app-bg" aria-hidden="true"><img v-if="bgImageSrc" class="app-bg-img" :src="bgImageSrc" alt="" /></div>
   <div class="app-root" @wheel="onWheel">
     <!-- 菜单栏（已合并自定义标题栏：左侧 收起/关于，右侧 窗口控制） -->
     <div class="menubar">

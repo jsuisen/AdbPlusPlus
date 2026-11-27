@@ -1,9 +1,12 @@
-// 自定义背景：配置 -> CSS 变量。图片只在启动/选择时解码一次，日志热路径不参与。
+// 自定义背景：配置 -> CSS 变量 + 单个 img 节点。图片只在启动/选择时解码一次，日志热路径不参与。
+import { ref } from 'vue'
 import { api, cfg } from './state'
 import { toast } from './useUi'
 import { t } from '@/i18n'
 
-let imageUrl = ''
+// data URL 有 2MB 量级；Chromium 会静默拒绝把它写进 CSS 自定义属性，
+// 但 <img src> 能正常解码。因此图片走 img 节点，区背景仍走 CSS 变量。
+export const bgImageSrc = ref('')
 let loadSeq = 0
 
 function zone(key) {
@@ -40,7 +43,6 @@ function applyBackground() {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   const on = !!cfg.value.bgEnabled
-  root.style.setProperty('--app-bg-image', (on && imageUrl) ? `url("${imageUrl}")` : 'none')
   const zones = [
     ['chrome', '--zone-chrome-bg', 'var(--panel)'],
     ['log', '--zone-log-bg', 'var(--surface)']
@@ -62,7 +64,7 @@ function applyBackground() {
 async function loadImage(p, quiet = false) {
   const seq = ++loadSeq
   if (!p) {
-    imageUrl = ''
+    bgImageSrc.value = ''
     applyBackground()
     return false
   }
@@ -73,10 +75,10 @@ async function loadImage(p, quiet = false) {
     console.warn('[background] image read failed', e)
   }
   if (seq !== loadSeq) return false
-  imageUrl = typeof url === 'string' ? url : ''
+  bgImageSrc.value = typeof url === 'string' ? url : ''
   applyBackground()
-  if (!imageUrl && !quiet) toast(t('toast.bgFailed'))
-  return !!imageUrl
+  if (!bgImageSrc.value && !quiet) toast(t('toast.bgFailed'))
+  return !!bgImageSrc.value
 }
 
 async function restoreBackground() {
@@ -99,7 +101,7 @@ async function browseBackgroundImage() {
 function clearBackgroundImage() {
   cfg.value.bgImage = ''
   loadSeq++
-  imageUrl = ''
+  bgImageSrc.value = ''
   applyBackground()
 }
 
@@ -132,7 +134,7 @@ function resetBackground() {
 
 function useBackground() {
   return {
-    applyBackground, browseBackgroundImage, clearBackgroundImage, loadImage,
+    bgImageSrc, applyBackground, browseBackgroundImage, clearBackgroundImage, loadImage,
     resetBackground, restoreBackground, setZoneAlpha, setZoneColor
   }
 }
