@@ -305,11 +305,14 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .logline .meta { color: var(--muted); margin-right: 6px; }
 
 /* 设置面板 */
-.settings-body { display: flex; gap: 12px; min-height: 300px; }
-.settings-tabs { display: flex; flex-direction: column; gap: 4px; min-width: 120px; border-right: 1px solid var(--border); padding-right: 12px; }
-.settings-tabs button { text-align: left; border: 1px solid var(--border); background: var(--surface); }
+/* 固定设置窗口高度：切换 tab 不再因内容长短改变窗口高度。
+   左侧 tab 列表与右侧内容各自滚动，body 留 2px 内边距避免元素贴窗口边缘。 */
+.settings-body { display: flex; gap: 12px; flex: 1; min-height: 0; overflow: hidden; padding: 2px; }
+.settings-tabs { display: flex; flex-direction: column; gap: 4px; flex: 0 0 132px; width: 132px; min-height: 0; overflow-y: auto; border-right: 1px solid var(--border); padding-right: 8px; }
+/* flex 列布局下按钮默认会收缩，必须锁死高度，否则列表装不下时按钮被压扁而不是出滚动条 */
+.settings-tabs button { flex: 0 0 auto; text-align: left; white-space: nowrap; border: 1px solid var(--border); background: var(--surface); }
 .settings-tabs button.active { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
-.settings-content { flex: 1; min-width: 0; }
+.settings-content { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 /* 所有设置 tab 统一容器内边距；原先 autolog/font 自带 6px 2px，比通用 tab 多 2px 左缩进 */
 .settings-content > div { padding: 4px 0; }
 /* 窗口属性 tab：行距统一由 .outdir-row / .switch-row / .muted.small 的 10px 上边距提供 */
@@ -320,8 +323,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .color-row input[type="color"] { width: 44px; height: 28px; padding: 2px; }
 .color-hex-input { width: 92px; font-family: monospace; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text); text-transform: uppercase; }
 .color-hex-input:focus { outline: none; border-color: var(--accent); }
-/* 用 .modal.settings-modal 双类提高优先级：.modal{width:560px} 在本文件中位置更靠后，同优先级会盖掉 .settings-modal 的宽度 */
-.modal.settings-modal { width: 1120px; }
+/* 用 .modal.settings-modal 双类提高优先级：.modal{width:560px} 在本文件中位置更靠后，同优先级会盖掉宽度。
+   height 固定为 82vh（与 .modal 的 max-height 一致），切换 tab 不再改变窗口高度 */
+.modal.settings-modal { width: 1120px; height: 82vh; }
 .autolog-box { padding: 4px 0; }
 .font-box { padding: 4px 0; }
 .font-box .switch-row { min-width: 0; }
