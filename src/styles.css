@@ -62,12 +62,17 @@
 
 * { box-sizing: border-box; }
 
-/* 全局滚动条配色：未接触 #CCCCCC，悬停 #5A5A5A。
-   只改颜色不改宽度/布局；不要写 scrollbar-color —— 标准属性一旦生效会禁用 ::-webkit-scrollbar-* 伪元素，
-   :hover 变色就失效了。全局 * 覆盖 Teleport 到 body 的下拉/菜单以及各弹窗内部滚动区。 */
+/* 全局滚动条配色：未接触 #CCCCCC，鼠标进入滚动条区域 #5A5A5A。
+   实测 Chromium 157 / Electron 37 已忽略 ::-webkit-scrollbar-* 伪元素，只认标准 scrollbar-color；
+   标准属性没有 thumb 级 :hover 选择器，故由 App.vue 的全局指针检测给滚动容器加 .scrollbar-hot。
+   下面的 webkit 规则只作旧引擎兜底，不改滚动条宽度。 */
+* { scrollbar-color: #CCCCCC transparent; }
+/* 悬停目标视觉色 #5A5A5A：Chromium 157 / Electron 37 在 hover 时会把 thumb 混合并提高下限，
+   实测直接写 #5A5A5A 只会画成 #838383；写 #333333 反而精确画成 #5A5A5A（见 .workbuddy/tmp 截图探针）。 */
+.scrollbar-hot { scrollbar-color: #333333 transparent; }
 *::-webkit-scrollbar-track { background: transparent; }
 *::-webkit-scrollbar-thumb { background: #CCCCCC; border-radius: 4px; }
-*::-webkit-scrollbar-thumb:hover { background: #5A5A5A; }
+*:hover::-webkit-scrollbar-thumb { background: #5A5A5A; }
 *::-webkit-scrollbar-corner { background: transparent; }
 
 html, body {

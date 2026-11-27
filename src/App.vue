@@ -104,6 +104,49 @@ function onSidebarResizeStart(e) {
   window.addEventListener('blur', onUp)
 }
 
+// 滚动条 hover 配色：标准 scrollbar-color 没有 thumb 级 :hover，只能用指针坐标判断
+// 是否落在某滚动容器的滚动条带内，再给该容器加 .scrollbar-hot（CSS 切到 #5A5A5A）。
+let scrollbarHotEl = null
+let hoverFrame = 0
+let hoverPoint = null
+function setScrollbarHot(el) {
+  if (scrollbarHotEl === el) return
+  if (scrollbarHotEl) scrollbarHotEl.classList.remove('scrollbar-hot')
+  scrollbarHotEl = el
+  if (el) el.classList.add('scrollbar-hot')
+}
+function updateScrollbarHot() {
+  hoverFrame = 0
+  if (!hoverPoint) return
+  const { x, y } = hoverPoint
+  let node = document.elementFromPoint(x, y)
+  while (node && node !== document.documentElement) {
+    const st = getComputedStyle(node)
+    const canY = /(auto|scroll)/.test(st.overflowY) && node.scrollHeight > node.clientHeight + 1
+    const canX = /(auto|scroll)/.test(st.overflowX) && node.scrollWidth > node.clientWidth + 1
+    if (canY || canX) {
+      const r = node.getBoundingClientRect()
+      const vw = node.offsetWidth - node.clientWidth   // 竖滚动条占位（含边框，放宽 1px 便于命中）
+      const vh = node.offsetHeight - node.clientHeight // 横滚动条占位
+      const inY = canY && vw > 0 && x >= r.right - vw - 1 && x <= r.right && y >= r.top && y <= r.bottom
+      const inX = canX && vh > 0 && y >= r.bottom - vh - 1 && y <= r.bottom && x >= r.left && x <= r.right
+      if (inY || inX) { setScrollbarHot(node); return }
+    }
+    node = node.parentElement
+  }
+  setScrollbarHot(null)
+}
+function onGlobalMouseMove(e) {
+  hoverPoint = { x: e.clientX, y: e.clientY }
+  if (!hoverFrame) hoverFrame = requestAnimationFrame(updateScrollbarHot)
+}
+function cleanupScrollbarHot() {
+  if (hoverFrame) cancelAnimationFrame(hoverFrame)
+  hoverFrame = 0
+  hoverPoint = null
+  setScrollbarHot(null)
+}
+
 // 过滤框「历史」下拉：同一时刻只展开一个；点选直接写入对应过滤条件的 computed setter。
 function toggleFilterHistoryMenu(kind) {
   filterHistoryOpen.value = filterHistoryOpen.value === kind ? '' : kind
@@ -194,9 +237,14 @@ function onLogScroll() {
 function onSelectionChange() {
   syncCaretFromSel()
 }
-onMounted(() => document.addEventListener('selectionchange', onSelectionChange))
+onMounted(() => {
+  document.addEventListener('selectionchange', onSelectionChange)
+  window.addEventListener('mousemove', onGlobalMouseMove, { passive: true })
+})
 onBeforeUnmount(() => {
   document.removeEventListener('selectionchange', onSelectionChange)
+  window.removeEventListener('mousemove', onGlobalMouseMove)
+  cleanupScrollbarHot()
   if (sidebarDragCleanup) sidebarDragCleanup()
 })
 const { addCmd, closeCmdOutput, cmdTextColor, onCmdArgsInput, onCmdColor, removeCmd, runCmd } = useActions()
