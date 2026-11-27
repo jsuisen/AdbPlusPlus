@@ -342,7 +342,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .outdir-btn:hover { background: var(--primary-d); border-color: var(--primary-d); }
 
 /* 语言包设置（i18n） */
-.lang-select { flex: 1 1 auto; min-width: 180px; max-width: 420px; }  /* 边框/底色/内边距由内部 .as-trigger 提供；根 div 再加会双重边框 */
+.lang-select, .theme-select { flex: 1 1 auto; min-width: 180px; max-width: 420px; }  /* 边框/底色/内边距由内部 .as-trigger 提供；根 div 再加会双重边框 */
 .lang-warnings { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 5px; background: var(--danger-bg); color: var(--danger); font-size: 12px; line-height: 1.7; max-height: 220px; overflow: auto; }
 .lang-warning { word-break: break-all; }
 
