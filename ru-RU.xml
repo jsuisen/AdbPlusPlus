@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Русский — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- Русский — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="ru-RU" name="Русский" fallback="en-US">
   <string name="about.checkUpdate">Проверить обновления</string>
   <string name="about.desc">ADB++ — десктопный инструмент ADB</string>
@@ -674,4 +674,7 @@
   <string name="settings.offlineLogLocalDirDesc">Загруженные логи сохраняются здесь; если пусто — {dir}/offline-logs.</string>
   <string name="settings.offlineLogRoot">Запускать logcat от root</string>
   <string name="settings.offlineLogRootDesc">Включите, если обычная оболочка не может читать/писать защищённые каталоги; su -c повышает права только для logcat.</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">Загрузка, пожалуйста, подождите…</string>
+  <string name="offlinelog.copyPathHint">Нажмите, чтобы скопировать полный путь загруженного файла</string>
 </resources>

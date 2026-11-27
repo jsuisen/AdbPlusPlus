@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 繁體中文 — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- 繁體中文 — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="zh-TW" name="繁體中文" fallback="en-US">
   <string name="about.checkUpdate">版本檢測</string>
   <string name="about.desc">ADB++，工程級ADB桌面工具</string>
@@ -674,4 +674,7 @@
   <string name="settings.offlineLogLocalDirDesc">點「下載」時 log 會拉到此本機目錄；留空則存到 {dir}/offline-logs。</string>
   <string name="settings.offlineLogRoot">以 root 執行 logcat</string>
   <string name="settings.offlineLogRootDesc">一般 shell 無權讀寫受保護目錄時勾選；透過 su -c 僅給 logcat 提權。</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">正在下載，請稍候…</string>
+  <string name="offlinelog.copyPathHint">點擊複製本機下載檔案的完整路徑</string>
 </resources>

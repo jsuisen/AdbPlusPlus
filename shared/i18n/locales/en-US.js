@@ -730,6 +730,8 @@ export default {
   'offlinelog.hint': 'logcat runs in the background on the device with nohup. Disconnecting adb or closing the app does not stop it; files stay on the device after stop.',
   'offlinelog.noFilesFull': 'No .log files in {dir}. Tap "Start log capture" first.',
   'offlinelog.dumpEmpty': 'logcat buffer is empty; no file was written',
+  'offlinelog.downloading': 'Downloading, please wait…',
+  'offlinelog.copyPathHint': 'Click to copy the full local path of the downloaded file',
   'status.offlineLogStarted': 'Offline log started: ',
   'toast.offlineLogStarted': 'Device-side background logcat started (adb may be disconnected)',
   'toast.offlineLogStopped': 'Background logcat stopped (files remain on device)',

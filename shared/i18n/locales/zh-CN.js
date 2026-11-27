@@ -731,6 +731,8 @@ export default {
   'offlinelog.hint': '设备端后台运行 nohup logcat，断开 adb 或退出软件都不中断；停止后文件保留在设备端。',
   'offlinelog.noFilesFull': '目录 {dir} 下暂无 .log 文件，先点「开始抓日志」。',
   'offlinelog.dumpEmpty': 'logcat 缓冲为空，未写出文件',
+  'offlinelog.downloading': '正在下载，请稍候…',
+  'offlinelog.copyPathHint': '点击复制本机下载文件的完整路径',
   'status.offlineLogStarted': '离线日志已开始：',
   'toast.offlineLogStarted': '已启动设备端后台 logcat（可断开 adb）',
   'toast.offlineLogStopped': '已停止设备端后台 logcat（文件保留在设备端）',

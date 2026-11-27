@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 한국어 — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- 한국어 — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="ko-KR" name="한국어" fallback="en-US">
   <string name="about.checkUpdate">업데이트 확인</string>
   <string name="about.desc">ADB++, 데스크톱 ADB 도구</string>
@@ -674,4 +674,7 @@
   <string name="settings.offlineLogLocalDirDesc">&quot;다운로드&quot; 시 로그가 여기에 저장됩니다. 비었으면 {dir}/offline-logs.</string>
   <string name="settings.offlineLogRoot">logcat을 root로 실행</string>
   <string name="settings.offlineLogRootDesc">일반 셸로 보호 디렉터리를 읽거나 쓸 수 없을 때 체크하세요. su -c로 logcat만 권한 상승합니다.</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">다운로드 중입니다. 잠시 기다려 주세요…</string>
+  <string name="offlinelog.copyPathHint">클릭하여 다운로드 파일의 전체 경로 복사</string>
 </resources>

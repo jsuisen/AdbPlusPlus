@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- اردو — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- اردو — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="ur-PK" name="اردو" fallback="en-US">
   <string name="about.checkUpdate">اپ ڈیٹس چیک کریں</string>
   <string name="about.desc">ADB++، ایک ڈیسک ٹاپ ADB ٹول</string>
@@ -674,4 +674,7 @@
   <string name="settings.offlineLogLocalDirDesc">&quot;ڈاؤن لوڈ&quot; پر لاگ یہاں آتی ہے؛ خالی ہو تو {dir}/offline-logs۔</string>
   <string name="settings.offlineLogRoot">logcat کو root سے چلائیں</string>
   <string name="settings.offlineLogRootDesc">جب عام شیل محفوظ فولڈرز پڑھ/لکھ نہ سکے تو نشان لگائیں؛ su -c صرف logcat کو بلند کرتا ہے۔</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">ڈاؤن لوڈ جاری ہے، براہِ کرم انتظار کریں…</string>
+  <string name="offlinelog.copyPathHint">ڈاؤن لوڈ شدہ فائل کے مکمل راستے کو کاپی کرنے کے لیے کلک کریں</string>
 </resources>

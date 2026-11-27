@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 日本語 — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- 日本語 — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="ja-JP" name="日本語" fallback="en-US">
   <string name="about.checkUpdate">バージョン確認</string>
   <string name="about.desc">ADB++、プロジェクト向け ADB デスクトップツール</string>
@@ -671,4 +671,7 @@
   <string name="settings.offlineLogLocalDirDesc">「ダウンロード」でここに保存します。空欄なら {dir}/offline-logs。</string>
   <string name="settings.offlineLogRoot">logcat を root で実行</string>
   <string name="settings.offlineLogRootDesc">通常シェルで保護ディレクトリを読み書きできない場合にチェック。su -c で logcat のみ権限昇格します。</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">ダウンロード中です。しばらくお待ちください…</string>
+  <string name="offlinelog.copyPathHint">クリックしてダウンロード先の完全パスをコピー</string>
 </resources>

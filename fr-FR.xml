@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Français — 完整词条（669 条）；占位符与内置基准一致。 -->
+<!-- Français — 完整词条（671 条）；占位符与内置基准一致。 -->
 <resources locale="fr-FR" name="Français" fallback="en-US">
   <string name="about.checkUpdate">Vérifier les mises à jour</string>
   <string name="about.desc">ADB++, un outil ADB de bureau</string>
@@ -674,4 +674,7 @@ Fichier : </string>
   <string name="settings.offlineLogLocalDirDesc">Les fichiers téléchargés vont ici ; sinon {dir}/offline-logs.</string>
   <string name="settings.offlineLogRoot">Exécuter logcat en root</string>
   <string name="settings.offlineLogRootDesc">Cochez si le shell normal ne peut pas lire/écrire les répertoires protégés ; su -c n’élève que logcat.</string>
+  <!-- ===== 本次会话新增：抓包离线化 + 离线日志 ===== -->
+  <string name="offlinelog.downloading">Téléchargement en cours, veuillez patienter…</string>
+  <string name="offlinelog.copyPathHint">Cliquez pour copier le chemin complet du fichier téléchargé</string>
 </resources>
