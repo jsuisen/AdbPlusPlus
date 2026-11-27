@@ -757,6 +757,13 @@ function onWheel(e) {
   }
 }
 
+// 把 WheelEvent.deltaY 统一换算成像素：0=像素、1=行（按日志行高）、2=页（按可视高度）
+function wheelDeltaPx(e, el) {
+  if (e.deltaMode === 1) return e.deltaY * logLineStep()
+  if (e.deltaMode === 2) return e.deltaY * el.clientHeight
+  return e.deltaY
+}
+
 // 日志窗口 Ctrl+滚轮：动态增减日志字体大小（与 设置-日志字体-字体大小 等效，范围 8~32px）。
 // 仅作用于日志窗口内；stopPropagation 阻止冒泡到 app-root 的 onWheel（后者 Ctrl+滚轮为整窗缩放）。
 function onLogWheel(e) {
@@ -769,12 +776,18 @@ function onLogWheel(e) {
     saveCfg()
     return
   }
+  const el = logEl.value
+  if (!el || !e.deltaY) return
   // 底部再下滚锁定：日志已贴底但未跟随时，再向下滚一次即重新开启底部跟随（等同点「底部」按钮）。
-  // 贴底阈值与 onLogScrollSave 保持一致（4px），兼容浏览器小数滚动量；上滚取消跟随仍由 app-root 的 onWheel 处理。
-  if (e.deltaY > 0 && cfg.value.wheelDownLockBottom && !autoscroll.value) {
-    const el = logEl.value
-    if (el && el.scrollHeight - el.scrollTop - el.clientHeight <= 4) enableAutoscroll()
-  }
+  // 必须在应用速度倍率前判定贴底；上滚取消跟随仍由冒泡到 app-root 的 onWheel 处理。
+  if (e.deltaY > 0 && cfg.value.wheelDownLockBottom && !autoscroll.value && el.scrollHeight - el.scrollTop - el.clientHeight <= 4) enableAutoscroll()
+  // 倍率 1 保持 Chromium 原生滚动（含触控板惯性）；非 1 时接管滚轮，按倍率手动滚动。
+  // 只 preventDefault，不 stopPropagation：上滚取消跟随依赖根容器 onWheel 继续收到同一事件。
+  const raw = Number(cfg.value.logWheelSpeed)
+  const factor = Number.isFinite(raw) && raw > 0 ? raw : 1
+  if (factor === 1) return
+  e.preventDefault()
+  el.scrollTop += wheelDeltaPx(e, el) * factor
 }
 
 function insertNote(anchorId, ev) {

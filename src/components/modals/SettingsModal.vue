@@ -13,7 +13,7 @@ import * as State from '@/composables/state'
 import {
   maskClose, setTab, resetLogColors, onLogColorChange, onHexInput, onBgInput,
   browseOutDir, onMaxRenderChange, browseConfigPath, exportSettings, importSettings,
-  onFontChange, openFontPicker, pickFont, saveCfg, syncLogColorsForTheme,
+  onFontChange, onWheelSpeedChange, openFontPicker, pickFont, saveCfg, syncLogColorsForTheme,
   browseCaptureLocalDir, browseOfflineLogLocalDir, browseScreenshotDir,
   addFilterHistory, clearFilterHistory, removeFilterHistory, toggleFilterHistoryLock, onFilterHistoryMaxChange
 } from '@/composables/useConfig'
@@ -118,6 +118,7 @@ async function exportLangTemplate() {
           <button :class="{ active: settingsTab === 'win' }" @click="setTab('win')">{{ t('settings.window') }}</button>
           <button :class="{ active: settingsTab === 'applog' }" @click="setTab('applog')">{{ t('settings.appLog') }}</button>
           <button :class="{ active: settingsTab === 'font' }" @click="setTab('font')">{{ t('settings.font') }}</button>
+          <button :class="{ active: settingsTab === 'logscroll' }" @click="setTab('logscroll')">{{ t('settings.logScrolling') }}</button>
           <button :class="{ active: settingsTab === 'colors' }" @click="setTab('colors')">{{ t('settings.colors') }}</button>
           <button :class="{ active: settingsTab === 'contentcolor' }" @click="setTab('contentcolor')">{{ t('settings.contentColor') }}</button>
           <button :class="{ active: settingsTab === 'autolog' }" @click="setTab('autolog')">{{ t('settings.autoLog') }}</button>
@@ -235,11 +236,6 @@ async function exportLangTemplate() {
             </label>
             <p class="muted small">{{ t('settings.cursorDesc') }}</p>
             <label class="switch-row">
-              <input type="checkbox" v-model="cfg.wheelDownLockBottom" @change="saveCfg" />
-              <span>{{ t('settings.wheelDownLockBottom') }}</span>
-            </label>
-            <p class="muted small">{{ t('settings.wheelDownLockBottomHint') }}</p>
-            <label class="switch-row">
               <input type="checkbox" v-model="cfg.checkUpdateOnStartup" @change="saveCfg" />
               <span>{{ t('settings.checkUpdate') }}</span>
             </label>
@@ -307,6 +303,18 @@ async function exportLangTemplate() {
             </label>
             <div class="font-preview" :style="logFontStyle">I/Hello World 2018-02-07 06:16:28.555 com.example.sample: sample log line</div>
             <p class="muted small">{{ t('settings.effectiveImmediately') }}</p>
+          </div>
+          <div v-if="settingsTab === 'logscroll'" class="logscroll-box">
+            <label class="switch-row">
+              <span>{{ t('settings.wheelSpeed') }}</span>
+              <input type="number" min="0.25" max="3" step="0.25" v-model.number="cfg.logWheelSpeed" @change="onWheelSpeedChange" />
+              <span class="muted small">{{ t('settings.wheelSpeedHint') }}</span>
+            </label>
+            <label class="switch-row">
+              <input type="checkbox" v-model="cfg.wheelDownLockBottom" @change="saveCfg" />
+              <span>日志滚到底后再向下滚轮自动锁定底部（默认开启）</span>
+            </label>
+            <p class="muted small">日志已贴底且未跟随时，再向下滚动一下即可锁定底部，后续日志继续自动跟随。</p>
           </div>
           <div v-if="settingsTab === 'win'" class="win-box">
             <label class="switch-row">

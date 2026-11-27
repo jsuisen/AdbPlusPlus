@@ -74,6 +74,14 @@ function normalizeAutoReconnectInterval(v) {
   return Math.max(1, Math.min(3600, n))
 }
 
+// 日志区滚轮速度倍率：0.25~3，1=系统默认；异常值回落 1。
+function normalizeWheelSpeed(v) {
+  let n = Number(v)
+  if (!Number.isFinite(n)) n = 1
+  n = Math.round(n * 100) / 100
+  return Math.max(0.25, Math.min(3, n))
+}
+
 // 兼容旧配置 / 导入文件：忽略非对象、非数组、空文本、重复项，锁定标志强制布尔化。
 function normalizeFilterHistory(fh) {
   const out = { tag: [], text: [] }
@@ -202,6 +210,11 @@ function onMaxRenderChange() {
   saveCfg()
 }
 
+function onWheelSpeedChange() {
+  cfg.value.logWheelSpeed = normalizeWheelSpeed(cfg.value.logWheelSpeed)
+  saveCfg()
+}
+
 function openFontPicker() { fontPickerOpen.value = true }
 
 function pickFont(opt) {
@@ -271,6 +284,8 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   if (Object.prototype.hasOwnProperty.call(c, 'autoReconnectInterval')) cfg.value.autoReconnectInterval = normalizeAutoReconnectInterval(c.autoReconnectInterval)
   // 旧配置缺字段时保持默认开启：只有明确关闭过才关掉「底部再下滚锁定」
   if (Object.prototype.hasOwnProperty.call(c, 'wheelDownLockBottom')) cfg.value.wheelDownLockBottom = !!c.wheelDownLockBottom
+  // 旧配置缺字段时保持默认倍率 1（系统原生滚动）
+  if (Object.prototype.hasOwnProperty.call(c, 'logWheelSpeed')) cfg.value.logWheelSpeed = normalizeWheelSpeed(c.logWheelSpeed)
   // 背景配置形状归一化：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
   cfg.value.bgEnabled = !!c.bgEnabled
   cfg.value.bgImage = typeof c.bgImage === 'string' ? c.bgImage : ''
@@ -379,7 +394,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'wheelDownLockBottom', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'autoReconnect', 'autoReconnectInterval', 'wheelDownLockBottom', 'logWheelSpeed', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }
@@ -438,6 +453,6 @@ async function browseScreenshotDir() {
 
 export function useConfig() {
 
-  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }
+  return { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, onWheelSpeedChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, syncLogColorsForTheme, toggleFilterHistoryLock }
 }
-export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
+export { addFilterHistory, applyConfig, browseCaptureLocalDir, browseConfigPath, browseOfflineLogLocalDir, browseOutDir, browseScreenshotDir, clearFilterHistory, exportSettings, importSettings, loadSystemFonts, maskClose, normalizeAutoReconnectInterval, normalizeHex, onBgInput, onDocMouseDown, onFilterHistoryMaxChange, onFontChange, onHexInput, onLogColorChange, onMaxRenderChange, onWheelSpeedChange, openFontPicker, pickFont, removeFilterHistory, resetLogColors, saveCfg, setTab, syncFontQuery, toggleFilterHistoryLock }
