@@ -240,11 +240,11 @@ async function exportLangTemplate() {
             </label>
             <label class="switch-row">
               <input type="checkbox" v-model="cfg.autoReconnect" @change="onAutoReconnectChange" />
-              <span>{{ t('settings.autoReconnect') }}</span>
+              <span>ADB 断线自动重连（默认开启）</span>
             </label>
-            <p class="muted small">{{ t('settings.autoReconnectHint') }}</p>
+            <p class="muted small">网络设备非人工断开时自动重连，直到恢复；手动关闭、断开、取消连接不会被重连。USB 设备无法用 adb 重连，需重新插拔。</p>
             <div v-if="cfg.autoReconnect" class="outdir-row">
-              <span class="outdir-label">{{ t('settings.autoReconnectInterval') }}</span>
+              <span class="outdir-label">重连间隔（秒）</span>
               <input class="font-input" type="number" min="1" max="3600" step="1" v-model.number="cfg.autoReconnectInterval" @change="onAutoReconnectChange" />
               <span class="muted small">{{ t('settings.autoReconnectIntervalHint') }}</span>
             </div>
