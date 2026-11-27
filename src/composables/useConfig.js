@@ -27,6 +27,27 @@ function resolvedTheme(mode) {
   return (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'
 }
 
+// 背景分区参数归一化：与 main/config.js 的同名函数保持同形，防半截配置/导入文件破坏结构。
+function normalizeBgZones(raw) {
+  const out = {}
+  for (const k of ['chrome', 'log']) {
+    const z = (raw && typeof raw === 'object' && raw[k] && typeof raw[k] === 'object') ? raw[k] : {}
+    let color = typeof z.color === 'string' ? z.color.trim() : ''
+    if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+      color = '#' + color.slice(1).split('').map(c => c + c).join('').toLowerCase()
+    } else if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+      color = color.toLowerCase()
+    } else {
+      color = ''
+    }
+    let alpha = Number(z.alpha)
+    if (!Number.isFinite(alpha)) alpha = 100
+    alpha = Math.max(0, Math.min(100, Math.round(alpha)))
+    out[k] = { enabled: !!z.enabled, color, alpha }
+  }
+  return out
+}
+
 // 主题解析后同步日志默认色。由 useApp 订阅 useTheme.onThemeResolved 调用（含 system 跟随变化）。
 export function syncLogColorsForTheme(resolved) {
   const t = resolved === 'dark' ? 'dark' : 'light'
@@ -237,6 +258,10 @@ function applyConfig(c, { applyDeviceState = true } = {}) {
   // 过滤历史形状归一化：旧配置缺字段 → 空列表；异常形状 → 回落空列表，避免下拉渲染时抛错。
   cfg.value.filterHistory = normalizeFilterHistory(c.filterHistory)
   cfg.value.filterHistoryMax = normalizeFilterHistoryMax(c.filterHistoryMax)
+  // 背景配置形状归一化：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
+  cfg.value.bgEnabled = !!c.bgEnabled
+  cfg.value.bgImage = typeof c.bgImage === 'string' ? c.bgImage : ''
+  cfg.value.bgZones = normalizeBgZones(c.bgZones)
   // 用户主动「关闭」过的网络设备：只接受字符串数组，避免异常配置让设备列表过滤抛错。
   if (Array.isArray(c.hiddenSerials)) cfg.value.hiddenSerials = c.hiddenSerials.filter((s) => typeof s === 'string' && s).map((s) => s.trim())
   // 连接历史形状归一化：旧配置缺字段 → 空数组；异常形状 → 空数组，避免下拉渲染时抛错。
@@ -341,7 +366,7 @@ async function doImportSettings(p) {
     return { ok: false, text: t('toast.invalidConfig') + t('common.fileLine') + p }
   }
   // 至少含一个已知配置键，避免误导入无关 JSON 把当前配置清空
-  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme']
+  const known = ['quickCommands', 'levelFilter', 'tagFilter', 'textFilter', 'lastSerial', 'hiddenSerials', 'outDir', 'targetPkg', 'configPath', 'autoLog', 'appLogEnabled', 'appLogDir', 'logColors', 'logColorBold', 'logBgColors', 'logBgOn', 'logColorRules', 'logFont', 'keyButtons', 'textButtons', 'tapButtons', 'swipeButtons', 'captureArgs', 'captureDeviceDir', 'captureLocalDir', 'captureAsRoot', 'screenshotDir', 'screenshotInterval', 'maxRender', 'filterHistoryMax', 'filterHistory', 'lastConnectIp', 'lastConnectPort', 'connectHistory', 'closeOnOuterClick', 'cursorMoveNoScroll', 'theme', 'bgEnabled', 'bgImage', 'bgZones']
   if (!known.some(k => k in data)) {
     return { ok: false, text: t('toast.noConfigItems') + t('common.fileLine') + p }
   }

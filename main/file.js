@@ -1,7 +1,7 @@
 // 文件对话框 / 落地 IPC：导出日志、选截图/录屏保存路径、选本地 APK。
 // 渲染进程无 nodeIntegration，所有文件写盘都在主进程完成。
-import { ipcMain, dialog, clipboard, shell } from 'electron'
-import { FILE_PICK_SAVE, FILE_OPEN_FILE, FILE_PICK_DIR, FILE_SAVE_TEXT, FILE_READ_TEXT, FILE_OPEN_DIR, LOG_APPEND, CLIPBOARD_WRITE } from '../shared/ipc-channels.js'
+import { ipcMain, dialog, clipboard, shell, nativeImage } from 'electron'
+import { FILE_PICK_SAVE, FILE_OPEN_FILE, FILE_PICK_DIR, FILE_SAVE_TEXT, FILE_READ_TEXT, FILE_READ_IMAGE, FILE_OPEN_DIR, LOG_APPEND, CLIPBOARD_WRITE } from '../shared/ipc-channels.js'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -18,6 +18,27 @@ export function registerFileIpc() {
     const { canceled, filePaths } = await dialog.showOpenDialog({ properties: ['openFile'], filters })
     if (canceled || !filePaths.length) return null
     return filePaths[0]
+  })
+
+  // 背景图读取：受控读取图片 -> 等比缩放 -> data URL。只服务设置面板，不做跨请求缓存。
+  ipcMain.handle(FILE_READ_IMAGE, async (_e, { path: p } = {}) => {
+    if (typeof p !== 'string' || !p.trim()) return null
+    const ext = path.extname(p).toLowerCase()
+    if (!['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) return null
+    try {
+      const st = await fs.promises.stat(p)
+      if (!st.isFile() || st.size > 10 * 1024 * 1024) return null
+      const img = nativeImage.createFromPath(p)
+      if (img.isEmpty()) return null
+      const { width, height } = img.getSize()
+      const scale = Math.min(1, 1920 / Math.max(width, height))
+      const out = scale < 1
+        ? img.resize({ width: Math.round(width * scale), height: Math.round(height * scale), quality: 'good' })
+        : img
+      return out.toDataURL()
+    } catch {
+      return null
+    }
   })
 
   // 弹目录选择对话框，返回选中的目录路径（日志自动保存路径用）；取消返回 null

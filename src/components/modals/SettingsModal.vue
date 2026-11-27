@@ -7,6 +7,7 @@ import keycodeZh from '@shared/i18n/locales/keycode.zh-CN.js'
 import { t, locale, locales, warnings, missingCount, scanDir, setKeycodeMode } from '@/i18n'
 import { loadI18n } from '@/composables/useApp'
 import { applyTheme } from '@/composables/useTheme'
+import { applyBackground, browseBackgroundImage, clearBackgroundImage, resetBackground, setZoneAlpha, setZoneColor } from '@/composables/useBackground'
 import AppSelect from '../AppSelect.vue'
 import * as State from '@/composables/state'
 import {
@@ -29,6 +30,18 @@ const {
 
 // 手动新增历史：两个输入框各自暂存，添加成功后清空。
 const fhDraft = reactive({ tag: '', text: '' })
+
+// 背景分区定义：模板只循环这份清单，两个区的开关/颜色/透明度互不影响。
+const bgZoneDefs = [
+  { key: 'chrome', labelKey: 'settings.bgZoneChrome', fallback: '#FFFFFF' },
+  { key: 'log', labelKey: 'settings.bgZoneLog', fallback: '#FFFFFF' }
+]
+function onBgToggle() { applyBackground(); saveCfg() }
+async function onBgPick() { await browseBackgroundImage(); saveCfg() }
+function onBgClear() { clearBackgroundImage(); saveCfg() }
+function onBgReset() { resetBackground(); saveCfg() }
+function onBgColor(key, val) { setZoneColor(key, val); saveCfg() }
+function onBgAlpha(key, val) { setZoneAlpha(key, val); saveCfg() }
 // 注意：computed 必须在此 `.value` 取成普通数组。若把 ref 直接塞进普通对象，
 // 模板里的 sect.list 不会被自动解包，v-for 拿到的是 ref 对象而非数组。
 const fhSections = computed(() => [
@@ -285,6 +298,38 @@ async function exportLangTemplate() {
               <span>{{ t('settings.closeOnOuter') }}</span>
             </label>
             <p class="muted small">{{ t('settings.closeOnOuterDesc') }}</p>
+            <div class="bg-section">
+              <label class="switch-row">
+                <input type="checkbox" v-model="cfg.bgEnabled" @change="onBgToggle" />
+                <span>{{ t('settings.bgMaster') }}</span>
+              </label>
+              <p class="muted small">{{ t('settings.bgMasterDesc') }}</p>
+              <div class="outdir-row">
+                <span class="outdir-label">{{ t('settings.bgImage') }}</span>
+                <button class="ghost" :disabled="!cfg.bgEnabled" @click="onBgPick">{{ t('settings.bgPick') }}</button>
+                <button class="ghost" :disabled="!cfg.bgEnabled || !cfg.bgImage" @click="onBgClear">{{ t('common.clear') }}</button>
+                <button class="ghost" :disabled="!cfg.bgEnabled" @click="onBgReset">{{ t('settings.bgReset') }}</button>
+              </div>
+              <p class="muted small">{{ cfg.bgImage || t('settings.bgNoImage') }}</p>
+              <p class="muted small">{{ t('settings.bgImageHint') }}</p>
+              <div v-for="z in bgZoneDefs" :key="z.key" class="bg-zone">
+                <label class="switch-row">
+                  <input type="checkbox" v-model="cfg.bgZones[z.key].enabled" :disabled="!cfg.bgEnabled" @change="onBgToggle" />
+                  <span>{{ t(z.labelKey) }}</span>
+                </label>
+                <div class="outdir-row">
+                  <span class="outdir-label">{{ t('settings.bgColor') }}</span>
+                  <input type="color" :value="cfg.bgZones[z.key].color || z.fallback" :disabled="!cfg.bgEnabled || !cfg.bgZones[z.key].enabled" @input="onBgColor(z.key, $event.target.value)" />
+                  <input type="text" class="color-hex-input" :value="cfg.bgZones[z.key].color" :disabled="!cfg.bgEnabled || !cfg.bgZones[z.key].enabled" @input="onBgColor(z.key, $event.target.value)" maxlength="7" spellcheck="false" />
+                </div>
+                <div class="outdir-row">
+                  <span class="outdir-label">{{ t('settings.bgAlpha') }}</span>
+                  <input type="range" min="0" max="100" :value="cfg.bgZones[z.key].alpha" :disabled="!cfg.bgEnabled || !cfg.bgZones[z.key].enabled" @input="onBgAlpha(z.key, $event.target.value)" />
+                  <span class="muted small">{{ cfg.bgZones[z.key].alpha }}%</span>
+                </div>
+                <p v-if="z.key === 'log'" class="muted small">{{ t('settings.bgLogHint') }}</p>
+              </div>
+            </div>
           </div>
           <div v-if="settingsTab === 'capture'" class="capture-box">
             <div class="outdir-row">

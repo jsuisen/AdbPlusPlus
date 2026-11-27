@@ -10,6 +10,7 @@ import { onOfflineLogStarted, onOfflineLogStopped, refreshOfflineLogs } from './
 import { onData, onFindWinFocusChange, onGlobalKey, refreshProcs, stopAutoLogFlush } from './useLogcat'
 import { refreshDevices } from './useDevices'
 import { applyTheme, onThemeResolved } from './useTheme'
+import { restoreBackground } from './useBackground'
 
 let offData, offErr, offStderr, offClosed, offMax, offDevicesChanged, offProcChanged, offNetcapStarted, offNetcapStopped, offNetcapError, offOfflineLogStarted, offOfflineLogStopped, offUpdate, offTheme
 let startupProcTimer = null
@@ -38,6 +39,7 @@ onMounted(async () => {
   applyConfig(c)
   offTheme = onThemeResolved(syncLogColorsForTheme)  // system 跟随变化时同步日志默认色
   applyTheme(c.theme)   // 主题在首屏渲染前落到 html，避免浅色闪一下；loadConfig 已用 DEFAULT 补齐字段
+  restoreBackground()   // 背景变量同步落地；图片异步读取，失败静默回落纯色
   // lang 为空时传空串，让主进程的系统语言探测结果生效（见 loadI18n）
   await loadI18n(c.lang || '')
   setKeycodeMode(c.keycodeLangMode || 'follow')

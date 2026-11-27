@@ -73,6 +73,13 @@ html, body {
 
 #app { height: 100vh; display: flex; flex-direction: column; }
 
+/* 自定义背景层：固定整窗、不接收事件，永远在内容层之下。 */
+.app-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image: var(--app-bg-image, none);
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+}
+
 select, input, button {
   font-family: inherit; font-size: 13px;
   padding: 5px 8px; border: 1px solid var(--border);
@@ -93,12 +100,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
 
 /* ---------- 整体骨架 ---------- */
-.app-root { height: 100%; display: flex; flex-direction: column; }
+.app-root { position: relative; z-index: 1; height: 100%; display: flex; flex-direction: column; }
 
 /* 菜单栏（已合并原生标题栏：可拖拽，左 收起/关于，右 窗口控制） */
 .menubar {
   height: 36px; display: flex; align-items: center; justify-content: space-between;
-  padding: 0 6px; background: var(--panel); border-bottom: 1px solid var(--border);
+  padding: 0 6px; background: var(--zone-chrome-bg, var(--panel)); border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
 .menu-left { display: flex; align-items: center; gap: 4px; min-width: 0; -webkit-app-region: no-drag; }
@@ -142,7 +149,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* 侧边栏 */
 .sidebar {
-  width: 208px; flex: 0 0 208px; background: var(--panel);
+  width: 208px; flex: 0 0 208px; background: var(--zone-chrome-bg, var(--panel));
   border-right: 1px solid var(--border); overflow: hidden;
 }
 .sidebar.collapsed { width: 0; flex-basis: 0; border-right: none; }
@@ -208,7 +215,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* 快捷按钮区（状态栏上一行） */
-.quickbar { border-top: 1px solid var(--border); background: var(--panel); padding: 5px 8px; }
+.quickbar { border-top: 1px solid var(--border); background: var(--zone-chrome-bg, var(--panel)); padding: 5px 8px; }
 .qb-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .qb-title { font-weight: 600; }
 .qb-group { margin-left: auto; }
@@ -263,7 +270,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .cmd-out { font-family: "Cascadia Code", Consolas, monospace; font-size: 12px; white-space: pre-wrap; word-break: break-all; background: var(--code-bg); color: #d6e2ff; border-radius: 6px; padding: 10px; max-height: 320px; overflow: auto; margin: 0; }
 
 .logview {
-  position: relative; flex: 1; overflow-y: auto; overflow-x: auto; background: var(--surface); border: 1px solid var(--border);
+  position: relative; flex: 1; overflow-y: auto; overflow-x: auto; background: var(--zone-log-bg, var(--surface)); border: 1px solid var(--border);
   border-radius: 6px; font-family: "Cascadia Code", Consolas, monospace; font-size: 12px;
   line-height: 1.5; padding: 6px 8px; caret-color: transparent; outline: none;
 }
@@ -352,7 +359,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
    曾导致窗口最右侧出现一根从视口顶部开始的常驻文档级垂直滚动条（关闭按钮右侧） */
 .statusbar {
   height: 24px; display: flex; align-items: center; gap: 8px;
-  padding: 0 12px; background: var(--panel); border-top: 1px solid var(--border);
+  padding: 0 12px; background: var(--zone-chrome-bg, var(--panel)); border-top: 1px solid var(--border);
   font-size: 12px; color: var(--muted);
   overflow: hidden;
 }
@@ -712,3 +719,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .fh-del-btn { flex: 0 0 auto; height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); color: var(--danger); font-size: 12px; cursor: pointer; }
 .fh-del-btn:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger); }
 .fh-del-btn:disabled { color: var(--muted); cursor: not-allowed; }
+
+/* 设置-窗口属性：自定义背景分区 */
+.bg-section { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.bg-zone { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
+.bg-zone .outdir-row { margin-bottom: 6px; }
+.bg-zone input[type="range"] { flex: 1 1 auto; min-width: 0; height: 20px; padding: 0; border: none; background: transparent; }

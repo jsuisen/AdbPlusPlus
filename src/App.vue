@@ -173,6 +173,7 @@ const { openUpdateDialog } = useUpdate()
 </script>
 
 <template>
+  <div class="app-bg" aria-hidden="true"></div>
   <div class="app-root" @wheel="onWheel">
     <!-- 菜单栏（已合并自定义标题栏：左侧 收起/关于，右侧 窗口控制） -->
     <div class="menubar">

@@ -42,9 +42,33 @@ export function defaultOutDir() {
   return path.resolve(__dirname, '..')
 }
 
+// 背景分区参数：旧配置/导入文件可能缺子键或带非法值，统一在这里收敛形状。
+function normalizeBgZones(raw) {
+  const out = {}
+  for (const k of ['chrome', 'log']) {
+    const z = (raw && typeof raw === 'object' && raw[k] && typeof raw[k] === 'object') ? raw[k] : {}
+    let color = typeof z.color === 'string' ? z.color.trim() : ''
+    if (/^#[0-9a-fA-F]{3}$/.test(color)) {
+      color = '#' + color.slice(1).split('').map(c => c + c).join('').toLowerCase()
+    } else if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+      color = color.toLowerCase()
+    } else {
+      color = ''
+    }
+    let alpha = Number(z.alpha)
+    if (!Number.isFinite(alpha)) alpha = 100
+    alpha = Math.max(0, Math.min(100, Math.round(alpha)))
+    out[k] = { enabled: !!z.enabled, color, alpha }
+  }
+  return out
+}
+
 const DEFAULT = {
   lang: '',            // 界面语言 id：空 = 首次启动按系统语言探测；外部语言包 id 亦可直接写这里
   theme: 'system',     // 界面主题：'system' 跟随系统 / 'light' 浅色 / 'dark' 深色；非法值在启动时回落 system
+  bgEnabled: false,    // 自定义背景总开关：关闭后背景图与两区背景色/透明度全部失效
+  bgImage: '',         // 背景图路径（只存路径；data URL 运行时生成，不落盘）
+  bgZones: normalizeBgZones(), // { chrome, log } 各自 enabled / color / alpha
   keycodeLangMode: 'follow', // KEYCODE 描述语言：'follow' 跟随界面 / 'en' 始终英文（本机偏好，不随设置导入导出）
   quickCommands: [],   // [{ name, args: string[] }]
   levelFilter: '',     // V/D/I/W/E/F 或空
@@ -91,6 +115,10 @@ export function loadConfig() {
     raw = JSON.parse(fs.readFileSync(activeCfgPath, 'utf8'))
   } catch { raw = {} }
   const merged = { ...DEFAULT, ...raw }
+  // 背景配置形状收敛：浅合并遇到半截 bgZones 会丢子键，必须显式重建。
+  merged.bgEnabled = !!merged.bgEnabled
+  merged.bgImage = typeof merged.bgImage === 'string' ? merged.bgImage : ''
+  merged.bgZones = normalizeBgZones(raw.bgZones)
   // outDir 为空时落到 exe 所在目录，保证自动日志/导出有可写落点
   if (!merged.outDir) merged.outDir = defaultOutDir()
   // appLogDir 为空时同样落到 exe 所在目录
